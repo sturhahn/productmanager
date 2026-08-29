@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ProductManager.Domain\ProductManager.Domain.csproj" />
+    <ProjectReference Include="..\ProductManager.Engine\ProductManager.Engine.csproj" />
   </ItemGroup>
 
   <ItemGroup>

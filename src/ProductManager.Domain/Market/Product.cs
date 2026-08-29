@@ -48,7 +48,7 @@ public sealed class Product : Entity
     public void SetParent(Guid? parentProductId)
     {
         if (parentProductId == Id)
-            throw new InvalidOperationException("A product cannot be its own parent.");
+            throw new DomainConflictException("A product cannot be its own parent.");
         ParentProductId = parentProductId;
     }
 
@@ -60,6 +60,10 @@ public sealed class Product : Entity
         if (existing is not null) _prices.Remove(existing);
         _prices.Add(new ProductPrice(clientSegmentId, recurringPricePerPeriod, implementationFee, usageBasedPlaceholder));
     }
+
+    /// <summary>Drops a price row. A null segment drops the default price. False when there was none.</summary>
+    public bool RemovePrice(Guid? clientSegmentId) =>
+        _prices.RemoveAll(p => p.ClientSegmentId == clientSegmentId) > 0;
 }
 
 /// <summary>Pricing for a product, optionally per segment. Owned by Product.</summary>

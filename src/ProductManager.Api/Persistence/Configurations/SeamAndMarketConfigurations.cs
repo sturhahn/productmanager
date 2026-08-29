@@ -48,6 +48,30 @@ public class ClientSegmentConfiguration : IEntityTypeConfiguration<ClientSegment
         b.Property(x => x.Name).HasMaxLength(200);
         b.HasOne<Market>().WithMany().HasForeignKey(x => x.MarketId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(x => new { x.MarketId, x.Name }).IsUnique();
+
+        // The observed starting state the engine consumes: one measurement, stored inline.
+        b.OwnsOne(x => x.StockState, stock =>
+        {
+            stock.Property(s => s.InitialProspectPool).HasColumnName("InitialProspectPool");
+            stock.Property(s => s.InitialClientCount).HasColumnName("InitialClientCount");
+            stock.Property(s => s.ArpuPerMonth).HasColumnName("ArpuPerMonth");
+            stock.Property(s => s.ImplementationFee).HasColumnName("ImplementationFee");
+            stock.Property(s => s.ServicingCostPerClient).HasColumnName("ServicingCostPerClient");
+            stock.Property(s => s.InfraFixedCostPerMonth).HasColumnName("InfraFixedCostPerMonth");
+            stock.Property(s => s.InfraCostPerClient).HasColumnName("InfraCostPerClient");
+            stock.Property(s => s.RdDragPerMonth).HasColumnName("RdDragPerMonth");
+        });
+        b.Navigation(x => x.StockState).IsRequired();
+
+        b.OwnsMany(x => x.ModulePenetrations, penetration =>
+        {
+            penetration.ToTable("ClientSegmentModulePenetrations");
+            penetration.WithOwner().HasForeignKey("ClientSegmentId");
+            penetration.Property<int>("Id");
+            penetration.HasKey("Id");
+            penetration.HasIndex(p => p.ModuleProductId);
+        });
+        b.Navigation(x => x.ModulePenetrations).AutoInclude();
     }
 }
 

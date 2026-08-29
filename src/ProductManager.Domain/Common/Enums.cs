@@ -82,6 +82,29 @@ public enum FactEventKind
     Other
 }
 
+/// <summary>
+/// The stock-and-flow the simulation engine drives with a parameter. Member names are kept
+/// identical to <c>ProductManager.Engine.FlowKind</c> — the API maps between the two by name, so
+/// the Domain never has to reference the engine assembly.
+/// </summary>
+public enum SimulationFlowKind
+{
+    /// <summary>New firms entering the segment's prospect pool per month.</summary>
+    NewFirmArrival,
+
+    /// <summary>Monthly rate at which pooled prospects come to market.</summary>
+    ConversionToMarket,
+
+    /// <summary>Per-opportunity win probability.</summary>
+    WinRate,
+
+    /// <summary>Per-client monthly churn probability.</summary>
+    ChurnHazard,
+
+    /// <summary>Per-module monthly adoption probability among clients not yet holding the module.</summary>
+    CrossSellRate
+}
+
 /// <summary>What kind of market-meaning delta a Feature carries.</summary>
 public enum FeatureDeltaKind
 {

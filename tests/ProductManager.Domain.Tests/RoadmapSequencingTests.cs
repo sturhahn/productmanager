@@ -1,3 +1,4 @@
+using ProductManager.Domain.Common;
 using ProductManager.Domain.Execution;
 using ProductManager.Domain.Services;
 
@@ -152,6 +153,6 @@ public class RoadmapSequencingTests
     public void SelfDependency_IsRejectedByTheDomain()
     {
         var a = new Project(InitiativeId, "A");
-        Assert.Throws<InvalidOperationException>(() => a.AddDependency(a.Id));
+        Assert.Throws<DomainConflictException>(() => a.AddDependency(a.Id));
     }
 }

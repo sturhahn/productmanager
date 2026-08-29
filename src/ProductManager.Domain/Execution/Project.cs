@@ -57,7 +57,7 @@ public sealed class Project : Entity
         if (dependsOnProjectId == Guid.Empty)
             throw new ArgumentException("Dependency project id is required.", nameof(dependsOnProjectId));
         if (dependsOnProjectId == Id)
-            throw new InvalidOperationException("A project cannot depend on itself.");
+            throw new DomainConflictException("A project cannot depend on itself.");
         if (_dependencies.Any(d => d.DependsOnProjectId == dependsOnProjectId))
             return; // idempotent
         _dependencies.Add(new ProjectDependency(Id, dependsOnProjectId));

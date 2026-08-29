@@ -38,7 +38,7 @@ public sealed class AssumptionSet : Entity
         Name = name.Trim();
     }
 
-    /// <summary>Sets (upserting by key) a parameter.</summary>
+    /// <summary>Sets (upserting by key) a free-form parameter — one the engine does not read.</summary>
     public Parameter SetParameter(string key, Distribution distribution, ParameterProvenance provenance,
         string? rationale = null)
     {
@@ -50,12 +50,57 @@ public sealed class AssumptionSet : Entity
         return parameter;
     }
 
+    /// <summary>
+    /// Sets (upserting) a parameter the engine reads, keyed exactly as the engine keys it:
+    /// (segment, flow kind, module?). The string <see cref="Parameter.Key"/> is derived from that
+    /// triple, so the same flow for the same segment can never end up stored twice.
+    /// </summary>
+    public Parameter SetEngineParameter(
+        Guid clientSegmentId,
+        SimulationFlowKind flowKind,
+        Guid? moduleProductId,
+        Distribution distribution,
+        ParameterProvenance provenance,
+        string? rationale = null,
+        Guid? covariateId = null,
+        double? covariateBeta = null)
+    {
+        if (clientSegmentId == Guid.Empty)
+            throw new ArgumentException("ClientSegmentId is required.", nameof(clientSegmentId));
+        if (moduleProductId is not null && flowKind != SimulationFlowKind.CrossSellRate)
+            throw new ArgumentException(
+                "Only a CrossSellRate parameter may name a module.", nameof(moduleProductId));
+        if (flowKind == SimulationFlowKind.CrossSellRate && moduleProductId is null)
+            throw new ArgumentException(
+                "A CrossSellRate parameter must name the module it cross-sells.", nameof(moduleProductId));
+        if (covariateId is not null && covariateBeta is null)
+            throw new ArgumentException("A covariate link needs a beta.", nameof(covariateBeta));
+        if (covariateId is null && covariateBeta is not null)
+            throw new ArgumentException("A covariate beta needs a covariate.", nameof(covariateId));
+
+        var key = Parameter.EngineKey(flowKind, clientSegmentId, moduleProductId);
+        _parameters.RemoveAll(p => p.Key == key);
+        var parameter = new Parameter(Id, key, distribution, provenance, rationale)
+            .WithEngineKeying(clientSegmentId, flowKind, moduleProductId)
+            .WithCovariateLink(covariateId, covariateBeta);
+        _parameters.Add(parameter);
+        return parameter;
+    }
+
+    /// <summary>Removes one parameter by its id. Returns false when this set does not hold it.</summary>
+    public bool RemoveParameter(Guid parameterId) => _parameters.RemoveAll(p => p.Id == parameterId) > 0;
+
     /// <summary>Branch this set: a deep copy of all parameters, parent pointing back here.</summary>
     public AssumptionSet Branch(string branchName)
     {
         var branch = new AssumptionSet(WorkspaceId, branchName) { ParentAssumptionSetId = Id };
         foreach (var p in _parameters)
-            branch._parameters.Add(new Parameter(branch.Id, p.Key, p.Distribution, p.Provenance, p.Rationale));
+            // The distribution is deep-copied, not shared: it is an owned value whose identity is
+            // its owner, and one instance hanging off two parameters is not a thing that can be stored.
+            branch._parameters.Add(
+                new Parameter(branch.Id, p.Key, p.Distribution.Copy(), p.Provenance, p.Rationale)
+                    .WithEngineKeying(p.ClientSegmentId, p.FlowKind, p.ModuleProductId)
+                    .WithCovariateLink(p.CovariateId, p.CovariateBeta));
         return branch;
     }
 }
@@ -72,6 +117,31 @@ public sealed class Parameter : Entity
     public ParameterProvenance Provenance { get; private set; }
     public string? Rationale { get; private set; }
 
+    // ---- Structured keying: set on parameters the engine reads, null on free-form ones ----
+
+    /// <summary>The segment this rate governs; null on a free-form parameter.</summary>
+    public Guid? ClientSegmentId { get; private set; }
+
+    /// <summary>The flow this rate governs; null on a free-form parameter.</summary>
+    public SimulationFlowKind? FlowKind { get; private set; }
+
+    /// <summary>The cross-sold module; only ever set for <see cref="SimulationFlowKind.CrossSellRate"/>.</summary>
+    public Guid? ModuleProductId { get; private set; }
+
+    /// <summary>Covariate whose movement scales this rate; null = no link.</summary>
+    public Guid? CovariateId { get; private set; }
+
+    /// <summary>
+    /// Elasticity of the rate with respect to the covariate: rate_t = rate * (x_t / x_0)^beta,
+    /// i.e. a +1% move in the covariate moves the rate by about +beta%. Being a ratio form it is
+    /// scale-free — the covariate's units do not matter — but it does require a strictly positive
+    /// covariate path, which the engine enforces.
+    /// </summary>
+    public double? CovariateBeta { get; private set; }
+
+    /// <summary>True when this parameter is keyed the way the engine keys its parameters.</summary>
+    public bool IsEngineParameter => ClientSegmentId is not null && FlowKind is not null;
+
     private Parameter() { } // EF
 
     public Parameter(Guid assumptionSetId, string key, Distribution distribution, ParameterProvenance provenance,
@@ -83,6 +153,27 @@ public sealed class Parameter : Entity
         Distribution = distribution ?? throw new ArgumentNullException(nameof(distribution));
         Provenance = provenance;
         Rationale = rationale;
+    }
+
+    /// <summary>The canonical storage key for an engine parameter — the engine's own (segment, flow, module) key.</summary>
+    public static string EngineKey(SimulationFlowKind flowKind, Guid clientSegmentId, Guid? moduleProductId) =>
+        moduleProductId is null
+            ? $"{flowKind}:{clientSegmentId}"
+            : $"{flowKind}:{clientSegmentId}:{moduleProductId}";
+
+    internal Parameter WithEngineKeying(Guid? clientSegmentId, SimulationFlowKind? flowKind, Guid? moduleProductId)
+    {
+        ClientSegmentId = clientSegmentId;
+        FlowKind = flowKind;
+        ModuleProductId = moduleProductId;
+        return this;
+    }
+
+    internal Parameter WithCovariateLink(Guid? covariateId, double? covariateBeta)
+    {
+        CovariateId = covariateId;
+        CovariateBeta = covariateBeta;
+        return this;
     }
 }
 
@@ -117,7 +208,7 @@ public sealed class CalibrationRun : Entity
     public void RecordFit(Guid fittedAssumptionSetId)
     {
         if (FittedAssumptionSetId is not null)
-            throw new InvalidOperationException("A calibration run is immutable once fitted.");
+            throw new DomainConflictException("A calibration run is immutable once fitted.");
         FittedAssumptionSetId = fittedAssumptionSetId;
     }
 }
@@ -133,46 +224,89 @@ public sealed class SimulationRun : Entity
     public Guid RoadmapId { get; private set; }
     public Guid AssumptionSetId { get; private set; }
 
+    /// <summary>Optional human label for the run ("base case", "with the incident").</summary>
+    public string? Name { get; private set; }
+
+    /// <summary>Calendar month the horizon starts in — month 0 of every trajectory.</summary>
+    public DateOnly StartDate { get; private set; }
+
+    public int HorizonMonths { get; private set; }
+    public int Paths { get; private set; }
+    public double DiscountRateAnnual { get; private set; }
+    public double TerminalGrowthAnnual { get; private set; }
+
     /// <summary>Covariate scenario specification snapshot (JSON).</summary>
     public string? CovariateScenarioJson { get; private set; }
 
-    /// <summary>Hypothetical-event overlay snapshot (JSON).</summary>
+    /// <summary>Event overlay snapshot — the real and hypothetical events included in this run (JSON).</summary>
     public string? EventOverlayJson { get; private set; }
 
     public int Seed { get; private set; }
     public string? ModelVersion { get; private set; }
 
-    /// <summary>Full input snapshot for exact reproducibility (JSON).</summary>
+    /// <summary>
+    /// Full engine input snapshot (JSON). This is the reproducibility guarantee: re-running the
+    /// engine on this snapshot alone — no database reads — reproduces the stored result byte for byte.
+    /// </summary>
     public string? InputSnapshotJson { get; private set; }
 
     /// <summary>Output trajectories (JSON), once executed.</summary>
     public string? TrajectoriesJson { get; private set; }
 
+    /// <summary>Wall-clock engine time, once executed.</summary>
+    public long? ElapsedMs { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
+
+    public bool IsExecuted => TrajectoriesJson is not null;
 
     private SimulationRun() { } // EF
 
-    public SimulationRun(Guid workspaceId, Guid roadmapId, Guid assumptionSetId, int seed,
-        string? covariateScenarioJson = null, string? eventOverlayJson = null, string? modelVersion = null)
+    public SimulationRun(
+        Guid workspaceId,
+        Guid roadmapId,
+        Guid assumptionSetId,
+        DateOnly startDate,
+        int horizonMonths,
+        int paths,
+        int seed,
+        double discountRateAnnual,
+        double terminalGrowthAnnual,
+        string? name = null,
+        string? covariateScenarioJson = null,
+        string? eventOverlayJson = null,
+        string? modelVersion = null)
     {
         if (workspaceId == Guid.Empty) throw new ArgumentException("WorkspaceId is required.", nameof(workspaceId));
         if (roadmapId == Guid.Empty) throw new ArgumentException("RoadmapId is required.", nameof(roadmapId));
         if (assumptionSetId == Guid.Empty)
             throw new ArgumentException("AssumptionSetId is required.", nameof(assumptionSetId));
+        if (horizonMonths < 1)
+            throw new ArgumentOutOfRangeException(nameof(horizonMonths), "A run needs at least one month.");
+        if (paths < 1)
+            throw new ArgumentOutOfRangeException(nameof(paths), "A run needs at least one Monte Carlo path.");
+
         WorkspaceId = workspaceId;
         RoadmapId = roadmapId;
         AssumptionSetId = assumptionSetId;
+        StartDate = startDate;
+        HorizonMonths = horizonMonths;
+        Paths = paths;
         Seed = seed;
+        DiscountRateAnnual = discountRateAnnual;
+        TerminalGrowthAnnual = terminalGrowthAnnual;
+        Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
         CovariateScenarioJson = covariateScenarioJson;
         EventOverlayJson = eventOverlayJson;
         ModelVersion = modelVersion;
     }
 
-    public void RecordResult(string inputSnapshotJson, string trajectoriesJson)
+    public void RecordResult(string inputSnapshotJson, string trajectoriesJson, long? elapsedMs = null)
     {
         if (TrajectoriesJson is not null)
-            throw new InvalidOperationException("A simulation run is immutable once executed.");
+            throw new DomainConflictException("A simulation run is immutable once executed.");
         InputSnapshotJson = inputSnapshotJson;
         TrajectoriesJson = trajectoriesJson;
+        ElapsedMs = elapsedMs;
     }
 }

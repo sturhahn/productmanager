@@ -81,11 +81,11 @@ public sealed class Roadmap : Entity
     {
         ArgumentNullException.ThrowIfNull(branch);
         if (!IsLive)
-            throw new InvalidOperationException("Only the live roadmap can adopt a branch; merge target must be live.");
+            throw new DomainConflictException("Only the live roadmap can adopt a branch; merge target must be live.");
         if (branch.IsLive)
-            throw new InvalidOperationException("Cannot adopt the live roadmap into itself.");
+            throw new DomainConflictException("Cannot adopt the live roadmap into itself.");
         if (branch.WorkspaceId != WorkspaceId)
-            throw new InvalidOperationException("Cannot adopt a branch from a different workspace.");
+            throw new DomainConflictException("Cannot adopt a branch from a different workspace.");
         _items.Clear();
         foreach (var item in branch._items.OrderBy(i => i.SortOrder))
             _items.Add(new RoadmapItem(Id, item.ProjectId, item.PlannedStart, item.PlannedEnd, item.SortOrder));

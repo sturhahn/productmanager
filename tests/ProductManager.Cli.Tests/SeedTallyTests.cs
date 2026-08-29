@@ -26,4 +26,30 @@ public class SeedTallyTests
 
         Assert.False(tally.Snapshot.ContainsKey("feature"));
     }
+
+    [Fact]
+    public void RecordApplied_counts_upserts_separately_from_created_and_matched()
+    {
+        var tally = new SeedTally();
+
+        tally.RecordApplied("segmentStock");
+        tally.RecordApplied("segmentStock");
+        tally.RecordApplied("modulePenetration");
+        tally.RecordCreated("segmentStock");
+
+        Assert.Equal(2, tally.AppliedSnapshot["segmentStock"]);
+        Assert.Equal(1, tally.AppliedSnapshot["modulePenetration"]);
+        // The two counters are independent views: an applied upsert is not a create or a match.
+        Assert.Equal((1, 0), tally.Snapshot["segmentStock"]);
+        Assert.False(tally.Snapshot.ContainsKey("modulePenetration"));
+    }
+
+    [Fact]
+    public void AppliedSnapshot_is_empty_until_an_upsert_is_recorded()
+    {
+        var tally = new SeedTally();
+        tally.RecordCreated("team");
+
+        Assert.Empty(tally.AppliedSnapshot);
+    }
 }

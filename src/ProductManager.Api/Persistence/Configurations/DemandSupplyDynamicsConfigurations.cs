@@ -94,6 +94,18 @@ public class MarketEventConfiguration : IEntityTypeConfiguration<MarketEvent>
         b.HasOne<Market>().WithMany().HasForeignKey(x => x.MarketId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne<Competitor>().WithMany().HasForeignKey(x => x.CompetitorId).OnDelete(DeleteBehavior.SetNull);
         b.HasIndex(x => new { x.MarketId, x.StartDate });
+        b.HasIndex(x => x.IsHypothetical);
+
+        b.OwnsMany(x => x.RateMultipliers, multiplier =>
+        {
+            multiplier.ToTable("MarketEventRateMultipliers");
+            multiplier.WithOwner().HasForeignKey("MarketEventId");
+            multiplier.Property<int>("Id");
+            multiplier.HasKey("Id");
+            multiplier.Property(m => m.FlowKind).AsString();
+            multiplier.HasIndex(m => m.ClientSegmentId);
+        });
+        b.Navigation(x => x.RateMultipliers).AutoInclude();
     }
 }
 
@@ -105,5 +117,6 @@ public class CovariateConfiguration : IEntityTypeConfiguration<Covariate>
         b.Property(x => x.Unit).HasMaxLength(50);
         b.HasOne<Workspace>().WithMany().HasForeignKey(x => x.WorkspaceId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(x => new { x.WorkspaceId, x.Name }).IsUnique();
+        b.Ignore(x => x.HasGbmSpec);
     }
 }

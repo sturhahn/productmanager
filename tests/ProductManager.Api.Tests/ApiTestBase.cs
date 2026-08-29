@@ -47,6 +47,14 @@ public abstract class ApiTestBase : IAsyncLifetime
         return (await response.Content.ReadFromJsonAsync<T>(ApiFactory.Json))!;
     }
 
+    /// <summary>For the delete endpoints that answer with the mutated aggregate rather than 204.</summary>
+    protected async Task<T> DeleteAsync<T>(string url)
+    {
+        var response = await Client.DeleteAsync(url);
+        await AssertSuccess(response, url);
+        return (await response.Content.ReadFromJsonAsync<T>(ApiFactory.Json))!;
+    }
+
     protected async Task<T> GetAsync<T>(string url)
     {
         var response = await Client.GetAsync(url);

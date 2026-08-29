@@ -24,6 +24,9 @@ public static class SeedLoader
             ? null
             : await LoadMarketAsync(client, workspaceId, seed.Market, tally, ct);
 
+        if (seed.MarketDynamics is not null)
+            await LoadMarketDynamicsAsync(client, workspaceId, seed.MarketDynamics, tally, ct);
+
         var teamIndex = await LoadTeamsAsync(client, workspaceId, seed.Teams, tally, ct);
         var initiativeIndex = await LoadInitiativesAsync(client, workspaceId, seed.Initiatives, market?.Segments, tally, ct);
         var featureIndex = await LoadFeaturesAsync(client, workspaceId, seed.Features, market, tally, ct);
@@ -403,6 +406,165 @@ public static class SeedLoader
                 approachId, segmentId, ParseHelpers.ParseOptionalDate(coverage.EffectiveDate, "coverage effectiveDate"), coverage.Rationale), ct);
             tally.RecordCreated("coverage");
         }
+    }
+
+    // ---------- Market dynamics (Phase 2) ----------
+
+    private static async Task LoadMarketDynamicsAsync(
+        ProductManagerApiClient client, Guid workspaceId, SeedMarketDynamics dynamics, SeedTally tally, CancellationToken ct)
+    {
+        var existingMarkets = await client.ListMarketsAsync(workspaceId, 1, ListPageSize, ct);
+        var marketIndex = new NameIndex(existingMarkets.Items.Select(m => (m.Name, m.Id)));
+        var marketId = marketIndex.GetOrThrow(dynamics.MarketName);
+
+        var existingSegments = await client.ListClientSegmentsAsync(marketId, 1, ListPageSize, ct);
+        var segmentIndex = new NameIndex(existingSegments.Items.Select(s => (s.Name, s.Id)));
+
+        var existingProducts = await client.ListProductsAsync(marketId, null, null, 1, ListPageSize, ct);
+        var productIndex = new NameIndex(existingProducts.Items.Select(p => (p.Name, p.Id)));
+
+        var existingCompetitors = await client.ListCompetitorsAsync(marketId, 1, ListPageSize, ct);
+        var competitorIndex = new NameIndex(existingCompetitors.Items.Select(c => (c.Name, c.Id)));
+
+        foreach (var stockState in dynamics.SegmentStockStates)
+            await ApplySegmentStockStateAsync(client, segmentIndex, productIndex, stockState, tally, ct);
+
+        var covariateIndex = await LoadCovariatesAsync(client, workspaceId, dynamics.Covariates, tally, ct);
+
+        foreach (var assumptionSet in dynamics.AssumptionSets)
+            await LoadAssumptionSetAsync(client, workspaceId, assumptionSet, segmentIndex, productIndex, covariateIndex, tally, ct);
+
+        foreach (var marketEvent in dynamics.MarketEvents)
+            await LoadMarketEventAsync(client, marketId, marketEvent, segmentIndex, competitorIndex, tally, ct);
+    }
+
+    private static async Task ApplySegmentStockStateAsync(
+        ProductManagerApiClient client, NameIndex segments, NameIndex products, SeedSegmentStockState stockState,
+        SeedTally tally, CancellationToken ct)
+    {
+        var segmentId = segments.GetOrThrow(stockState.SegmentName);
+
+        // SetStockState replaces the whole measurement, so re-applying the same seed value is a no-op
+        // — safe to run on every load, the same way team capacities are simply re-applied every run.
+        // There is no create-vs-match decision here, so these count as "applied" in the tally.
+        await client.SetSegmentStockStateAsync(segmentId, new SetSegmentStockStateRequest(
+            stockState.InitialProspectPool, stockState.InitialClientCount, stockState.ArpuPerMonth,
+            stockState.ImplementationFee, stockState.ServicingCostPerClient, stockState.InfraFixedCostPerMonth,
+            stockState.InfraCostPerClient, stockState.RdDragPerMonth), ct);
+        tally.RecordApplied("segmentStock");
+
+        foreach (var penetration in stockState.ModulePenetrations)
+        {
+            var moduleProductId = products.GetOrThrow(penetration.ModuleProductName);
+            await client.SetSegmentModulePenetrationAsync(segmentId,
+                new SetSegmentModulePenetrationRequest(moduleProductId, penetration.Penetration, penetration.ArpuPerMonth), ct);
+            tally.RecordApplied("modulePenetration");
+        }
+    }
+
+    private static async Task<NameIndex> LoadCovariatesAsync(
+        ProductManagerApiClient client, Guid workspaceId, List<SeedCovariate> covariates, SeedTally tally, CancellationToken ct)
+    {
+        var existing = await client.ListCovariatesAsync(workspaceId, 1, ListPageSize, ct);
+        var index = new NameIndex(existing.Items.Select(c => (c.Name, c.Id)));
+
+        foreach (var covariate in covariates)
+        {
+            var id = await GetOrCreateAsync(index, covariate.Name, "covariate", tally, async () =>
+                (await client.CreateCovariateAsync(new CreateCovariateRequest(
+                    workspaceId, covariate.Name, covariate.Description, covariate.Unit,
+                    covariate.GbmStart, covariate.GbmDrift, covariate.GbmVol), ct)).Id);
+
+            foreach (var observation in covariate.Observations)
+                await ApplyCovariateObservationAsync(client, workspaceId, id, observation, tally, ct);
+        }
+
+        return index;
+    }
+
+    private static async Task ApplyCovariateObservationAsync(
+        ProductManagerApiClient client, Guid workspaceId, Guid covariateId, SeedCovariateObservation observation, SeedTally tally, CancellationToken ct)
+    {
+        var effectiveDate = ParseHelpers.ParseDate(observation.EffectiveDate, "covariate observation effectiveDate");
+
+        // The facts ledger is append-only (no natural-key upsert on the API side), so idempotency is
+        // the seed loader's job here: skip a date that already has a reading before appending another.
+        var existing = await client.GetCovariateHistoryAsync(covariateId, effectiveDate, effectiveDate, null, ct);
+        if (existing.Observations.Count > 0)
+        {
+            tally.RecordMatched("covariateObservation");
+            return;
+        }
+
+        var payload = $"{{\"value\":{observation.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}";
+        await client.CreateFactAsync(new CreateFactEventRequest(
+            workspaceId, FactEventKind.CovariateObserved, effectiveDate,
+            SubjectType: "Covariate", SubjectId: covariateId, PayloadJson: payload, Notes: observation.Notes), ct);
+        tally.RecordCreated("covariateObservation");
+    }
+
+    private static async Task LoadAssumptionSetAsync(
+        ProductManagerApiClient client, Guid workspaceId, SeedAssumptionSet assumptionSet,
+        NameIndex segments, NameIndex products, NameIndex covariates, SeedTally tally, CancellationToken ct)
+    {
+        var existing = await client.ListAssumptionSetsAsync(workspaceId, null, 1, ListPageSize, ct);
+        var index = new NameIndex(existing.Items.Select(a => (a.Name, a.Id)));
+
+        var id = await GetOrCreateAsync(index, assumptionSet.Name, "assumptionSet", tally, async () =>
+            (await client.CreateAssumptionSetAsync(new CreateAssumptionSetRequest(workspaceId, assumptionSet.Name, assumptionSet.Notes), ct)).Id);
+
+        // UpsertParameter is upsert-by-engine-key (or by free-form Key) on the API side, so
+        // re-applying every parameter on every load is safe — same idempotency story as capacities.
+        foreach (var parameter in assumptionSet.Parameters)
+        {
+            Guid? segmentId = parameter.SegmentName is null ? null : segments.GetOrThrow(parameter.SegmentName);
+            Guid? moduleProductId = parameter.ModuleProductName is null ? null : products.GetOrThrow(parameter.ModuleProductName);
+            Guid? covariateId = parameter.CovariateName is null ? null : covariates.GetOrThrow(parameter.CovariateName);
+            SimulationFlowKind? flowKind = parameter.FlowKind is null
+                ? null
+                : ParseHelpers.ParseEnum<SimulationFlowKind>(parameter.FlowKind, "parameter flowKind");
+
+            var distribution = new DistributionSpecDto(
+                ParseHelpers.ParseEnum<DistributionType>(parameter.DistType, "parameter distType"), parameter.P1, parameter.P2);
+            var provenance = ParseHelpers.ParseEnum<ParameterProvenance>(parameter.Provenance, "parameter provenance");
+
+            await client.UpsertParameterAsync(id, new UpsertParameterRequest(
+                distribution, provenance, parameter.Rationale, segmentId, flowKind, moduleProductId,
+                covariateId, parameter.CovariateBeta, parameter.Key), ct);
+        }
+    }
+
+    private static async Task LoadMarketEventAsync(
+        ProductManagerApiClient client, Guid marketId, SeedMarketEvent marketEvent,
+        NameIndex segments, NameIndex competitors, SeedTally tally, CancellationToken ct)
+    {
+        var existing = await client.ListMarketEventsAsync(marketId, null, null, 1, ListPageSize, ct);
+        var index = new NameIndex(existing.Items.Select(e => (e.Name, e.Id)));
+
+        if (index.TryGet(marketEvent.Name, out _))
+        {
+            tally.RecordMatched("marketEvent");
+            return;
+        }
+
+        var competitorId = marketEvent.CompetitorName is null ? (Guid?)null : competitors.GetOrThrow(marketEvent.CompetitorName);
+        var rateMultipliers = marketEvent.RateMultipliers.Select(m => new EventRateMultiplierDto(
+            m.SegmentName is null ? (Guid?)null : segments.GetOrThrow(m.SegmentName),
+            ParseHelpers.ParseEnum<SimulationFlowKind>(m.FlowKind, "market event rate multiplier flowKind"),
+            m.Multiplier)).ToList();
+
+        await client.CreateMarketEventAsync(new CreateMarketEventRequest(
+            marketId,
+            ParseHelpers.ParseEnum<MarketEventType>(marketEvent.Type, "market event type"),
+            marketEvent.Name,
+            ParseHelpers.ParseDate(marketEvent.StartDate, "market event startDate"),
+            ParseHelpers.ParseOptionalDate(marketEvent.EndDate, "market event endDate"),
+            marketEvent.IsHypothetical,
+            marketEvent.Magnitude,
+            competitorId,
+            marketEvent.Notes,
+            rateMultipliers), ct);
+        tally.RecordCreated("marketEvent");
     }
 
     private static MarketIndexes RequireMarket(MarketIndexes? market) =>

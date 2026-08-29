@@ -33,7 +33,7 @@ public sealed class BusinessProcess : Entity
     public void SetParent(Guid? parentProcessId)
     {
         if (parentProcessId == Id)
-            throw new InvalidOperationException("A business process cannot be its own parent.");
+            throw new DomainConflictException("A business process cannot be its own parent.");
         ParentProcessId = parentProcessId;
     }
 }
@@ -196,6 +196,14 @@ public sealed class Coverage : Entity
         Tier = tier;
         IsUnknown = false;
         SetConfidence(confidence);
+    }
+
+    /// <summary>Steps back to an explicit "we don't know" — the honest state for sparse competitor data.</summary>
+    public void MarkUnknown()
+    {
+        Tier = CoverageTier.NotPlaying;
+        IsUnknown = true;
+        SetConfidence(0.0);
     }
 
     private void SetConfidence(double confidence)

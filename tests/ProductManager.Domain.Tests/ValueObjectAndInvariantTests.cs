@@ -50,7 +50,7 @@ public class MoneyTests
     [Fact]
     public void AddingDifferentCurrencies_IsRejected()
     {
-        Assert.Throws<InvalidOperationException>(() => new Money(1m, "USD").Add(new Money(1m, "EUR")));
+        Assert.Throws<DomainConflictException>(() => new Money(1m, "USD").Add(new Money(1m, "EUR")));
     }
 
     [Fact]
@@ -206,8 +206,8 @@ public class OpportunityLifecycleTests
         opp.AddToScope(Guid.NewGuid(), opp.OpenedAt);
         opp.Decide(OpportunityStage.Lost, opp.OpenedAt.AddDays(30));
 
-        Assert.Throws<InvalidOperationException>(() => opp.Decide(OpportunityStage.NoDecision, DateTimeOffset.UtcNow));
-        Assert.Throws<InvalidOperationException>(() => opp.AddToScope(Guid.NewGuid(), DateTimeOffset.UtcNow));
+        Assert.Throws<DomainConflictException>(() => opp.Decide(OpportunityStage.NoDecision, DateTimeOffset.UtcNow));
+        Assert.Throws<DomainConflictException>(() => opp.AddToScope(Guid.NewGuid(), DateTimeOffset.UtcNow));
     }
 
     [Fact]

@@ -27,7 +27,13 @@ public class ParameterConfiguration : IEntityTypeConfiguration<Parameter>
         b.Property(x => x.Key).HasMaxLength(300);
         b.Property(x => x.Provenance).AsString();
         b.Property(x => x.Rationale).HasMaxLength(4000);
+        b.Property(x => x.FlowKind).AsString();
         b.HasIndex(x => new { x.AssumptionSetId, x.Key }).IsUnique();
+        b.HasIndex(x => new { x.ClientSegmentId, x.FlowKind });
+        b.Ignore(x => x.IsEngineParameter);
+        // Deliberately no FK on ClientSegmentId / ModuleProductId / CovariateId: an assumption set
+        // is an immutable-ish artifact that runs reference, and deleting a segment must not silently
+        // rewrite the assumptions a past run was executed against.
         b.OwnsOne(x => x.Distribution, dist =>
         {
             dist.Property(d => d.Type).HasColumnName("DistributionType").HasConversion<string>().HasMaxLength(40);
@@ -55,6 +61,8 @@ public class SimulationRunConfiguration : IEntityTypeConfiguration<SimulationRun
     public void Configure(EntityTypeBuilder<SimulationRun> b)
     {
         b.Property(x => x.ModelVersion).HasMaxLength(100);
+        b.Property(x => x.Name).HasMaxLength(200);
+        b.Ignore(x => x.IsExecuted);
         b.Property(x => x.CovariateScenarioJson).HasColumnType("jsonb");
         b.Property(x => x.EventOverlayJson).HasColumnType("jsonb");
         b.Property(x => x.InputSnapshotJson).HasColumnType("jsonb");

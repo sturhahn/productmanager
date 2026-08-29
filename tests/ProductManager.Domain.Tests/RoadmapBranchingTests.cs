@@ -1,3 +1,4 @@
+using ProductManager.Domain.Common;
 using ProductManager.Domain.Execution;
 
 namespace ProductManager.Domain.Tests;
@@ -90,7 +91,7 @@ public class RoadmapBranchingTests
         var branch1 = live.Branch("S1");
         var branch2 = live.Branch("S2");
 
-        Assert.Throws<InvalidOperationException>(() => branch1.AdoptBranch(branch2));
+        Assert.Throws<DomainConflictException>(() => branch1.AdoptBranch(branch2));
     }
 
     [Fact]
@@ -98,7 +99,7 @@ public class RoadmapBranchingTests
     {
         var live = LiveRoadmapWithTwoProjects(out _, out _);
 
-        Assert.Throws<InvalidOperationException>(() => live.AdoptBranch(live));
+        Assert.Throws<DomainConflictException>(() => live.AdoptBranch(live));
     }
 
     [Fact]
@@ -107,7 +108,7 @@ public class RoadmapBranchingTests
         var live = LiveRoadmapWithTwoProjects(out _, out _);
         var foreign = new Roadmap(Guid.NewGuid(), "Other workspace scenario");
 
-        Assert.Throws<InvalidOperationException>(() => live.AdoptBranch(foreign));
+        Assert.Throws<DomainConflictException>(() => live.AdoptBranch(foreign));
     }
 
     [Fact]

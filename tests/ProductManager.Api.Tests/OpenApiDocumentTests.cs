@@ -61,9 +61,28 @@ public sealed class OpenApiDocumentTests : IAsyncLifetime
                      "/api/roadmaps/{id}/feasibility",
                      "/api/markets",
                      "/api/client-segments",
+                     "/api/client-segments/{id}/stock-state",
+                     "/api/client-segments/{id}/module-penetrations",
                      "/api/business-processes",
+                     "/api/approaches",
+                     "/api/competitors",
                      "/api/products",
-                     "/api/coverages"
+                     "/api/products/{id}/prices",
+                     "/api/coverages",
+                     "/api/coverages/{id}",
+                     "/api/firms",
+                     "/api/needs",
+                     "/api/market-events",
+                     "/api/covariates",
+                     "/api/covariates/{id}/history",
+                     "/api/facts",
+                     "/api/assumption-sets",
+                     "/api/assumption-sets/{id}/branch",
+                     "/api/assumption-sets/{id}/parameters",
+                     "/api/simulation-runs",
+                     "/api/simulation-runs/{id}",
+                     "/api/simulation-runs/{id}/result",
+                     "/api/simulation-runs/{id}/input"
                  })
         {
             Assert.True(paths.TryGetProperty(expected, out _), $"OpenAPI document is missing {expected}");

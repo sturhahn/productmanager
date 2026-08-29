@@ -43,4 +43,10 @@ public sealed record Distribution
     }
 
     public static Distribution PointValue(double value) => new(DistributionType.Point, value, 0);
+
+    /// <summary>
+    /// A separate instance with the same numbers. Distributions are owned by the parameter that
+    /// carries them, so copying a parameter has to copy its distribution rather than share it.
+    /// </summary>
+    public Distribution Copy() => new(Type, ParamA, ParamB);
 }

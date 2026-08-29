@@ -12,6 +12,12 @@
   --font-heading: var(--font-space-grotesk);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-tier-gold: var(--tier-gold);
+  --color-tier-gold-foreground: var(--tier-gold-foreground);
+  --color-tier-silver: var(--tier-silver);
+  --color-tier-silver-foreground: var(--tier-silver-foreground);
+  --color-tier-bronze: var(--tier-bronze);
+  --color-tier-bronze-foreground: var(--tier-bronze-foreground);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -85,6 +91,15 @@
   --sidebar-accent-foreground: oklch(0.24 0.05 262);
   --sidebar-border: oklch(0.905 0.008 255);
   --sidebar-ring: oklch(0.62 0.12 262);
+  /* Coverage tiers — a metallic ramp kept clear of the amber "capacity"
+     and red "violation" conventions: gold is yellower and lighter than
+     the warning amber, bronze is a muted copper. */
+  --tier-gold: oklch(0.86 0.13 95);
+  --tier-gold-foreground: oklch(0.4 0.09 85);
+  --tier-silver: oklch(0.87 0.012 255);
+  --tier-silver-foreground: oklch(0.38 0.02 258);
+  --tier-bronze: oklch(0.77 0.075 55);
+  --tier-bronze-foreground: oklch(0.36 0.07 45);
 }
 
 .dark {
@@ -121,6 +136,12 @@
   --sidebar-accent-foreground: oklch(0.94 0.01 258);
   --sidebar-border: oklch(0.94 0.01 255 / 9%);
   --sidebar-ring: oklch(0.6 0.11 262);
+  --tier-gold: oklch(0.46 0.08 92);
+  --tier-gold-foreground: oklch(0.92 0.13 98);
+  --tier-silver: oklch(0.38 0.012 255);
+  --tier-silver-foreground: oklch(0.9 0.01 255);
+  --tier-bronze: oklch(0.4 0.06 50);
+  --tier-bronze-foreground: oklch(0.88 0.08 60);
 }
 
 @layer base {

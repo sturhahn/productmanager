@@ -435,6 +435,15 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<double?>("GbmDrift")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("GbmStart")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("GbmVol")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -670,6 +679,8 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CompetitorId");
+
+                    b.HasIndex("IsHypothetical");
 
                     b.HasIndex("MarketId", "StartDate");
 
@@ -918,10 +929,26 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.Property<Guid>("AssumptionSetId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ClientSegmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("CovariateBeta")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid?>("CovariateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FlowKind")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.Property<string>("Key")
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
+
+                    b.Property<Guid?>("ModuleProductId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Provenance")
                         .IsRequired()
@@ -936,6 +963,8 @@ namespace ProductManager.Api.Persistence.Migrations
 
                     b.HasIndex("AssumptionSetId", "Key")
                         .IsUnique();
+
+                    b.HasIndex("ClientSegmentId", "FlowKind");
 
                     b.ToTable("Parameters");
                 });
@@ -955,8 +984,17 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<double>("DiscountRateAnnual")
+                        .HasColumnType("double precision");
+
+                    b.Property<long?>("ElapsedMs")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("EventOverlayJson")
                         .HasColumnType("jsonb");
+
+                    b.Property<int>("HorizonMonths")
+                        .HasColumnType("integer");
 
                     b.Property<string>("InputSnapshotJson")
                         .HasColumnType("jsonb");
@@ -965,11 +1003,24 @@ namespace ProductManager.Api.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("Name")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Paths")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("RoadmapId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Seed")
                         .HasColumnType("integer");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<double>("TerminalGrowthAnnual")
+                        .HasColumnType("double precision");
 
                     b.Property<string>("TrajectoriesJson")
                         .HasColumnType("jsonb");
@@ -1289,6 +1340,88 @@ namespace ProductManager.Api.Persistence.Migrations
                         .HasForeignKey("MarketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsMany("ProductManager.Domain.Market.SegmentModulePenetration", "ModulePenetrations", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<double>("ArpuPerMonth")
+                                .HasColumnType("double precision");
+
+                            b1.Property<Guid>("ClientSegmentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<Guid>("ModuleProductId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<double>("Penetration")
+                                .HasColumnType("double precision");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ClientSegmentId");
+
+                            b1.HasIndex("ModuleProductId");
+
+                            b1.ToTable("ClientSegmentModulePenetrations", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ClientSegmentId");
+                        });
+
+                    b.OwnsOne("ProductManager.Domain.Market.SegmentStockState", "StockState", b1 =>
+                        {
+                            b1.Property<Guid>("ClientSegmentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<double>("ArpuPerMonth")
+                                .HasColumnType("double precision")
+                                .HasColumnName("ArpuPerMonth");
+
+                            b1.Property<double>("ImplementationFee")
+                                .HasColumnType("double precision")
+                                .HasColumnName("ImplementationFee");
+
+                            b1.Property<double>("InfraCostPerClient")
+                                .HasColumnType("double precision")
+                                .HasColumnName("InfraCostPerClient");
+
+                            b1.Property<double>("InfraFixedCostPerMonth")
+                                .HasColumnType("double precision")
+                                .HasColumnName("InfraFixedCostPerMonth");
+
+                            b1.Property<int>("InitialClientCount")
+                                .HasColumnType("integer")
+                                .HasColumnName("InitialClientCount");
+
+                            b1.Property<double>("InitialProspectPool")
+                                .HasColumnType("double precision")
+                                .HasColumnName("InitialProspectPool");
+
+                            b1.Property<double>("RdDragPerMonth")
+                                .HasColumnType("double precision")
+                                .HasColumnName("RdDragPerMonth");
+
+                            b1.Property<double>("ServicingCostPerClient")
+                                .HasColumnType("double precision")
+                                .HasColumnName("ServicingCostPerClient");
+
+                            b1.HasKey("ClientSegmentId");
+
+                            b1.ToTable("ClientSegments");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ClientSegmentId");
+                        });
+
+                    b.Navigation("ModulePenetrations");
+
+                    b.Navigation("StockState")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ProductManager.Domain.Market.Competitor", b =>
@@ -1425,6 +1558,42 @@ namespace ProductManager.Api.Persistence.Migrations
                         .HasForeignKey("MarketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsMany("ProductManager.Domain.Market.MarketEventRateMultiplier", "RateMultipliers", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<Guid?>("ClientSegmentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("FlowKind")
+                                .IsRequired()
+                                .HasMaxLength(40)
+                                .HasColumnType("character varying(40)");
+
+                            b1.Property<Guid>("MarketEventId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<double>("Multiplier")
+                                .HasColumnType("double precision");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ClientSegmentId");
+
+                            b1.HasIndex("MarketEventId");
+
+                            b1.ToTable("MarketEventRateMultipliers", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("MarketEventId");
+                        });
+
+                    b.Navigation("RateMultipliers");
                 });
 
             modelBuilder.Entity("ProductManager.Domain.Market.Need", b =>

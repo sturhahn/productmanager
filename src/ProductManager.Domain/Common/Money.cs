@@ -23,7 +23,7 @@ public sealed record Money
     public Money Add(Money other)
     {
         if (other.Currency != Currency)
-            throw new InvalidOperationException($"Cannot add {other.Currency} to {Currency}.");
+            throw new DomainConflictException($"Cannot add {other.Currency} to {Currency}.");
         return new Money(Amount + other.Amount, Currency);
     }
 

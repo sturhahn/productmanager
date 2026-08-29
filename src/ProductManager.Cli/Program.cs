@@ -11,6 +11,14 @@ root.Subcommands.Add(InitiativeCommands.Build());
 root.Subcommands.Add(ProjectCommands.Build());
 root.Subcommands.Add(FeatureCommands.Build());
 root.Subcommands.Add(RoadmapCommands.Build());
+root.Subcommands.Add(SegmentCommands.Build());
+root.Subcommands.Add(FirmCommands.Build());
+root.Subcommands.Add(NeedCommands.Build());
+root.Subcommands.Add(MarketEventCommands.Build());
+root.Subcommands.Add(CovariateCommands.Build());
+root.Subcommands.Add(CoverageCommands.Build());
+root.Subcommands.Add(AssumptionSetCommands.Build());
+root.Subcommands.Add(SimulationCommands.Build());
 root.Subcommands.Add(SeedCommand.Build());
 
 return await root.Parse(args).InvokeAsync();

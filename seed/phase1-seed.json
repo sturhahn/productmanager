@@ -195,6 +195,7 @@
       "name": "FIX 5.0 Session Support",
       "description": "Order Management speaks FIX 5.0 to venues that require it.",
       "status": "Planned",
+      "productName": "Meridian Trading Module",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Order Management", "fromTier": "Bronze", "toTier": "Silver",
           "rationale": "Closes a protocol gap that was blocking two enterprise venue connections." }
@@ -204,6 +205,7 @@
       "name": "Smart Order Routing Engine",
       "description": "Chooses execution venue algorithmically instead of by static routing table.",
       "status": "Planned",
+      "productName": "Meridian Trading Module",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Trade Execution", "approachName": "Algorithmic",
           "fromTier": "Silver", "toTier": "Gold", "rationale": "Matches the algorithmic execution quality of the two leading competitors." }
@@ -213,6 +215,7 @@
       "name": "Best-Execution Analytics",
       "description": "Post-trade cost and venue-quality analysis for the desk.",
       "status": "Hypothetical",
+      "productName": "Meridian Reporting Module",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Performance Reporting", "fromTier": "Bronze", "toTier": "Silver" }
       ]
@@ -221,6 +224,7 @@
       "name": "Fill Quality Dashboard",
       "description": "Client-facing view of execution quality, sourced from the same analytics.",
       "status": "Hypothetical",
+      "productName": "Meridian Trading Module",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Trade Execution", "fromTier": "Silver", "toTier": "Gold" }
       ]
@@ -229,6 +233,7 @@
       "name": "Pre-Trade Compliance Rules Engine",
       "description": "Configurable rule sets block or flag non-compliant orders before they route.",
       "status": "Planned",
+      "productName": "Meridian Portfolio Suite",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Compliance Monitoring", "fromTier": "Bronze", "toTier": "Gold",
           "rationale": "The single biggest coverage gap named in enterprise renewal conversations this year." }
@@ -238,6 +243,7 @@
       "name": "Restricted List Screening",
       "description": "Screens orders against firm and regulator restricted lists in real time.",
       "status": "Planned",
+      "productName": "Meridian Portfolio Suite",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Compliance Monitoring", "fromTier": "Silver", "toTier": "Gold" }
       ]
@@ -246,6 +252,7 @@
       "name": "Regulatory Filing Automation",
       "description": "Generates the standard regulatory filing package directly from the rules engine's data.",
       "status": "Planned",
+      "productName": "Meridian Reporting Module",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Regulatory Reporting", "fromTier": "Bronze", "toTier": "Gold" }
       ]
@@ -254,6 +261,7 @@
       "name": "Client Portal 2.0 Shell",
       "description": "New navigation and branding shell every client-facing screen will live in.",
       "status": "Planned",
+      "productName": "Meridian Reporting Module",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Client Reporting", "fromTier": "Bronze", "toTier": "Silver" }
       ]
@@ -262,6 +270,7 @@
       "name": "White-Label Branding",
       "description": "Firms can put their own branding on the client portal.",
       "status": "Hypothetical",
+      "productName": "Meridian Reporting Module",
       "deltas": [
         { "kind": "SwitchingCost", "segmentName": "Enterprise Asset Managers", "magnitude": 0.15,
           "rationale": "Estimated reduction in switching-cost-driven churn for firms consolidating reporting under their own brand." }
@@ -271,6 +280,7 @@
       "name": "Self-Serve Report Builder UI",
       "description": "Drag-and-drop report composition; no services ticket required.",
       "status": "Planned",
+      "productName": "Meridian Reporting Module",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Client Reporting", "fromTier": "Silver", "toTier": "Gold" }
       ]
@@ -279,6 +289,7 @@
       "name": "Client Onboarding Wizard",
       "description": "Guided self-serve onboarding flow for firms that don't need white-glove setup.",
       "status": "Planned",
+      "productName": "Meridian Portfolio Suite",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Client Onboarding", "approachName": "Self-Serve",
           "fromTier": "Bronze", "toTier": "Silver" }
@@ -288,6 +299,7 @@
       "name": "Mobile Portfolio Dashboard",
       "description": "Read-only mobile view of positions, performance, and alerts.",
       "status": "Hypothetical",
+      "productName": "Meridian Reporting Module",
       "deltas": [
         { "kind": "Other", "businessProcessName": "Performance Reporting", "magnitude": 0.1,
           "rationale": "Placeholder adoption-lift estimate for mobile access; to be calibrated against usage data once shipped." }

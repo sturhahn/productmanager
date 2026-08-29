@@ -7,6 +7,8 @@ namespace ProductManager.Api.Infrastructure;
 /// </summary>
 public static class OpenApiSchemaIds
 {
+    private const string EngineNamespace = "ProductManager.Engine";
+
     public static string For(Type type)
     {
         if (type.IsGenericType)
@@ -18,6 +20,14 @@ public static class OpenApiSchemaIds
         if (type.IsArray)
             return $"{For(type.GetElementType()!)}Array";
 
-        return type.Name.Replace("+", ".");
+        var simpleName = type.Name.Replace("+", ".");
+
+        // The engine contract and the domain both name a type "DistributionType" — one is the API's
+        // wire vocabulary, the other the engine's. Prefixing engine types keeps both in one document
+        // instead of forcing one of them out of the published contract.
+        if (type.Namespace == EngineNamespace && !simpleName.StartsWith("Engine", StringComparison.Ordinal))
+            return $"Engine{simpleName}";
+
+        return simpleName;
     }
 }

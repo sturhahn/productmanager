@@ -33,6 +33,8 @@ public sealed class Market : Entity
 /// </summary>
 public sealed class ClientSegment : Entity
 {
+    private readonly List<SegmentModulePenetration> _modulePenetrations = [];
+
     public Guid MarketId { get; private set; }
     public string Name { get; private set; } = null!;
     public string? Description { get; set; }
@@ -42,6 +44,15 @@ public sealed class ClientSegment : Entity
 
     /// <summary>Preference for consolidating vendors (0..1).</summary>
     public double ConsolidationPreference { get; private set; } = 0.5;
+
+    /// <summary>
+    /// Observed starting stocks and unit economics — what the simulation engine starts a run from.
+    /// All-zero until someone measures the segment.
+    /// </summary>
+    public SegmentStockState StockState { get; private set; } = SegmentStockState.Zero();
+
+    /// <summary>Per-module starting penetration and pricing inside this segment.</summary>
+    public IReadOnlyCollection<SegmentModulePenetration> ModulePenetrations => _modulePenetrations.AsReadOnly();
 
     private ClientSegment() { } // EF
 
@@ -69,6 +80,23 @@ public sealed class ClientSegment : Entity
         SuiteAffinity = suiteAffinity;
         ConsolidationPreference = consolidationPreference;
     }
+
+    /// <summary>Replaces the observed starting state wholesale — it is a single measurement, not a set of knobs.</summary>
+    public void SetStockState(SegmentStockState stockState) =>
+        StockState = stockState ?? throw new ArgumentNullException(nameof(stockState));
+
+    /// <summary>Sets (upserting by module) the starting penetration and pricing of one module.</summary>
+    public SegmentModulePenetration SetModulePenetration(Guid moduleProductId, double penetration, double arpuPerMonth)
+    {
+        var row = new SegmentModulePenetration(moduleProductId, penetration, arpuPerMonth);
+        _modulePenetrations.RemoveAll(m => m.ModuleProductId == moduleProductId);
+        _modulePenetrations.Add(row);
+        return row;
+    }
+
+    /// <summary>Drops a module from the segment's starting state. Returns false when it was not there.</summary>
+    public bool RemoveModulePenetration(Guid moduleProductId) =>
+        _modulePenetrations.RemoveAll(m => m.ModuleProductId == moduleProductId) > 0;
 }
 
 /// <summary>

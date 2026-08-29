@@ -45,7 +45,10 @@ internal static class SeedCommand
 
             Console.WriteLine($"Loaded {path}:");
             foreach (var (kind, (created, matched)) in tally.Snapshot.OrderBy(kv => kv.Key))
-                Console.WriteLine($"  {kind,-16} created {created,3}, matched {matched,3}");
+                Console.WriteLine($"  {kind,-20} created {created,3}, matched {matched,3}");
+            // Upserts have no create-vs-match story to tell; without this they do work silently.
+            foreach (var (kind, applied) in tally.AppliedSnapshot.OrderBy(kv => kv.Key))
+                Console.WriteLine($"  {kind,-20} applied {applied,3}");
         }, ct));
 
         return seed;

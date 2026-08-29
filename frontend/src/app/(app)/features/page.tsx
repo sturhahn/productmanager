@@ -1,17 +1,23 @@
 "use client";
 
 import * as React from "react";
-import { PlusIcon, PencilIcon, Trash2Icon, XIcon } from "lucide-react";
+import { PlusIcon, PencilIcon, Trash2Icon, XIcon, EyeOffIcon } from "lucide-react";
 import { api } from "@/lib/api/client";
-import type { FeatureDto, FeatureStatus, ProjectDto } from "@/lib/api/types";
+import type { FeatureDeltaDto, FeatureDto, FeatureStatus, ProjectDto } from "@/lib/api/types";
 import { FEATURE_STATUSES } from "@/lib/api/types";
 import {
   queryKeys,
+  useAllBusinessProcesses,
+  useAllProducts,
+  useCoverages,
   useFeatures,
   useInvalidatingMutation,
   useProjects,
   useWorkspace,
 } from "@/lib/queries";
+import { buildCoverageMap } from "@/lib/coverage";
+import { bestOurAssessedTier, featureMaskInfo, isDeltaMasked } from "@/lib/masking";
+import { TIER_LABELS } from "@/components/tier-chip";
 import { PageHeader, EmptyState } from "@/components/page-header";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -43,6 +49,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const STATUS_BADGE: Record<FeatureStatus, "outline" | "secondary" | "default"> = {
   Hypothetical: "outline",
@@ -55,6 +62,14 @@ export default function FeaturesPage() {
   const workspaceId = workspace.data?.id;
   const features = useFeatures(workspaceId);
   const projects = useProjects(workspaceId);
+  const coverages = useCoverages();
+  const processes = useAllBusinessProcesses(workspaceId);
+  const products = useAllProducts(workspaceId);
+
+  const ourProductIds = React.useMemo(
+    () => (products.data ?? []).filter((p) => p.isOurs).map((p) => p.id),
+    [products.data],
+  );
 
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<FeatureDto | null>(null);
@@ -71,6 +86,34 @@ export default function FeaturesPage() {
     }
     return map;
   }, [projects.data]);
+
+  const coverageMap = React.useMemo(
+    () => buildCoverageMap(coverages.data ?? []),
+    [coverages.data],
+  );
+
+  const processName = React.useMemo(() => {
+    const byId = new Map((processes.data ?? []).map((p) => [p.id, p.name]));
+    return (id: string | null) => (id ? (byId.get(id) ?? "process") : "process");
+  }, [processes.data]);
+
+  /** Human-readable "why" for one masked delta, for the deltas tooltip. */
+  const maskedDeltaExplanation = React.useCallback(
+    (delta: FeatureDeltaDto) => {
+      const best = delta.businessProcessId
+        ? bestOurAssessedTier(
+            ourProductIds,
+            delta.businessProcessId,
+            delta.approachId,
+            delta.segmentId,
+            coverageMap,
+          )
+        : null;
+      const assessedLabel = best ? TIER_LABELS[best] : "—";
+      return `${processName(delta.businessProcessId)}: targets ${delta.toTier ? TIER_LABELS[delta.toTier] : "—"}, already assessed at ${assessedLabel}`;
+    },
+    [coverageMap, ourProductIds, processName],
+  );
 
   const deleteFeature = useInvalidatingMutation(
     (id: string) => api.features.delete(id),
@@ -117,10 +160,37 @@ export default function FeaturesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(features.data ?? []).map((feature) => (
+                {(features.data ?? []).map((feature) => {
+                  const maskInfo = featureMaskInfo(feature, ourProductIds, coverageMap);
+                  const maskedDeltas = feature.deltas.filter(
+                    (d) => d.kind === "Coverage" && isDeltaMasked(d, ourProductIds, coverageMap),
+                  );
+                  return (
                   <TableRow key={feature.id}>
                     <TableCell>
-                      <div className="font-medium">{feature.name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium">{feature.name}</span>
+                        {maskInfo.allMasked && (
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 text-[10px] text-muted-foreground/70"
+                                >
+                                  <EyeOffIcon className="size-3" />
+                                  No sim impact
+                                </Badge>
+                              }
+                            />
+                            <TooltipContent className="max-w-64">
+                              Every delta on this feature is already covered by
+                              an existing assessment — shipping or delaying it
+                              currently changes nothing in the simulation.
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                       {feature.description && (
                         <div className="max-w-96 truncate text-xs text-muted-foreground">
                           {feature.description}
@@ -147,8 +217,36 @@ export default function FeaturesPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {feature.deltas.length}
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {feature.deltas.length}
+                        </span>
+                        {maskedDeltas.length > 0 && (
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <span className="inline-flex items-center gap-0.5 rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground/80">
+                                  <EyeOffIcon className="size-2.5" />
+                                  {maskedDeltas.length}
+                                </span>
+                              }
+                            />
+                            <TooltipContent className="max-w-72">
+                              <div className="flex flex-col gap-1">
+                                <span className="font-medium">
+                                  {maskedDeltas.length} of {feature.deltas.length}{" "}
+                                  {maskedDeltas.length === 1 ? "delta has" : "deltas have"}{" "}
+                                  no simulation impact:
+                                </span>
+                                {maskedDeltas.map((d, i) => (
+                                  <span key={i}>{maskedDeltaExplanation(d)}</span>
+                                ))}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="inline-flex gap-1">
@@ -174,7 +272,8 @@ export default function FeaturesPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

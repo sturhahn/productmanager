@@ -13,6 +13,7 @@ public sealed class SeedFile
     public List<SeedFeature> Features { get; set; } = [];
     public SeedRoadmap? Roadmap { get; set; }
     public SeedMarket? Market { get; set; }
+    public SeedMarketDynamics? MarketDynamics { get; set; }
 }
 
 public sealed class SeedWorkspace
@@ -171,4 +172,106 @@ public sealed class SeedMarket
     public List<SeedCompetitor> Competitors { get; set; } = [];
     public List<SeedProduct> Products { get; set; } = [];
     public List<SeedCoverage> Coverages { get; set; } = [];
+}
+
+// ---------- Phase 2: market dynamics / simulation ----------
+//
+// Layered on top of an already-seeded market (referenced by name, not redefined) so
+// "phase2-seed.json" can be loaded after "phase1-seed.json" without redeclaring the market
+// skeleton. Every reference below (segment/product/competitor/covariate names) is resolved
+// against what the API already has, the same way Coverages resolve against the market seeded in
+// the same run.
+
+public sealed class SeedModulePenetration
+{
+    public string ModuleProductName { get; set; } = "";
+    public double Penetration { get; set; }
+    public double ArpuPerMonth { get; set; }
+}
+
+public sealed class SeedSegmentStockState
+{
+    public string SegmentName { get; set; } = "";
+    public double InitialProspectPool { get; set; }
+    public int InitialClientCount { get; set; }
+    public double ArpuPerMonth { get; set; }
+    public double ImplementationFee { get; set; }
+    public double ServicingCostPerClient { get; set; }
+    public double InfraFixedCostPerMonth { get; set; }
+    public double InfraCostPerClient { get; set; }
+    public double RdDragPerMonth { get; set; }
+    public List<SeedModulePenetration> ModulePenetrations { get; set; } = [];
+}
+
+public sealed class SeedCovariateObservation
+{
+    public string EffectiveDate { get; set; } = "";
+    public double Value { get; set; }
+    public string? Notes { get; set; }
+}
+
+public sealed class SeedCovariate
+{
+    public string Name { get; set; } = "";
+    public string? Description { get; set; }
+    public string? Unit { get; set; }
+    public double? GbmStart { get; set; }
+    public double? GbmDrift { get; set; }
+    public double? GbmVol { get; set; }
+    public List<SeedCovariateObservation> Observations { get; set; } = [];
+}
+
+public sealed class SeedParameter
+{
+    /// <summary>Engine parameter: give SegmentName + FlowKind (+ ModuleProductName for
+    /// CrossSellRate). Free-form parameter: give Key instead.</summary>
+    public string? SegmentName { get; set; }
+    public string? FlowKind { get; set; }
+    public string? ModuleProductName { get; set; }
+    public string? Key { get; set; }
+    public string DistType { get; set; } = "Point";
+    public double P1 { get; set; }
+    public double P2 { get; set; }
+    public string Provenance { get; set; } = "Asserted";
+    public string? Rationale { get; set; }
+    public string? CovariateName { get; set; }
+    public double? CovariateBeta { get; set; }
+}
+
+public sealed class SeedAssumptionSet
+{
+    public string Name { get; set; } = "";
+    public string? Notes { get; set; }
+    public List<SeedParameter> Parameters { get; set; } = [];
+}
+
+public sealed class SeedEventRateMultiplier
+{
+    /// <summary>Omit for "applies to every segment".</summary>
+    public string? SegmentName { get; set; }
+    public string FlowKind { get; set; } = "";
+    public double Multiplier { get; set; }
+}
+
+public sealed class SeedMarketEvent
+{
+    public string Name { get; set; } = "";
+    public string Type { get; set; } = "Other";
+    public string StartDate { get; set; } = "";
+    public string? EndDate { get; set; }
+    public bool IsHypothetical { get; set; }
+    public double? Magnitude { get; set; }
+    public string? CompetitorName { get; set; }
+    public string? Notes { get; set; }
+    public List<SeedEventRateMultiplier> RateMultipliers { get; set; } = [];
+}
+
+public sealed class SeedMarketDynamics
+{
+    /// <summary>The already-seeded market these entities attach to.</summary>
+    public string MarketName { get; set; } = "";
+    public List<SeedSegmentStockState> SegmentStockStates { get; set; } = [];
+    public List<SeedCovariate> Covariates { get; set; } = [];
+    public List<SeedAssumptionSet> AssumptionSets { get; set; } = [];
+    public List<SeedMarketEvent> MarketEvents { get; set; } = [];
 }

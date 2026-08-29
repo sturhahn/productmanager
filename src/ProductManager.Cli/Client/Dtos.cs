@@ -202,13 +202,30 @@ public sealed record MarketDto(Guid Id, Guid WorkspaceId, string Name, string? D
 
 public sealed record CreateMarketRequest(Guid WorkspaceId, string Name, string? Description);
 
+/// <summary>The segment's observed starting state — the stocks and unit economics the simulation
+/// engine starts a run from. Amounts are per month in the workspace's implicit single currency.</summary>
+public sealed record SegmentStockStateDto(
+    double InitialProspectPool,
+    int InitialClientCount,
+    double ArpuPerMonth,
+    double ImplementationFee,
+    double ServicingCostPerClient,
+    double InfraFixedCostPerMonth,
+    double InfraCostPerClient,
+    double RdDragPerMonth);
+
+/// <summary>Starting penetration and pricing of one cross-sellable module within the segment.</summary>
+public sealed record SegmentModulePenetrationDto(Guid ModuleProductId, double Penetration, double ArpuPerMonth);
+
 public sealed record ClientSegmentDto(
     Guid Id,
     Guid MarketId,
     string Name,
     string? Description,
     double SuiteAffinity,
-    double ConsolidationPreference);
+    double ConsolidationPreference,
+    SegmentStockStateDto StockState,
+    IReadOnlyList<SegmentModulePenetrationDto> ModulePenetrations);
 
 public sealed record CreateClientSegmentRequest(
     Guid MarketId,
@@ -216,6 +233,19 @@ public sealed record CreateClientSegmentRequest(
     string? Description,
     double SuiteAffinity = 0.5,
     double ConsolidationPreference = 0.5);
+
+/// <summary>Replaces the segment's whole starting state — it is one measurement, not a set of knobs.</summary>
+public sealed record SetSegmentStockStateRequest(
+    double InitialProspectPool = 0,
+    int InitialClientCount = 0,
+    double ArpuPerMonth = 0,
+    double ImplementationFee = 0,
+    double ServicingCostPerClient = 0,
+    double InfraFixedCostPerMonth = 0,
+    double InfraCostPerClient = 0,
+    double RdDragPerMonth = 0);
+
+public sealed record SetSegmentModulePenetrationRequest(Guid ModuleProductId, double Penetration, double ArpuPerMonth);
 
 public sealed record BusinessProcessDto(Guid Id, Guid MarketId, Guid? ParentProcessId, string Name, string? Description);
 
@@ -262,6 +292,8 @@ public sealed record CoverageDto(
     string? Rationale,
     string? ScaleLimits);
 
+/// <summary>Records a coverage assessment, upserting on the (product, process, approach?, segment?)
+/// key — posting the same tuple twice re-assesses rather than duplicating.</summary>
 public sealed record CreateCoverageRequest(
     Guid ProductId,
     Guid BusinessProcessId,
@@ -272,3 +304,335 @@ public sealed record CreateCoverageRequest(
     Guid? ClientSegmentId = null,
     DateOnly? EffectiveDate = null,
     string? Rationale = null);
+
+/// <summary>Re-assesses an existing coverage row found by id; the key dimensions are immutable.</summary>
+public sealed record UpdateCoverageRequest(
+    CoverageTier Tier,
+    bool IsUnknown = false,
+    double Confidence = 1.0,
+    DateOnly? EffectiveDate = null,
+    string? Rationale = null,
+    string? ScaleLimits = null);
+
+// ---------- Firm ----------
+
+public sealed record FirmDto(
+    Guid Id,
+    Guid MarketId,
+    Guid? ClientSegmentId,
+    string Name,
+    EpistemicStatus EpistemicStatus,
+    string? AttributesJson,
+    string? Notes);
+
+public sealed record CreateFirmRequest(
+    Guid MarketId,
+    string Name,
+    EpistemicStatus EpistemicStatus = EpistemicStatus.Observed,
+    Guid? ClientSegmentId = null,
+    string? AttributesJson = null,
+    string? Notes = null);
+
+public sealed record UpdateFirmRequest(
+    string Name,
+    EpistemicStatus EpistemicStatus = EpistemicStatus.Observed,
+    Guid? ClientSegmentId = null,
+    string? AttributesJson = null,
+    string? Notes = null);
+
+// ---------- Need ----------
+
+public sealed record NeedDto(
+    Guid Id,
+    Guid? FirmId,
+    Guid? ClientSegmentId,
+    Guid BusinessProcessId,
+    double ImportanceWeight,
+    bool IsHard,
+    MoneyDto? WorkaroundCostPerPeriod,
+    string? RequiredDepthJson,
+    string? Conditionality,
+    string? Notes);
+
+/// <summary>A demand edge. Exactly one of <c>FirmId</c> / <c>ClientSegmentId</c> must be given.</summary>
+public sealed record CreateNeedRequest(
+    Guid BusinessProcessId,
+    double ImportanceWeight,
+    Guid? FirmId = null,
+    Guid? ClientSegmentId = null,
+    bool IsHard = false,
+    MoneyDto? WorkaroundCostPerPeriod = null,
+    string? RequiredDepthJson = null,
+    string? Conditionality = null,
+    string? Notes = null);
+
+public sealed record UpdateNeedRequest(
+    double ImportanceWeight,
+    bool IsHard = false,
+    MoneyDto? WorkaroundCostPerPeriod = null,
+    string? RequiredDepthJson = null,
+    string? Conditionality = null,
+    string? Notes = null);
+
+// ---------- MarketEvent ----------
+
+/// <summary>How an event scales one simulated flow while it is active. A null segment means all segments.</summary>
+public sealed record EventRateMultiplierDto(Guid? ClientSegmentId, SimulationFlowKind FlowKind, double Multiplier);
+
+public sealed record MarketEventDto(
+    Guid Id,
+    Guid MarketId,
+    MarketEventType Type,
+    string Name,
+    DateOnly StartDate,
+    DateOnly? EndDate,
+    double? Magnitude,
+    bool IsHypothetical,
+    Guid? CompetitorId,
+    string? Notes,
+    IReadOnlyList<EventRateMultiplierDto> RateMultipliers);
+
+public sealed record CreateMarketEventRequest(
+    Guid MarketId,
+    MarketEventType Type,
+    string Name,
+    DateOnly StartDate,
+    DateOnly? EndDate = null,
+    bool IsHypothetical = false,
+    double? Magnitude = null,
+    Guid? CompetitorId = null,
+    string? Notes = null,
+    IReadOnlyList<EventRateMultiplierDto>? RateMultipliers = null);
+
+public sealed record UpdateMarketEventRequest(
+    MarketEventType Type,
+    string Name,
+    DateOnly StartDate,
+    DateOnly? EndDate = null,
+    bool IsHypothetical = false,
+    double? Magnitude = null,
+    Guid? CompetitorId = null,
+    string? Notes = null,
+    IReadOnlyList<EventRateMultiplierDto>? RateMultipliers = null);
+
+// ---------- Covariate ----------
+
+public sealed record CovariateDto(
+    Guid Id,
+    Guid WorkspaceId,
+    string Name,
+    string? Description,
+    string? Unit,
+    double? GbmStart,
+    double? GbmDrift,
+    double? GbmVol,
+    bool HasGbmSpec);
+
+/// <summary>The three <c>Gbm*</c> numbers describe the future path (geometric Brownian motion) and
+/// must be given together or not at all; observed history arrives separately as facts.</summary>
+public sealed record CreateCovariateRequest(
+    Guid WorkspaceId,
+    string Name,
+    string? Description = null,
+    string? Unit = null,
+    double? GbmStart = null,
+    double? GbmDrift = null,
+    double? GbmVol = null);
+
+public sealed record UpdateCovariateRequest(
+    string Name,
+    string? Description = null,
+    string? Unit = null,
+    double? GbmStart = null,
+    double? GbmDrift = null,
+    double? GbmVol = null);
+
+/// <summary>One observed value of a covariate, read back out of the bi-temporal facts ledger.</summary>
+public sealed record CovariateObservationDto(Guid FactEventId, DateOnly EffectiveDate, DateTimeOffset RecordedDate, double Value, string? Notes);
+
+public sealed record CovariateHistoryDto(Guid CovariateId, string Name, string? Unit, IReadOnlyList<CovariateObservationDto> Observations);
+
+// ---------- Facts ledger ----------
+
+/// <summary>A bi-temporal market observation. Append-only: there is no update and no delete.</summary>
+public sealed record FactEventDto(
+    Guid Id,
+    Guid WorkspaceId,
+    FactEventKind Kind,
+    DateOnly EffectiveDate,
+    DateTimeOffset RecordedDate,
+    string? SubjectType,
+    Guid? SubjectId,
+    string? PayloadJson,
+    string? Notes);
+
+/// <summary>Appends one observation. For a covariate reading use <c>Kind = CovariateObserved</c>,
+/// <c>SubjectType = "Covariate"</c>, <c>SubjectId</c> = the covariate, and a payload of
+/// <c>{"value": 1234.5}</c> — that is what the covariate history endpoint reads back.</summary>
+public sealed record CreateFactEventRequest(
+    Guid WorkspaceId,
+    FactEventKind Kind,
+    DateOnly EffectiveDate,
+    string? SubjectType = null,
+    Guid? SubjectId = null,
+    string? PayloadJson = null,
+    string? Notes = null);
+
+// ---------- Distribution / AssumptionSet / Parameter ----------
+
+/// <summary>A parameter distribution: a family plus two numbers. Point: P1 = the value, P2 must be
+/// 0. Normal: P1 = mean, P2 = std dev. Lognormal: P1 = mu, P2 = sigma (log scale). Beta: P1 = alpha, P2 = beta.</summary>
+public sealed record DistributionSpecDto(DistributionType Type, double P1, double P2 = 0);
+
+public sealed record ParameterDto(
+    Guid Id,
+    Guid AssumptionSetId,
+    string Key,
+    DistributionSpecDto Distribution,
+    ParameterProvenance Provenance,
+    string? Rationale,
+    Guid? ClientSegmentId,
+    SimulationFlowKind? FlowKind,
+    Guid? ModuleProductId,
+    Guid? CovariateId,
+    double? CovariateBeta,
+    bool IsEngineParameter);
+
+public sealed record AssumptionSetDto(
+    Guid Id,
+    Guid WorkspaceId,
+    string Name,
+    Guid? ParentAssumptionSetId,
+    DateTimeOffset CreatedAt,
+    string? Notes,
+    IReadOnlyList<ParameterDto> Parameters);
+
+public sealed record CreateAssumptionSetRequest(Guid WorkspaceId, string Name, string? Notes = null);
+
+public sealed record UpdateAssumptionSetRequest(string Name, string? Notes = null);
+
+public sealed record BranchAssumptionSetRequest(string Name);
+
+/// <summary>Sets (upserting) one parameter. Give <c>ClientSegmentId</c> + <c>FlowKind</c>
+/// (+ <c>ModuleProductId</c> for CrossSellRate) for a parameter the engine reads — that triple is
+/// the engine's own key, so writing it twice replaces rather than duplicates. Give <c>Key</c>
+/// instead for a free-form assumption the engine ignores.</summary>
+public sealed record UpsertParameterRequest(
+    DistributionSpecDto Distribution,
+    ParameterProvenance Provenance = ParameterProvenance.Asserted,
+    string? Rationale = null,
+    Guid? ClientSegmentId = null,
+    SimulationFlowKind? FlowKind = null,
+    Guid? ModuleProductId = null,
+    Guid? CovariateId = null,
+    double? CovariateBeta = null,
+    string? Key = null);
+
+// ---------- SimulationRun ----------
+
+public sealed record SimulationRunDto(
+    Guid Id,
+    Guid WorkspaceId,
+    Guid RoadmapId,
+    Guid AssumptionSetId,
+    string? Name,
+    DateOnly StartDate,
+    int HorizonMonths,
+    int Paths,
+    int Seed,
+    double DiscountRateAnnual,
+    double TerminalGrowthAnnual,
+    string? ModelVersion,
+    bool IsExecuted,
+    long? ElapsedMs,
+    DateTimeOffset CreatedAt);
+
+/// <summary>Executes one simulation synchronously and stores it — immutable once executed.</summary>
+public sealed record CreateSimulationRunRequest(
+    Guid RoadmapId,
+    Guid AssumptionSetId,
+    int HorizonMonths = 60,
+    int Paths = 1000,
+    int Seed = 0,
+    double DiscountRateAnnual = 0.10,
+    double TerminalGrowthAnnual = 0.02,
+    string? Name = null,
+    DateOnly? StartDate = null,
+    Guid? MarketId = null,
+    IReadOnlyList<Guid>? EventIds = null,
+    IReadOnlyList<Guid>? HypotheticalEventIds = null);
+
+// ---------- Engine (mirrors ProductManager.Engine — see openapi's Engine-prefixed schemas) ----------
+
+public sealed record EngineCostRates(double ServicingPerClient, double InfraFixed, double InfraPerClient, double RdDragPerMonth);
+
+public sealed record EngineModulePenetration(string ModuleId, double Penetration, double ArpuPerMonth);
+
+public sealed record EngineSegmentInput(
+    string Id,
+    double InitialProspectPool,
+    int InitialClientCount,
+    double ArpuPerMonth,
+    double ImplementationFee,
+    IReadOnlyList<EngineModulePenetration> PerModulePenetration,
+    EngineCostRates CostRates);
+
+public sealed record EngineDistributionSpec(EngineDistributionType Type, double P1, double P2 = 0);
+
+/// <summary>Beta is an elasticity: the engine applies rate * (x_t / x_0)^Beta.</summary>
+public sealed record EngineCovariateLink(string CovariateId, double Beta);
+
+/// <summary>Note: FlowKind reuses the CLI's <see cref="SimulationFlowKind"/> enum — the engine's own
+/// "EngineFlowKind" schema has an identical member set, so one CLI enum type serves both wire shapes.</summary>
+public sealed record EngineParameterSpec(
+    string SegmentId,
+    SimulationFlowKind FlowKind,
+    string? ModuleId,
+    EngineDistributionSpec Distribution,
+    EngineCovariateLink? Covariate);
+
+public sealed record EngineGbmSpec(double Start, double Drift, double Vol);
+
+public sealed record EngineCovariateInput(string Id, double[]? MonthlyPath, EngineGbmSpec? Gbm);
+
+public sealed record EngineEventRateMultiplier(string? SegmentId, SimulationFlowKind FlowKind, double Multiplier);
+
+public sealed record EngineEventInput(string Id, int StartMonth, int EndMonth, IReadOnlyList<EngineEventRateMultiplier> RateMultipliers);
+
+public sealed record EngineAttractivenessEntry(string SegmentId, int Month, double Multiplier);
+
+public sealed record EngineInput(
+    IReadOnlyList<EngineSegmentInput> Segments,
+    IReadOnlyList<EngineParameterSpec> Parameters,
+    IReadOnlyList<EngineCovariateInput> Covariates,
+    IReadOnlyList<EngineEventInput> Events,
+    IReadOnlyList<EngineAttractivenessEntry> AttractivenessSchedule,
+    int HorizonMonths,
+    int Paths,
+    int Seed,
+    double DiscountRateAnnual,
+    double TerminalGrowthAnnual);
+
+public sealed record EngineDistributionSummary(double Mean, double P10, double P50, double P90);
+
+public sealed record EngineMetricTrajectory(double[] Mean, double[] P10, double[] P50, double[] P90);
+
+public sealed record EngineSegmentTrajectories(
+    string SegmentId,
+    EngineMetricTrajectory Clients,
+    EngineMetricTrajectory ProspectPool,
+    EngineMetricTrajectory NewWins,
+    EngineMetricTrajectory Churned,
+    EngineMetricTrajectory Bookings,
+    EngineMetricTrajectory RecognizedArr,
+    EngineMetricTrajectory ContributionMargin);
+
+public sealed record EngineResult(
+    IReadOnlyList<EngineSegmentTrajectories> Segments,
+    EngineSegmentTrajectories Total,
+    EngineDistributionSummary Npv,
+    double[] NpvPerPath,
+    int Paths,
+    int Seed,
+    int HorizonMonths,
+    long ElapsedMs);

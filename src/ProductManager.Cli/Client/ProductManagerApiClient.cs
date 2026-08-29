@@ -188,8 +188,20 @@ public sealed class ProductManagerApiClient(HttpClient http)
     public Task<PagedResponse<ClientSegmentDto>> ListClientSegmentsAsync(Guid? marketId, int? page, int? pageSize, CancellationToken ct) =>
         GetAsync<PagedResponse<ClientSegmentDto>>(Query("api/client-segments", ("marketId", marketId), ("page", page), ("pageSize", pageSize)), ct);
 
+    public Task<ClientSegmentDto> GetClientSegmentAsync(Guid id, CancellationToken ct) =>
+        GetAsync<ClientSegmentDto>($"api/client-segments/{id}", ct);
+
     public Task<ClientSegmentDto> CreateClientSegmentAsync(CreateClientSegmentRequest request, CancellationToken ct) =>
         PostAsync<CreateClientSegmentRequest, ClientSegmentDto>("api/client-segments", request, ct);
+
+    public Task<ClientSegmentDto> SetSegmentStockStateAsync(Guid id, SetSegmentStockStateRequest request, CancellationToken ct) =>
+        PutAsync<SetSegmentStockStateRequest, ClientSegmentDto>($"api/client-segments/{id}/stock-state", request, ct);
+
+    public Task<ClientSegmentDto> SetSegmentModulePenetrationAsync(Guid id, SetSegmentModulePenetrationRequest request, CancellationToken ct) =>
+        PutAsync<SetSegmentModulePenetrationRequest, ClientSegmentDto>($"api/client-segments/{id}/module-penetrations", request, ct);
+
+    public Task<ClientSegmentDto> RemoveSegmentModulePenetrationAsync(Guid id, Guid moduleProductId, CancellationToken ct) =>
+        DeleteReturningAsync<ClientSegmentDto>($"api/client-segments/{id}/module-penetrations/{moduleProductId}", ct);
 
     public Task<PagedResponse<BusinessProcessDto>> ListBusinessProcessesAsync(Guid? marketId, Guid? parentProcessId, int? page, int? pageSize, CancellationToken ct) =>
         GetAsync<PagedResponse<BusinessProcessDto>>(
@@ -224,8 +236,142 @@ public sealed class ProductManagerApiClient(HttpClient http)
         GetAsync<PagedResponse<CoverageDto>>(
             Query("api/coverages", ("productId", productId), ("businessProcessId", businessProcessId), ("clientSegmentId", clientSegmentId), ("page", page), ("pageSize", pageSize)), ct);
 
+    public Task<CoverageDto> GetCoverageAsync(Guid id, CancellationToken ct) => GetAsync<CoverageDto>($"api/coverages/{id}", ct);
+
+    /// <summary>Upserts on the (product, process, approach?, segment?) key — posting the same tuple
+    /// twice re-assesses the existing row rather than duplicating it.</summary>
     public Task<CoverageDto> CreateCoverageAsync(CreateCoverageRequest request, CancellationToken ct) =>
         PostAsync<CreateCoverageRequest, CoverageDto>("api/coverages", request, ct);
+
+    public Task<CoverageDto> UpdateCoverageAsync(Guid id, UpdateCoverageRequest request, CancellationToken ct) =>
+        PutAsync<UpdateCoverageRequest, CoverageDto>($"api/coverages/{id}", request, ct);
+
+    public Task DeleteCoverageAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/coverages/{id}", ct);
+
+    // ---------- Firms ----------
+
+    public Task<PagedResponse<FirmDto>> ListFirmsAsync(Guid? marketId, Guid? clientSegmentId, EpistemicStatus? epistemicStatus, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<FirmDto>>(
+            Query("api/firms", ("marketId", marketId), ("clientSegmentId", clientSegmentId), ("epistemicStatus", epistemicStatus), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<FirmDto> GetFirmAsync(Guid id, CancellationToken ct) => GetAsync<FirmDto>($"api/firms/{id}", ct);
+
+    public Task<FirmDto> CreateFirmAsync(CreateFirmRequest request, CancellationToken ct) =>
+        PostAsync<CreateFirmRequest, FirmDto>("api/firms", request, ct);
+
+    public Task<FirmDto> UpdateFirmAsync(Guid id, UpdateFirmRequest request, CancellationToken ct) =>
+        PutAsync<UpdateFirmRequest, FirmDto>($"api/firms/{id}", request, ct);
+
+    public Task DeleteFirmAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/firms/{id}", ct);
+
+    // ---------- Needs ----------
+
+    public Task<PagedResponse<NeedDto>> ListNeedsAsync(Guid? firmId, Guid? clientSegmentId, Guid? businessProcessId, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<NeedDto>>(
+            Query("api/needs", ("firmId", firmId), ("clientSegmentId", clientSegmentId), ("businessProcessId", businessProcessId), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<NeedDto> GetNeedAsync(Guid id, CancellationToken ct) => GetAsync<NeedDto>($"api/needs/{id}", ct);
+
+    public Task<NeedDto> CreateNeedAsync(CreateNeedRequest request, CancellationToken ct) =>
+        PostAsync<CreateNeedRequest, NeedDto>("api/needs", request, ct);
+
+    public Task<NeedDto> UpdateNeedAsync(Guid id, UpdateNeedRequest request, CancellationToken ct) =>
+        PutAsync<UpdateNeedRequest, NeedDto>($"api/needs/{id}", request, ct);
+
+    public Task DeleteNeedAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/needs/{id}", ct);
+
+    // ---------- Market events ----------
+
+    public Task<PagedResponse<MarketEventDto>> ListMarketEventsAsync(Guid? marketId, bool? isHypothetical, Guid? competitorId, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<MarketEventDto>>(
+            Query("api/market-events", ("marketId", marketId), ("isHypothetical", isHypothetical), ("competitorId", competitorId), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<MarketEventDto> GetMarketEventAsync(Guid id, CancellationToken ct) => GetAsync<MarketEventDto>($"api/market-events/{id}", ct);
+
+    public Task<MarketEventDto> CreateMarketEventAsync(CreateMarketEventRequest request, CancellationToken ct) =>
+        PostAsync<CreateMarketEventRequest, MarketEventDto>("api/market-events", request, ct);
+
+    public Task<MarketEventDto> UpdateMarketEventAsync(Guid id, UpdateMarketEventRequest request, CancellationToken ct) =>
+        PutAsync<UpdateMarketEventRequest, MarketEventDto>($"api/market-events/{id}", request, ct);
+
+    public Task DeleteMarketEventAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/market-events/{id}", ct);
+
+    // ---------- Covariates ----------
+
+    public Task<PagedResponse<CovariateDto>> ListCovariatesAsync(Guid? workspaceId, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<CovariateDto>>(Query("api/covariates", ("workspaceId", workspaceId), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<CovariateDto> GetCovariateAsync(Guid id, CancellationToken ct) => GetAsync<CovariateDto>($"api/covariates/{id}", ct);
+
+    public Task<CovariateDto> CreateCovariateAsync(CreateCovariateRequest request, CancellationToken ct) =>
+        PostAsync<CreateCovariateRequest, CovariateDto>("api/covariates", request, ct);
+
+    public Task<CovariateDto> UpdateCovariateAsync(Guid id, UpdateCovariateRequest request, CancellationToken ct) =>
+        PutAsync<UpdateCovariateRequest, CovariateDto>($"api/covariates/{id}", request, ct);
+
+    public Task DeleteCovariateAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/covariates/{id}", ct);
+
+    public Task<CovariateHistoryDto> GetCovariateHistoryAsync(Guid id, DateOnly? effectiveFrom, DateOnly? effectiveTo, DateTimeOffset? knownAsOf, CancellationToken ct) =>
+        GetAsync<CovariateHistoryDto>(
+            Query($"api/covariates/{id}/history", ("effectiveFrom", effectiveFrom), ("effectiveTo", effectiveTo), ("knownAsOf", knownAsOf)), ct);
+
+    // ---------- Facts ----------
+
+    public Task<PagedResponse<FactEventDto>> ListFactsAsync(
+        Guid? workspaceId, FactEventKind? kind, string? subjectType, Guid? subjectId,
+        DateOnly? effectiveFrom, DateOnly? effectiveTo, DateTimeOffset? knownAsOf, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<FactEventDto>>(
+            Query("api/facts",
+                ("workspaceId", workspaceId), ("kind", kind), ("subjectType", subjectType), ("subjectId", subjectId),
+                ("effectiveFrom", effectiveFrom), ("effectiveTo", effectiveTo), ("knownAsOf", knownAsOf),
+                ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<FactEventDto> GetFactAsync(Guid id, CancellationToken ct) => GetAsync<FactEventDto>($"api/facts/{id}", ct);
+
+    public Task<FactEventDto> CreateFactAsync(CreateFactEventRequest request, CancellationToken ct) =>
+        PostAsync<CreateFactEventRequest, FactEventDto>("api/facts", request, ct);
+
+    // ---------- Assumption sets ----------
+
+    public Task<PagedResponse<AssumptionSetDto>> ListAssumptionSetsAsync(Guid? workspaceId, Guid? parentAssumptionSetId, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<AssumptionSetDto>>(
+            Query("api/assumption-sets", ("workspaceId", workspaceId), ("parentAssumptionSetId", parentAssumptionSetId), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<AssumptionSetDto> GetAssumptionSetAsync(Guid id, CancellationToken ct) => GetAsync<AssumptionSetDto>($"api/assumption-sets/{id}", ct);
+
+    public Task<AssumptionSetDto> CreateAssumptionSetAsync(CreateAssumptionSetRequest request, CancellationToken ct) =>
+        PostAsync<CreateAssumptionSetRequest, AssumptionSetDto>("api/assumption-sets", request, ct);
+
+    public Task<AssumptionSetDto> UpdateAssumptionSetAsync(Guid id, UpdateAssumptionSetRequest request, CancellationToken ct) =>
+        PutAsync<UpdateAssumptionSetRequest, AssumptionSetDto>($"api/assumption-sets/{id}", request, ct);
+
+    public Task DeleteAssumptionSetAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/assumption-sets/{id}", ct);
+
+    public Task<AssumptionSetDto> BranchAssumptionSetAsync(Guid id, BranchAssumptionSetRequest request, CancellationToken ct) =>
+        PostAsync<BranchAssumptionSetRequest, AssumptionSetDto>($"api/assumption-sets/{id}/branch", request, ct);
+
+    public Task<AssumptionSetDto> UpsertParameterAsync(Guid id, UpsertParameterRequest request, CancellationToken ct) =>
+        PutAsync<UpsertParameterRequest, AssumptionSetDto>($"api/assumption-sets/{id}/parameters", request, ct);
+
+    public Task<AssumptionSetDto> RemoveParameterAsync(Guid id, Guid parameterId, CancellationToken ct) =>
+        DeleteReturningAsync<AssumptionSetDto>($"api/assumption-sets/{id}/parameters/{parameterId}", ct);
+
+    // ---------- Simulation runs ----------
+
+    public Task<PagedResponse<SimulationRunDto>> ListSimulationRunsAsync(Guid? workspaceId, Guid? roadmapId, Guid? assumptionSetId, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<SimulationRunDto>>(
+            Query("api/simulation-runs", ("workspaceId", workspaceId), ("roadmapId", roadmapId), ("assumptionSetId", assumptionSetId), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<SimulationRunDto> GetSimulationRunAsync(Guid id, CancellationToken ct) => GetAsync<SimulationRunDto>($"api/simulation-runs/{id}", ct);
+
+    public Task<EngineResult> GetSimulationRunResultAsync(Guid id, CancellationToken ct) => GetAsync<EngineResult>($"api/simulation-runs/{id}/result", ct);
+
+    public Task<EngineInput> GetSimulationRunInputAsync(Guid id, CancellationToken ct) => GetAsync<EngineInput>($"api/simulation-runs/{id}/input", ct);
+
+    public Task<SimulationRunDto> CreateSimulationRunAsync(CreateSimulationRunRequest request, CancellationToken ct) =>
+        PostAsync<CreateSimulationRunRequest, SimulationRunDto>("api/simulation-runs", request, ct);
+
+    public Task DeleteSimulationRunAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/simulation-runs/{id}", ct);
 
     // ---------- Plumbing ----------
 
@@ -322,6 +468,8 @@ public sealed class ProductManagerApiClient(HttpClient http)
             var text = value switch
             {
                 bool b => b ? "true" : "false",
+                DateOnly d => d.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                DateTimeOffset dto => dto.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
                 _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? ""
             };
             pairs.Add($"{Uri.EscapeDataString(key)}={Uri.EscapeDataString(text)}");
