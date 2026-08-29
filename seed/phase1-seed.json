@@ -1,0 +1,419 @@
+{
+  "workspace": {
+    "name": "Meridian Software"
+  },
+
+  "teams": [
+    {
+      "name": "Platform Engineering",
+      "specializationTag": "platform",
+      "capacities": [
+        { "year": 2026, "month": 9, "points": 40 },
+        { "year": 2026, "month": 10, "points": 40 },
+        { "year": 2026, "month": 11, "points": 40 },
+        { "year": 2026, "month": 12, "points": 40 }
+      ]
+    },
+    {
+      "name": "Trading Systems",
+      "specializationTag": "trading",
+      "capacities": [
+        { "year": 2026, "month": 9, "points": 30 },
+        { "year": 2026, "month": 10, "points": 30 },
+        { "year": 2026, "month": 11, "points": 30 },
+        { "year": 2026, "month": 12, "points": 25 }
+      ]
+    },
+    {
+      "name": "Client Reporting",
+      "specializationTag": "reporting",
+      "capacities": [
+        { "year": 2026, "month": 9, "points": 25 },
+        { "year": 2026, "month": 10, "points": 25 },
+        { "year": 2026, "month": 11, "points": 25 },
+        { "year": 2026, "month": 12, "points": 25 }
+      ]
+    },
+    {
+      "name": "Compliance & Risk",
+      "specializationTag": "compliance",
+      "capacities": [
+        { "year": 2026, "month": 9, "points": 20 },
+        { "year": 2026, "month": 10, "points": 20 },
+        { "year": 2026, "month": 11, "points": 20 },
+        { "year": 2026, "month": 12, "points": 20 }
+      ]
+    }
+  ],
+
+  "initiatives": [
+    {
+      "name": "Modernize Trade Execution",
+      "outcome": "Cut trade fails and improve fill quality across our top two client segments.",
+      "hypothesizedValue": "Reduces trade breaks and manual intervention, lowering client servicing cost and churn risk.",
+      "targetSegmentNames": [ "Enterprise Asset Managers", "Mid-Market RIAs" ]
+    },
+    {
+      "name": "Compliance Automation",
+      "outcome": "Pre-trade compliance checks run automatically, with regulatory filings generated, not assembled by hand.",
+      "hypothesizedValue": "Removes a recurring point-solution workaround cost for enterprise clients and closes a gold-tier coverage gap.",
+      "targetSegmentNames": [ "Enterprise Asset Managers" ]
+    },
+    {
+      "name": "Client Experience Overhaul",
+      "outcome": "Clients self-serve reporting and onboarding instead of waiting on our services team.",
+      "hypothesizedValue": "Improves win rate against best-of-breed reporting competitors in the mid-market and boutique segments.",
+      "targetSegmentNames": [ "Mid-Market RIAs", "Boutique Family Offices" ]
+    }
+  ],
+
+  "projects": [
+    {
+      "name": "FIX Connectivity Upgrade",
+      "initiativeName": "Modernize Trade Execution",
+      "description": "Move order routing onto FIX 5.0 sessions with the top three execution venues.",
+      "status": "InProgress",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-30",
+      "effortDemands": [
+        { "teamName": "Trading Systems", "year": 2026, "month": 9, "points": 20 }
+      ],
+      "deliversFeatureNames": [ "FIX 5.0 Session Support" ]
+    },
+    {
+      "name": "Smart Order Router",
+      "initiativeName": "Modernize Trade Execution",
+      "description": "Algorithmic routing across venues based on real-time liquidity and cost.",
+      "status": "Planned",
+      "startDate": "2026-10-01",
+      "endDate": "2026-11-15",
+      "dependsOnProjectNames": [ "FIX Connectivity Upgrade" ],
+      "effortDemands": [
+        { "teamName": "Trading Systems", "year": 2026, "month": 10, "points": 10 },
+        { "teamName": "Trading Systems", "year": 2026, "month": 11, "points": 15 },
+        { "teamName": "Trading Systems", "year": 2026, "month": 12, "points": 10 },
+        { "teamName": "Platform Engineering", "year": 2026, "month": 11, "points": 15 },
+        { "teamName": "Platform Engineering", "year": 2026, "month": 12, "points": 10 }
+      ],
+      "deliversFeatureNames": [ "Smart Order Routing Engine" ]
+    },
+    {
+      "name": "Execution Analytics Dashboard",
+      "initiativeName": "Modernize Trade Execution",
+      "description": "Fill-quality and best-execution reporting for the desk and for clients.",
+      "status": "Proposed",
+      "startDate": "2026-11-16",
+      "endDate": "2026-12-15",
+      "dependsOnProjectNames": [ "Smart Order Router" ],
+      "effortDemands": [
+        { "teamName": "Client Reporting", "year": 2026, "month": 11, "points": 10 },
+        { "teamName": "Client Reporting", "year": 2026, "month": 12, "points": 10 }
+      ],
+      "deliversFeatureNames": [ "Best-Execution Analytics", "Fill Quality Dashboard" ]
+    },
+    {
+      "name": "Pre-Trade Compliance Engine",
+      "initiativeName": "Compliance Automation",
+      "description": "Rule-based pre-trade checks (concentration, restricted list, mandate limits) blocking non-compliant orders.",
+      "status": "InProgress",
+      "startDate": "2026-09-01",
+      "endDate": "2026-10-31",
+      "effortDemands": [
+        { "teamName": "Compliance & Risk", "year": 2026, "month": 9, "points": 15 },
+        { "teamName": "Compliance & Risk", "year": 2026, "month": 10, "points": 15 },
+        { "teamName": "Compliance & Risk", "year": 2026, "month": 11, "points": 10 },
+        { "teamName": "Platform Engineering", "year": 2026, "month": 10, "points": 10 },
+        { "teamName": "Platform Engineering", "year": 2026, "month": 11, "points": 10 }
+      ],
+      "deliversFeatureNames": [ "Pre-Trade Compliance Rules Engine", "Restricted List Screening" ]
+    },
+    {
+      "name": "Regulatory Reporting Pack",
+      "initiativeName": "Compliance Automation",
+      "description": "Auto-generated regulatory filings from the same rules data as the pre-trade engine.",
+      "status": "Planned",
+      "startDate": "2026-11-01",
+      "endDate": "2026-12-15",
+      "dependsOnProjectNames": [ "Pre-Trade Compliance Engine" ],
+      "effortDemands": [
+        { "teamName": "Compliance & Risk", "year": 2026, "month": 11, "points": 10 },
+        { "teamName": "Compliance & Risk", "year": 2026, "month": 12, "points": 15 }
+      ],
+      "deliversFeatureNames": [ "Regulatory Filing Automation" ]
+    },
+    {
+      "name": "Client Portal Redesign",
+      "initiativeName": "Client Experience Overhaul",
+      "description": "New client-facing shell: navigation, branding, and the reporting home clients land on.",
+      "status": "Planned",
+      "startDate": "2026-09-01",
+      "endDate": "2026-11-15",
+      "effortDemands": [
+        { "teamName": "Client Reporting", "year": 2026, "month": 9, "points": 15 },
+        { "teamName": "Client Reporting", "year": 2026, "month": 10, "points": 15 },
+        { "teamName": "Client Reporting", "year": 2026, "month": 11, "points": 10 },
+        { "teamName": "Client Reporting", "year": 2026, "month": 12, "points": 5 },
+        { "teamName": "Platform Engineering", "year": 2026, "month": 9, "points": 10 },
+        { "teamName": "Platform Engineering", "year": 2026, "month": 10, "points": 10 },
+        { "teamName": "Platform Engineering", "year": 2026, "month": 11, "points": 10 },
+        { "teamName": "Platform Engineering", "year": 2026, "month": 12, "points": 5 }
+      ],
+      "deliversFeatureNames": [ "Client Portal 2.0 Shell", "White-Label Branding" ]
+    },
+    {
+      "name": "Self-Serve Report Builder",
+      "initiativeName": "Client Experience Overhaul",
+      "description": "Drag-and-drop report builder plus a guided onboarding wizard, both self-serve.",
+      "status": "Proposed",
+      "startDate": "2026-11-16",
+      "endDate": "2026-12-31",
+      "dependsOnProjectNames": [ "Client Portal Redesign" ],
+      "effortDemands": [
+        { "teamName": "Client Reporting", "year": 2026, "month": 11, "points": 5 },
+        { "teamName": "Client Reporting", "year": 2026, "month": 12, "points": 10 }
+      ],
+      "deliversFeatureNames": [ "Self-Serve Report Builder UI", "Client Onboarding Wizard" ]
+    },
+    {
+      "name": "Mobile Portfolio App",
+      "initiativeName": "Client Experience Overhaul",
+      "description": "Read-only mobile companion app: positions, performance, and alerts.",
+      "status": "Proposed",
+      "startDate": "2026-10-01",
+      "endDate": "2026-12-15",
+      "effortDemands": [
+        { "teamName": "Platform Engineering", "year": 2026, "month": 10, "points": 10 },
+        { "teamName": "Platform Engineering", "year": 2026, "month": 11, "points": 15 },
+        { "teamName": "Platform Engineering", "year": 2026, "month": 12, "points": 10 }
+      ],
+      "deliversFeatureNames": [ "Mobile Portfolio Dashboard" ]
+    }
+  ],
+
+  "features": [
+    {
+      "name": "FIX 5.0 Session Support",
+      "description": "Order Management speaks FIX 5.0 to venues that require it.",
+      "status": "Planned",
+      "deltas": [
+        { "kind": "Coverage", "businessProcessName": "Order Management", "fromTier": "Bronze", "toTier": "Silver",
+          "rationale": "Closes a protocol gap that was blocking two enterprise venue connections." }
+      ]
+    },
+    {
+      "name": "Smart Order Routing Engine",
+      "description": "Chooses execution venue algorithmically instead of by static routing table.",
+      "status": "Planned",
+      "deltas": [
+        { "kind": "Coverage", "businessProcessName": "Trade Execution", "approachName": "Algorithmic",
+          "fromTier": "Silver", "toTier": "Gold", "rationale": "Matches the algorithmic execution quality of the two leading competitors." }
+      ]
+    },
+    {
+      "name": "Best-Execution Analytics",
+      "description": "Post-trade cost and venue-quality analysis for the desk.",
+      "status": "Hypothetical",
+      "deltas": [
+        { "kind": "Coverage", "businessProcessName": "Performance Reporting", "fromTier": "Bronze", "toTier": "Silver" }
+      ]
+    },
+    {
+      "name": "Fill Quality Dashboard",
+      "description": "Client-facing view of execution quality, sourced from the same analytics.",
+      "status": "Hypothetical",
+      "deltas": [
+        { "kind": "Coverage", "businessProcessName": "Trade Execution", "fromTier": "Silver", "toTier": "Gold" }
+      ]
+    },
+    {
+      "name": "Pre-Trade Compliance Rules Engine",
+      "description": "Configurable rule sets block or flag non-compliant orders before they route.",
+      "status": "Planned",
+      "deltas": [
+        { "kind": "Coverage", "businessProcessName": "Compliance Monitoring", "fromTier": "Bronze", "toTier": "Gold",
+          "rationale": "The single biggest coverage gap named in enterprise renewal conversations this year." }
+      ]
+    },
+    {
+      "name": "Restricted List Screening",
+      "description": "Screens orders against firm and regulator restricted lists in real time.",
+      "status": "Planned",
+      "deltas": [
+        { "kind": "Coverage", "businessProcessName": "Compliance Monitoring", "fromTier": "Silver", "toTier": "Gold" }
+      ]
+    },
+    {
+      "name": "Regulatory Filing Automation",
+      "description": "Generates the standard regulatory filing package directly from the rules engine's data.",
+      "status": "Planned",
+      "deltas": [
+        { "kind": "Coverage", "businessProcessName": "Regulatory Reporting", "fromTier": "Bronze", "toTier": "Gold" }
+      ]
+    },
+    {
+      "name": "Client Portal 2.0 Shell",
+      "description": "New navigation and branding shell every client-facing screen will live in.",
+      "status": "Planned",
+      "deltas": [
+        { "kind": "Coverage", "businessProcessName": "Client Reporting", "fromTier": "Bronze", "toTier": "Silver" }
+      ]
+    },
+    {
+      "name": "White-Label Branding",
+      "description": "Firms can put their own branding on the client portal.",
+      "status": "Hypothetical",
+      "deltas": [
+        { "kind": "SwitchingCost", "segmentName": "Enterprise Asset Managers", "magnitude": 0.15,
+          "rationale": "Estimated reduction in switching-cost-driven churn for firms consolidating reporting under their own brand." }
+      ]
+    },
+    {
+      "name": "Self-Serve Report Builder UI",
+      "description": "Drag-and-drop report composition; no services ticket required.",
+      "status": "Planned",
+      "deltas": [
+        { "kind": "Coverage", "businessProcessName": "Client Reporting", "fromTier": "Silver", "toTier": "Gold" }
+      ]
+    },
+    {
+      "name": "Client Onboarding Wizard",
+      "description": "Guided self-serve onboarding flow for firms that don't need white-glove setup.",
+      "status": "Planned",
+      "deltas": [
+        { "kind": "Coverage", "businessProcessName": "Client Onboarding", "approachName": "Self-Serve",
+          "fromTier": "Bronze", "toTier": "Silver" }
+      ]
+    },
+    {
+      "name": "Mobile Portfolio Dashboard",
+      "description": "Read-only mobile view of positions, performance, and alerts.",
+      "status": "Hypothetical",
+      "deltas": [
+        { "kind": "Other", "businessProcessName": "Performance Reporting", "magnitude": 0.1,
+          "rationale": "Placeholder adoption-lift estimate for mobile access; to be calibrated against usage data once shipped." }
+      ]
+    }
+  ],
+
+  "roadmap": {
+    "name": "FY27 Delivery Plan",
+    "versionName": "2026-08 draft",
+    "isLive": true,
+    "items": [
+      { "projectName": "FIX Connectivity Upgrade", "start": "2026-09-01", "end": "2026-09-30", "sortOrder": 0 },
+      { "projectName": "Smart Order Router", "start": "2026-10-01", "end": "2026-11-15", "sortOrder": 1 },
+      { "projectName": "Execution Analytics Dashboard", "start": "2026-11-16", "end": "2026-12-15", "sortOrder": 2 },
+      { "projectName": "Pre-Trade Compliance Engine", "start": "2026-09-01", "end": "2026-10-31", "sortOrder": 3 },
+      { "projectName": "Regulatory Reporting Pack", "start": "2026-11-01", "end": "2026-12-15", "sortOrder": 4 },
+      { "projectName": "Client Portal Redesign", "start": "2026-09-01", "end": "2026-11-15", "sortOrder": 5 },
+      { "projectName": "Self-Serve Report Builder", "start": "2026-11-16", "end": "2026-12-31", "sortOrder": 6 },
+      { "projectName": "Mobile Portfolio App", "start": "2026-10-01", "end": "2026-12-15", "sortOrder": 7 }
+    ]
+  },
+
+  "market": {
+    "name": "Institutional Portfolio Management",
+    "description": "Software for asset managers, RIAs, and family offices to construct, execute, monitor, and report on client portfolios.",
+
+    "segments": [
+      { "name": "Enterprise Asset Managers", "description": "Large, multi-desk firms with dedicated compliance and operations teams.", "suiteAffinity": 0.8, "consolidationPreference": 0.7 },
+      { "name": "Mid-Market RIAs", "description": "Independent advisory firms managing $500M-$5B, lean back office.", "suiteAffinity": 0.5, "consolidationPreference": 0.5 },
+      { "name": "Boutique Family Offices", "description": "Small, high-touch shops serving a handful of ultra-high-net-worth families.", "suiteAffinity": 0.3, "consolidationPreference": 0.2 }
+    ],
+
+    "businessProcesses": [
+      { "name": "Portfolio Construction", "description": "Building and maintaining target portfolios against a model or mandate." },
+      { "name": "Order Management", "description": "Creating, staging, and routing orders to venues." },
+      { "name": "Trade Execution", "description": "Getting orders filled at the best available terms." },
+      { "name": "Compliance Monitoring", "description": "Pre- and post-trade checks against mandates, restricted lists, and regulation." },
+      { "name": "Regulatory Reporting", "description": "Filings and disclosures required by regulators." },
+      { "name": "Performance Reporting", "description": "Internal performance and attribution analysis." },
+      { "name": "Client Reporting", "description": "Client-facing statements, dashboards, and ad hoc reports." },
+      { "name": "Rebalancing", "description": "Bringing drifted portfolios back to target allocation." },
+      { "name": "Risk Analytics", "description": "Exposure, concentration, and scenario analysis." },
+      { "name": "Reconciliation", "description": "Matching positions and cash across custodians and internal books." },
+      { "name": "Client Onboarding", "description": "Bringing a new client relationship from signed contract to first trade." }
+    ],
+
+    "approaches": [
+      { "name": "Manual", "businessProcessName": "Trade Execution", "description": "A human trader selects venue and timing." },
+      { "name": "Algorithmic", "businessProcessName": "Trade Execution", "description": "Software selects venue and timing against a cost/liquidity model." },
+      { "name": "Self-Serve", "businessProcessName": "Client Onboarding", "description": "The client completes onboarding through a guided flow with no dedicated rep." },
+      { "name": "White-Glove", "businessProcessName": "Client Onboarding", "description": "A dedicated implementation manager runs onboarding for the client." }
+    ],
+
+    "competitors": [
+      { "name": "Apex Financial Systems", "strategyNotes": "Execution-first vendor; wins on trading desk relationships, weak on client-facing reporting." },
+      { "name": "Ledgerline Technologies", "strategyNotes": "Reporting-first vendor selling into RIAs and family offices; thin execution and compliance story." }
+    ],
+
+    "products": [
+      {
+        "name": "Meridian Portfolio Suite",
+        "description": "Our flagship suite: construction, execution, compliance, and reporting in one platform.",
+        "prices": [
+          { "recurringAmount": 8000, "currency": "USD", "implementationFeeAmount": 50000, "implementationFeeCurrency": "USD" },
+          { "segmentName": "Boutique Family Offices", "recurringAmount": 4000, "currency": "USD", "implementationFeeAmount": 20000, "implementationFeeCurrency": "USD" }
+        ]
+      },
+      {
+        "name": "Meridian Trading Module",
+        "description": "Order management and execution, sold standalone or alongside the suite.",
+        "parentProductName": "Meridian Portfolio Suite",
+        "prices": [
+          { "recurringAmount": 3000, "currency": "USD", "implementationFeeAmount": 15000, "implementationFeeCurrency": "USD" }
+        ]
+      },
+      {
+        "name": "Meridian Reporting Module",
+        "description": "Client and performance reporting, sold standalone or alongside the suite.",
+        "parentProductName": "Meridian Portfolio Suite",
+        "prices": [
+          { "recurringAmount": 2000, "currency": "USD", "implementationFeeAmount": 10000, "implementationFeeCurrency": "USD" }
+        ]
+      },
+      {
+        "name": "Apex OMS Platform",
+        "description": "Apex's order management and execution platform.",
+        "competitorName": "Apex Financial Systems"
+      },
+      {
+        "name": "Ledgerline Portfolio Cloud",
+        "description": "Ledgerline's cloud reporting and client portal platform.",
+        "competitorName": "Ledgerline Technologies"
+      }
+    ],
+
+    "coverages": [
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Portfolio Construction", "tier": "Gold", "confidence": 0.9, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Order Management", "tier": "Silver", "confidence": 0.9, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Trade Execution", "tier": "Silver", "confidence": 0.85, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Compliance Monitoring", "tier": "Bronze", "confidence": 0.9,
+        "rationale": "Manual pre-trade checks only; the rules engine (in flight) targets Gold.", "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Regulatory Reporting", "tier": "Bronze", "confidence": 0.85, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Performance Reporting", "tier": "Silver", "confidence": 0.9, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Client Reporting", "tier": "Bronze", "confidence": 0.9,
+        "rationale": "Functional but dated; the portal redesign targets Gold.", "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Rebalancing", "tier": "Gold", "confidence": 0.9, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Risk Analytics", "tier": "Silver", "confidence": 0.8, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Reconciliation", "tier": "Gold", "confidence": 0.9, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Client Onboarding", "approachName": "Self-Serve", "tier": "Bronze", "confidence": 0.8, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Portfolio Suite", "businessProcessName": "Client Onboarding", "approachName": "White-Glove", "tier": "NotPlaying", "confidence": 0.95,
+        "rationale": "We deliberately do not staff white-glove onboarding; self-serve only.", "effectiveDate": "2026-08-01" },
+
+      { "productName": "Apex OMS Platform", "businessProcessName": "Order Management", "tier": "Gold", "confidence": 0.6,
+        "rationale": "Inferred from win/loss notes and public materials; not directly observed." },
+      { "productName": "Apex OMS Platform", "businessProcessName": "Trade Execution", "tier": "Gold", "confidence": 0.6 },
+      { "productName": "Apex OMS Platform", "businessProcessName": "Compliance Monitoring", "tier": "Silver", "confidence": 0.5 },
+      { "productName": "Apex OMS Platform", "businessProcessName": "Client Reporting", "tier": "Bronze", "confidence": 0.5 },
+      { "productName": "Apex OMS Platform", "businessProcessName": "Regulatory Reporting", "tier": "NotPlaying", "isUnknown": true,
+        "rationale": "No evidence either way yet — flagged unknown rather than guessed." },
+
+      { "productName": "Ledgerline Portfolio Cloud", "businessProcessName": "Client Reporting", "tier": "Gold", "confidence": 0.65 },
+      { "productName": "Ledgerline Portfolio Cloud", "businessProcessName": "Performance Reporting", "tier": "Gold", "confidence": 0.6 },
+      { "productName": "Ledgerline Portfolio Cloud", "businessProcessName": "Portfolio Construction", "tier": "Silver", "confidence": 0.5 },
+      { "productName": "Ledgerline Portfolio Cloud", "businessProcessName": "Risk Analytics", "tier": "NotPlaying", "isUnknown": true,
+        "rationale": "No evidence either way yet — flagged unknown rather than guessed." }
+    ]
+  }
+}

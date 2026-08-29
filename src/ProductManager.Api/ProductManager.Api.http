@@ -1,0 +1,116 @@
+@host = http://localhost:5072
+
+### Liveness (anonymous)
+GET {{host}}/api/health
+Accept: application/json
+
+### Sign in — single-user password from appsettings.Development.json
+# @name token
+POST {{host}}/api/auth/token
+Content-Type: application/json
+
+{ "password": "productmanager-dev" }
+
+@jwt = {{token.response.body.accessToken}}
+
+### The workspace, created on first run
+# @name workspace
+GET {{host}}/api/workspaces/default
+Authorization: Bearer {{jwt}}
+
+@workspaceId = {{workspace.response.body.id}}
+
+### Teams
+# @name team
+POST {{host}}/api/teams
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{ "workspaceId": "{{workspaceId}}", "name": "Core", "specializationTag": "backend" }
+
+### Team capacity for one period (upsert)
+PUT {{host}}/api/teams/{{team.response.body.id}}/capacities
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{ "year": 2026, "month": 1, "points": 20 }
+
+### Initiatives
+# @name initiative
+POST {{host}}/api/initiatives
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{ "workspaceId": "{{workspaceId}}", "name": "Settlement modernization", "outcome": "Cut fails by half" }
+
+### Projects
+# @name project
+POST {{host}}/api/projects
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{
+  "initiativeId": "{{initiative.response.body.id}}",
+  "name": "Ledger rewrite",
+  "status": "Planned",
+  "startDate": "2026-01-01",
+  "endDate": "2026-03-31"
+}
+
+### Effort demand on a team for a period (upsert; 0 clears)
+PUT {{host}}/api/projects/{{project.response.body.id}}/effort-demands
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{ "teamId": "{{team.response.body.id}}", "year": 2026, "month": 1, "points": 25 }
+
+### Roadmaps
+# @name roadmap
+POST {{host}}/api/roadmaps
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{ "workspaceId": "{{workspaceId}}", "name": "2026 plan", "isLive": true }
+
+### Plan a project on the roadmap
+POST {{host}}/api/roadmaps/{{roadmap.response.body.id}}/items
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{ "projectId": "{{project.response.body.id}}", "plannedStart": "2026-01-01", "plannedEnd": "2026-03-31" }
+
+### Drag-and-drop reschedule
+PUT {{host}}/api/roadmaps/{{roadmap.response.body.id}}/items/{{project.response.body.id}}
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{ "plannedStart": "2026-02-01", "plannedEnd": "2026-04-30" }
+
+### Drag-and-drop reorder (sort order = position in the list)
+PUT {{host}}/api/roadmaps/{{roadmap.response.body.id}}/order
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{ "projectIds": [ "{{project.response.body.id}}" ] }
+
+### Feasibility: capacity overallocations + sequencing violations
+GET {{host}}/api/roadmaps/{{roadmap.response.body.id}}/feasibility
+Authorization: Bearer {{jwt}}
+
+### Branch the roadmap into a scenario
+# @name branch
+POST {{host}}/api/roadmaps/{{roadmap.response.body.id}}/branch
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{ "name": "What if we pull the rewrite forward" }
+
+### Adopt the scenario back into the live roadmap
+POST {{host}}/api/roadmaps/{{roadmap.response.body.id}}/adopt
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{ "branchRoadmapId": "{{branch.response.body.id}}" }
+
+### OpenAPI document (anonymous)
+GET {{host}}/swagger/v1/swagger.json

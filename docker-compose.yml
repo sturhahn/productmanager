@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: productmanager-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: productmanager
+      POSTGRES_USER: productmanager
+      POSTGRES_PASSWORD: productmanager
+    ports:
+      - "5433:5432"
+    volumes:
+      - productmanager-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Lets `docker compose up -d --wait` block until the database really accepts
+      # connections, instead of callers racing the container into EF migrations.
+      test: ["CMD-SHELL", "pg_isready -U productmanager -d productmanager"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  productmanager-pgdata:
