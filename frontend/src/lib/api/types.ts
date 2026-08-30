@@ -374,6 +374,13 @@ export interface SegmentModulePenetrationDto {
   arpuPerMonth: number;
 }
 
+export interface SegmentApproachAdoptionDto {
+  approachId: string;
+  share: number;
+}
+
+export type SetSegmentApproachAdoptionRequest = SegmentApproachAdoptionDto;
+
 export interface ClientSegmentDto {
   id: string;
   marketId: string;
@@ -383,6 +390,7 @@ export interface ClientSegmentDto {
   consolidationPreference: number;
   stockState: SegmentStockStateDto;
   modulePenetrations: SegmentModulePenetrationDto[];
+  approachAdoptions: SegmentApproachAdoptionDto[];
 }
 
 export interface CreateClientSegmentRequest {
@@ -762,6 +770,8 @@ export type FactEventKind =
   | "PricingChanged"
   | "IncidentOccurred"
   | "CovariateObserved"
+  | "OpportunityDecided"
+  | "SegmentArrivalObserved"
   | "Other";
 
 export interface FactEventDto {
@@ -865,6 +875,8 @@ export interface UpsertParameterRequest {
 
 // ---------- Simulation runs ----------
 
+export type SimulationEngineMode = "Aggregate" | "FirmLevel";
+
 export interface SimulationRunDto {
   id: string;
   workspaceId: string;
@@ -881,6 +893,8 @@ export interface SimulationRunDto {
   isExecuted: boolean;
   elapsedMs: number | null;
   createdAt: string;
+  engineMode: SimulationEngineMode;
+  hasDiagnostics: boolean;
 }
 
 export interface CreateSimulationRunRequest {
@@ -896,6 +910,7 @@ export interface CreateSimulationRunRequest {
   marketId?: string | null;
   eventIds?: string[] | null;
   hypotheticalEventIds?: string[] | null;
+  engineMode?: SimulationEngineMode;
 }
 
 // ---------- Engine result (read-only trajectories) ----------
@@ -934,6 +949,300 @@ export interface EngineResult {
   seed: number;
   horizonMonths: number;
   elapsedMs: number;
+}
+
+// =====================================================================
+// Phase 3 — firm-level choice engine surface
+// =====================================================================
+
+// ---------- Channels ----------
+
+export interface ChannelSegmentReachDto {
+  clientSegmentId: string;
+  /** Fraction of the segment the channel can reach, [0, 1]. */
+  reach: number;
+  /** Fraction of the segment's opportunity flow the channel originates. */
+  originationShare: number;
+}
+
+export interface ChannelProductAffinityDto {
+  productId: string;
+  /** Signed utility bias applied to the product; 0 is neutral. */
+  bias: number;
+}
+
+export interface ChannelDto {
+  id: string;
+  marketId: string;
+  name: string;
+  description: string | null;
+  originatesOpportunities: boolean;
+  /** Turns the affinity list into a whitelist of carried products. */
+  carriesOnlyListedProducts: boolean;
+  segmentReaches: ChannelSegmentReachDto[];
+  productAffinities: ChannelProductAffinityDto[];
+}
+
+export interface CreateChannelRequest {
+  marketId: string;
+  name: string;
+  description?: string | null;
+  originatesOpportunities?: boolean;
+  carriesOnlyListedProducts?: boolean;
+}
+
+export interface UpdateChannelRequest {
+  name: string;
+  description?: string | null;
+  originatesOpportunities?: boolean;
+  carriesOnlyListedProducts?: boolean;
+}
+
+export type SetChannelSegmentReachRequest = ChannelSegmentReachDto;
+
+export type SetChannelProductAffinityRequest = ChannelProductAffinityDto;
+
+// ---------- Integrations ----------
+
+export interface IntegrationDto {
+  id: string;
+  productAId: string;
+  productBId: string;
+  /** Quality in [0, 1]; symmetric edge. */
+  qualityScore: number;
+  notes: string | null;
+}
+
+export interface CreateIntegrationRequest {
+  productAId: string;
+  productBId: string;
+  qualityScore: number;
+  notes?: string | null;
+}
+
+export interface UpdateIntegrationRequest {
+  qualityScore: number;
+  notes?: string | null;
+}
+
+// ---------- Firm↔Product relationships ----------
+
+export interface FirmProductRelationshipDto {
+  id: string;
+  firmId: string;
+  productId: string;
+  /** Empty = "whatever the product covers" — not yet decomposed into modules. */
+  servedProcessIds: string[];
+  /** Multiplier on list price: 1.0 = list, 0.8 = a 20% discount. */
+  priceLevel: number;
+  pricePaidPerPeriod: MoneyDto;
+  acquisitionDate: string | null;
+  endDate: string | null;
+  isActive: boolean;
+  notes: string | null;
+}
+
+export interface CreateFirmProductRelationshipRequest {
+  firmId: string;
+  productId: string;
+  servedProcessIds?: string[] | null;
+  priceLevel?: number;
+  pricePaidPerPeriod?: MoneyDto;
+  acquisitionDate?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateFirmProductRelationshipRequest {
+  servedProcessIds?: string[] | null;
+  priceLevel?: number;
+  pricePaidPerPeriod?: MoneyDto;
+  acquisitionDate?: string | null;
+  endDate?: string | null;
+  notes?: string | null;
+}
+
+// ---------- Synthetic firm generation ----------
+
+export interface SyntheticSegmentFillDto {
+  clientSegmentId: string;
+  prospectTarget: number;
+  observedProspects: number;
+  syntheticProspects: number;
+  clientTarget: number;
+  observedClients: number;
+  syntheticClients: number;
+}
+
+export interface GenerateSyntheticFirmsResponse {
+  marketId: string;
+  removed: number;
+  created: number;
+  relationshipsCreated: number;
+  segments: SyntheticSegmentFillDto[];
+}
+
+// ---------- Opportunities ----------
+
+export type OpportunityStage =
+  | "Open"
+  | "Qualified"
+  | "Won"
+  | "Lost"
+  | "NoDecision";
+
+export const OPPORTUNITY_STAGES: OpportunityStage[] = [
+  "Open",
+  "Qualified",
+  "Won",
+  "Lost",
+  "NoDecision",
+];
+
+export interface OpportunityScopeItemDto {
+  businessProcessId: string;
+  addedAt: string;
+}
+
+export interface OpportunityDto {
+  id: string;
+  firmId: string;
+  channelId: string | null;
+  stage: OpportunityStage;
+  openedAt: string;
+  qualifiedAt: string | null;
+  decidedAt: string | null;
+  competitorIds: string[];
+  winningProductId: string | null;
+  crossSellModuleProductId: string | null;
+  isCrossSell: boolean;
+  isDecided: boolean;
+  notes: string | null;
+  scope: OpportunityScopeItemDto[];
+}
+
+export interface CreateOpportunityRequest {
+  firmId: string;
+  openedAt?: string | null;
+  channelId?: string | null;
+  crossSellModuleProductId?: string | null;
+  scopeProcessIds?: string[] | null;
+  competitorIds?: string[] | null;
+  notes?: string | null;
+}
+
+export interface UpdateOpportunityRequest {
+  channelId?: string | null;
+  crossSellModuleProductId?: string | null;
+  competitorIds?: string[] | null;
+  notes?: string | null;
+}
+
+export interface QualifyOpportunityRequest {
+  at?: string | null;
+}
+
+export interface DecideOpportunityRequest {
+  /** Must be Won, Lost or NoDecision; Won requires a winning product. */
+  outcome: OpportunityStage;
+  winningProductId?: string | null;
+  at?: string | null;
+}
+
+export interface AddOpportunityScopeRequest {
+  businessProcessId: string;
+  addedAt?: string | null;
+}
+
+// ---------- Firm-level engine diagnostics ----------
+
+export interface EngineSegmentFunnel {
+  segmentId: string;
+  opened: number;
+  qualified: number;
+  won: number;
+  lost: number;
+  noDecision: number;
+  stillOpen: number;
+  winRate: number;
+}
+
+export interface EngineChannelFunnel {
+  channelId: string;
+  opened: number;
+  won: number;
+  winRate: number;
+}
+
+export interface EngineFirmLevelDiagnostics {
+  funnelBySegment: EngineSegmentFunnel[];
+  funnelByChannel: EngineChannelFunnel[];
+  avgSalesCycleMonths: number;
+  expansionCount: number;
+  meanUtilityGapLostDeals: number;
+  syntheticFirmsCreated: number;
+}
+
+// ---------- Calibration ----------
+
+export interface CalibrationRunDto {
+  id: string;
+  workspaceId: string;
+  name: string | null;
+  factsAsOfDate: string;
+  priorAssumptionSetId: string;
+  fittedAssumptionSetId: string | null;
+  isExecuted: boolean;
+  createdAt: string;
+  notes: string | null;
+}
+
+export interface CalibrationParameterDiffDto {
+  key: string;
+  clientSegmentId: string | null;
+  flowKind: SimulationFlowKind | null;
+  moduleProductId: string | null;
+  productId: string | null;
+  prior: DistributionSpecDto;
+  posterior: DistributionSpecDto;
+  priorMean: number;
+  posteriorMean: number;
+  priorStdDev: number;
+  posteriorStdDev: number;
+  /** posterior mean − prior mean. */
+  shift: number;
+  sampleSize: number;
+  rationale: string;
+}
+
+export interface CalibrationUnfittedDto {
+  key: string;
+  clientSegmentId: string | null;
+  flowKind: SimulationFlowKind | null;
+  moduleProductId: string | null;
+  productId: string | null;
+  distribution: DistributionSpecDto;
+  reason: string;
+}
+
+export interface CalibrationDiffDto {
+  calibrationRunId: string;
+  asOfDate: string;
+  priorAssumptionSetId: string;
+  fittedAssumptionSetId: string | null;
+  fitted: CalibrationParameterDiffDto[];
+  unfitted: CalibrationUnfittedDto[];
+}
+
+export interface CalibrationRunResultDto {
+  run: CalibrationRunDto;
+  diff: CalibrationDiffDto;
+}
+
+export interface CreateCalibrationRunRequest {
+  assumptionSetId: string;
+  asOfDate?: string | null;
+  name?: string | null;
+  notes?: string | null;
 }
 
 /** The stored engine input snapshot — read back only for diffing/inspection. */

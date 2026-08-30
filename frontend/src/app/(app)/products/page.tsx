@@ -2,23 +2,32 @@
 
 import * as React from "react";
 import {
+  CheckIcon,
   CornerDownRightIcon,
   DollarSignIcon,
+  Link2Icon,
   PencilIcon,
   PlusIcon,
   Trash2Icon,
 } from "lucide-react";
 import { api } from "@/lib/api/client";
-import type { ClientSegmentDto, CompetitorDto, ProductDto } from "@/lib/api/types";
+import type {
+  ClientSegmentDto,
+  CompetitorDto,
+  IntegrationDto,
+  ProductDto,
+} from "@/lib/api/types";
 import {
   queryKeys,
   useActiveMarket,
   useCompetitors,
+  useIntegrations,
   useInvalidatingMutation,
   useProducts,
   useSegments,
   useWorkspace,
 } from "@/lib/queries";
+import { cn } from "@/lib/utils";
 import { PageHeader, EmptyState } from "@/components/page-header";
 import { MarketPicker } from "@/components/market-picker";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -82,6 +91,8 @@ export default function ProductsPage() {
     parentProductId: string | null;
   }>({ competitorId: null, parentProductId: null });
   const [pricingFor, setPricingFor] = React.useState<ProductDto | null>(null);
+  const [integrationsFor, setIntegrationsFor] =
+    React.useState<ProductDto | null>(null);
   const [deleting, setDeleting] = React.useState<ProductDto | null>(null);
 
   const deleteProduct = useInvalidatingMutation(
@@ -148,6 +159,14 @@ export default function ProductsPage() {
               onClick={() => setPricingFor(product)}
             >
               <DollarSignIcon />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Integrations for ${product.name}`}
+              onClick={() => setIntegrationsFor(product)}
+            >
+              <Link2Icon />
             </Button>
             {!product.isModule && (
               <Button
@@ -307,6 +326,15 @@ export default function ProductsPage() {
           marketId={market.id}
           segments={segments.data ?? []}
           onOpenChange={(open) => !open && setPricingFor(null)}
+        />
+      )}
+
+      {integrationsFor && market && (
+        <IntegrationsDialog
+          product={integrationsFor}
+          allProducts={all}
+          competitors={competitors.data ?? []}
+          onOpenChange={(open) => !open && setIntegrationsFor(null)}
         />
       )}
 
@@ -671,5 +699,227 @@ function PricingDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Integrations — Product↔Product quality edges (competitors included)
+// ---------------------------------------------------------------------
+
+function IntegrationsDialog({
+  product,
+  allProducts,
+  competitors,
+  onOpenChange,
+}: {
+  product: ProductDto;
+  allProducts: ProductDto[];
+  competitors: CompetitorDto[];
+  onOpenChange: (open: boolean) => void;
+}) {
+  const integrations = useIntegrations(product.id);
+  const [addingId, setAddingId] = React.useState<string>("");
+
+  const invalidate = () => [
+    queryKeys.integrations(product.id),
+    queryKeys.integrations("all"),
+  ];
+
+  const create = useInvalidatingMutation(
+    (otherProductId: string) =>
+      api.integrations.create({
+        productAId: product.id,
+        productBId: otherProductId,
+        qualityScore: 0.5,
+      }),
+    invalidate,
+    { successMessage: "Integration added", onSuccess: () => setAddingId("") },
+  );
+
+  const update = useInvalidatingMutation(
+    (vars: { id: string; qualityScore: number; notes: string | null }) =>
+      api.integrations.update(vars.id, {
+        qualityScore: vars.qualityScore,
+        notes: vars.notes,
+      }),
+    invalidate,
+    { successMessage: "Integration saved" },
+  );
+
+  const remove = useInvalidatingMutation(
+    (id: string) => api.integrations.delete(id),
+    invalidate,
+    { successMessage: "Integration removed" },
+  );
+
+  const ownerLabel = (p: ProductDto) =>
+    p.isOurs
+      ? "ours"
+      : (competitors.find((c) => c.id === p.competitorId)?.name ?? "competitor");
+
+  const productById = new Map(allProducts.map((p) => [p.id, p]));
+  const otherId = (edge: IntegrationDto) =>
+    edge.productAId === product.id ? edge.productBId : edge.productAId;
+
+  const edges = integrations.data ?? [];
+  const linked = new Set(edges.map(otherId));
+  const addable = allProducts.filter(
+    (p) => p.id !== product.id && !linked.has(p.id),
+  );
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{product.name} — integrations</DialogTitle>
+          <DialogDescription>
+            Symmetric quality edges (0–1). In the firm-level engine they raise
+            a best-of-breed candidate&apos;s utility against a firm&apos;s
+            existing stack — competitor products included.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-2">
+          {integrations.isPending ? (
+            <p className="py-3 text-center text-sm text-muted-foreground">
+              Loading…
+            </p>
+          ) : edges.length === 0 ? (
+            <p className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+              No integrations recorded for this product.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {edges.map((edge) => {
+                const other = productById.get(otherId(edge));
+                return (
+                  <IntegrationRow
+                    key={edge.id}
+                    edge={edge}
+                    name={other?.name ?? otherId(edge).slice(0, 8)}
+                    owner={other ? ownerLabel(other) : ""}
+                    busy={update.isPending}
+                    onSave={(qualityScore) =>
+                      update.mutate({
+                        id: edge.id,
+                        qualityScore,
+                        notes: edge.notes,
+                      })
+                    }
+                    onRemove={() => remove.mutate(edge.id)}
+                  />
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {addable.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Select
+              items={addable.map((p) => ({
+                label: `${p.name} (${ownerLabel(p)})`,
+                value: p.id,
+              }))}
+              value={addingId || null}
+              onValueChange={(v) => v && setAddingId(v as string)}
+            >
+              <SelectTrigger size="sm" className="min-w-0 flex-1">
+                <SelectValue placeholder="Link another product…" />
+              </SelectTrigger>
+              <SelectContent>
+                {addable.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} ({ownerLabel(p)})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!addingId || create.isPending}
+              onClick={() => create.mutate(addingId)}
+            >
+              <PlusIcon data-icon="inline-start" />
+              Add
+            </Button>
+          </div>
+        )}
+
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>Done</DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function IntegrationRow({
+  edge,
+  name,
+  owner,
+  busy,
+  onSave,
+  onRemove,
+}: {
+  edge: IntegrationDto;
+  name: string;
+  owner: string;
+  busy: boolean;
+  onSave: (qualityScore: number) => void;
+  onRemove: () => void;
+}) {
+  const [value, setValue] = React.useState(edge.qualityScore);
+  const dirty = value !== edge.qualityScore;
+
+  return (
+    <li className="flex items-center gap-3 rounded-lg border px-3 py-2">
+      <div className="w-36 min-w-0">
+        <p className="truncate text-sm font-medium">{name}</p>
+        {owner && (
+          <p className="text-[10px] text-muted-foreground">{owner}</p>
+        )}
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.05}
+        value={value}
+        onChange={(e) => setValue(Number(e.target.value))}
+        aria-label={`Integration quality with ${name}`}
+        className="h-1.5 flex-1 cursor-pointer accent-primary"
+      />
+      <span
+        className={cn(
+          "w-10 text-right font-mono text-xs",
+          value >= 0.7 && "text-primary",
+        )}
+      >
+        {value.toFixed(2)}
+      </span>
+      <div className="flex w-16 justify-end gap-1">
+        {dirty && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Save integration quality with ${name}`}
+            disabled={busy}
+            onClick={() => onSave(value)}
+          >
+            <CheckIcon className="text-primary" />
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Remove integration with ${name}`}
+          onClick={onRemove}
+        >
+          <Trash2Icon className="text-destructive" />
+        </Button>
+      </div>
+    </li>
   );
 }

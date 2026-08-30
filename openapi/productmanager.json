@@ -2123,6 +2123,1612 @@
         }
       }
     },
+    "/api/calibration-runs": {
+      "get": {
+        "tags": [
+          "CalibrationRuns"
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "priorAssumptionSetId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfCalibrationRunDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfCalibrationRunDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfCalibrationRunDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "CalibrationRuns"
+        ],
+        "summary": "Runs the fit synchronously: maps the ledger as of the date onto the calibration contract,\r\nexecutes the pure calibration module, stores the run, and creates the fitted assumption set.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCalibrationRunRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCalibrationRunRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCalibrationRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationRunResultDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationRunResultDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationRunResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calibration-runs/{id}": {
+      "get": {
+        "tags": [
+          "CalibrationRuns"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationRunDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationRunDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationRunDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "CalibrationRuns"
+        ],
+        "summary": "Deleting is the only write a stored fit allows \u2014 it is never edited.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/calibration-runs/{id}/diff": {
+      "get": {
+        "tags": [
+          "CalibrationRuns"
+        ],
+        "summary": "Prior vs posterior for every parameter the fit touched, and the reason for each one it could not.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationDiffDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationDiffDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationDiffDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calibration-runs/{id}/input": {
+      "get": {
+        "tags": [
+          "CalibrationRuns"
+        ],
+        "summary": "The exact calibration input this run was executed against \u2014 priors plus the observations as of the date.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationInput"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationInput"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationInput"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels": {
+      "get": {
+        "tags": [
+          "Channels"
+        ],
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "originatesOpportunities",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfChannelDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfChannelDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfChannelDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Channels"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChannelRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChannelRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChannelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{id}": {
+      "get": {
+        "tags": [
+          "Channels"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Channels"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChannelRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChannelRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChannelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Channels"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/channels/{id}/segment-reaches": {
+      "put": {
+        "tags": [
+          "Channels"
+        ],
+        "summary": "Sets (upserting by segment) how much of a segment this channel reaches and originates.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetChannelSegmentReachRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetChannelSegmentReachRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/SetChannelSegmentReachRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{id}/segment-reaches/{clientSegmentId}": {
+      "delete": {
+        "tags": [
+          "Channels"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "clientSegmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{id}/product-affinities": {
+      "put": {
+        "tags": [
+          "Channels"
+        ],
+        "summary": "Sets (upserting by product) this channel\u0027s signed bias toward a product.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetChannelProductAffinityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetChannelProductAffinityRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/SetChannelProductAffinityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{id}/product-affinities/{productId}": {
+      "delete": {
+        "tags": [
+          "Channels"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/client-segments": {
       "get": {
         "tags": [
@@ -2923,6 +4529,235 @@
           },
           {
             "name": "moduleProductId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSegmentDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSegmentDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSegmentDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client-segments/{id}/approach-mix": {
+      "put": {
+        "tags": [
+          "ClientSegments"
+        ],
+        "summary": "Sets (upserting by approach) the share of this segment\u0027s firms on one approach to a process\r\n\u2014 e.g. 99% settling via the incumbent utility, 1% on chain. Effective coverage is weighted by\r\nthis mix, which is what stops \u0022gold on the 1% approach\u0022 from reading as gold.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSegmentApproachAdoptionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSegmentApproachAdoptionRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSegmentApproachAdoptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSegmentDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSegmentDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSegmentDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client-segments/{id}/approach-mix/{approachId}": {
+      "delete": {
+        "tags": [
+          "ClientSegments"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "approachId",
             "in": "path",
             "required": true,
             "schema": {
@@ -4936,7 +6771,7 @@
         "tags": [
           "Facts"
         ],
-        "summary": "Appends one observation. The recorded date is stamped server-side \u2014 a caller cannot backdate\r\nwhen we learned something.",
+        "summary": "Appends one observation. The recorded date is stamped server-side unless the caller supplies\r\n\u0060recordedAt\u0060 \u2014 the import/backfill path, for history whose \u0022when we learned it\u0022 is\r\ngenuinely in the past. A recorded date in the future is refused.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5918,6 +7753,544 @@
         }
       }
     },
+    "/api/firm-relationships": {
+      "get": {
+        "tags": [
+          "FirmRelationships"
+        ],
+        "parameters": [
+          {
+            "name": "firmId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "productId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfFirmProductRelationshipDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfFirmProductRelationshipDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfFirmProductRelationshipDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FirmRelationships"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFirmProductRelationshipRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFirmProductRelationshipRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFirmProductRelationshipRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/firm-relationships/{id}": {
+      "get": {
+        "tags": [
+          "FirmRelationships"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "FirmRelationships"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFirmProductRelationshipRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFirmProductRelationshipRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFirmProductRelationshipRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "FirmRelationships"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/firms": {
       "get": {
         "tags": [
@@ -6476,6 +8849,224 @@
         }
       }
     },
+    "/api/firms/bulk": {
+      "post": {
+        "tags": [
+          "Firms"
+        ],
+        "summary": "Imports a whole roster into one market in a single call, relationships included. Matching is\r\nby natural key (market, name), so re-importing the same roster corrects it rather than\r\nduplicating it \u2014 the same idempotence the seed loader relies on.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkImportFirmsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkImportFirmsRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkImportFirmsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkImportFirmsResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkImportFirmsResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkImportFirmsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/firms/generate-synthetic": {
+      "post": {
+        "tags": [
+          "Firms"
+        ],
+        "summary": "Fills every segment\u0027s measured stocks with deterministically generated synthetic firms, so a\r\nfirm-level simulation runs over the whole market and not only the part we happen to have\r\nnames for. Regeneration \u003Cem\u003Ereplaces\u003C/em\u003E the previous synthetic population: identities are\r\nhashes of (market, segment, role, index), so running this twice is a no-op rather than a\r\ndoubling.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateSyntheticFirmsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateSyntheticFirmsRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateSyntheticFirmsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateSyntheticFirmsResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateSyntheticFirmsResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateSyntheticFirmsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -6932,6 +9523,550 @@
       "delete": {
         "tags": [
           "Initiatives"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/integrations": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfIntegrationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfIntegrationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfIntegrationDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Creates the edge. The edge is symmetric, so (A, B) and (B, A) are the same integration and\r\nthe second one is a conflict rather than a second row \u2014 two rows would let the same pair\r\ncarry two different quality scores.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntegrationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntegrationRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntegrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/{id}": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Integrations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIntegrationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIntegrationRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIntegrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Integrations"
         ],
         "parameters": [
           {
@@ -8628,6 +11763,1119 @@
           },
           "204": {
             "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/opportunities": {
+      "get": {
+        "tags": [
+          "Opportunities"
+        ],
+        "parameters": [
+          {
+            "name": "firmId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "channelId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OpportunityStage"
+            }
+          },
+          {
+            "name": "isCrossSell",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfOpportunityDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfOpportunityDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfOpportunityDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Opportunities"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOpportunityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOpportunityRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOpportunityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/opportunities/{id}": {
+      "get": {
+        "tags": [
+          "Opportunities"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Opportunities"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOpportunityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOpportunityRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOpportunityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Opportunities"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/opportunities/{id}/scope": {
+      "post": {
+        "tags": [
+          "Opportunities"
+        ],
+        "summary": "Adds a business process to the scope (idempotent). Refused once the deal is decided.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddOpportunityScopeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddOpportunityScopeRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/AddOpportunityScopeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/opportunities/{id}/scope/{businessProcessId}": {
+      "delete": {
+        "tags": [
+          "Opportunities"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "businessProcessId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/opportunities/{id}/qualify": {
+      "post": {
+        "tags": [
+          "Opportunities"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualifyOpportunityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualifyOpportunityRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/QualifyOpportunityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/opportunities/{id}/decide": {
+      "post": {
+        "tags": [
+          "Opportunities"
+        ],
+        "summary": "Decides the opportunity and appends the ledger entry that calibration will later read. The\r\ntwo writes are one transaction: a decision that never reached the ledger would silently\r\ndisappear from every future fit.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideOpportunityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideOpportunityRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideOpportunityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -12485,7 +16733,7 @@
         "tags": [
           "SimulationRuns"
         ],
-        "summary": "The run\u0027s trajectories: per-segment and total bands (mean/P10/P50/P90) plus the NPV distribution.",
+        "summary": "The run\u0027s trajectories: per-segment and total bands (mean/P10/P50/P90) plus the NPV\r\ndistribution. Firm-level runs carry an extra \u0060diagnostics\u0060 property here (the same\r\ndocument \u0060GET {id}/diagnostics\u0060 returns); the trajectory fields are identical in both\r\nmodes, which is what lets a comparison put an aggregate run and a firm-level run side by side.",
         "parameters": [
           {
             "name": "id",
@@ -12574,6 +16822,107 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EngineResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulation-runs/{id}/diagnostics": {
+      "get": {
+        "tags": [
+          "SimulationRuns"
+        ],
+        "summary": "Firm-level diagnostics: opportunity funnels by segment and by channel, average sales-cycle\r\nlength, scope expansions, the mean utility gap on lost deals, and how many synthetic firms\r\nthe run created. 404 on an aggregate run \u2014 it has no opportunities to count.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineFirmLevelDiagnostics"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineFirmLevelDiagnostics"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineFirmLevelDiagnostics"
                 }
               }
             }
@@ -13993,6 +18342,22 @@
         "additionalProperties": false,
         "description": "Adds a delta. Coverage deltas require \u0060businessProcessId\u0060 and \u0060toTier\u0060 (and must raise\r\nthe tier); other kinds require a \u0060magnitude\u0060."
       },
+      "AddOpportunityScopeRequest": {
+        "type": "object",
+        "properties": {
+          "businessProcessId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Adds one business process to the scope. Scope can expand mid-cycle until the decision."
+      },
       "AddProjectDependencyRequest": {
         "type": "object",
         "properties": {
@@ -14031,6 +18396,30 @@
           "description": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ArrivalCount": {
+        "type": "object",
+        "properties": {
+          "segmentId": {
+            "type": "string"
+          },
+          "flowKind": {
+            "$ref": "#/components/schemas/EngineFlowKind"
+          },
+          "month": {
+            "type": "string",
+            "format": "date"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "exposure": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -14089,6 +18478,51 @@
         },
         "additionalProperties": false
       },
+      "BulkImportFirmsRequest": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FirmImportItem"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "description": "Imports a roster of firms into one market. Matching is by natural key (market, name), so\r\nre-importing the same roster updates rather than duplicates it \u2014 the same idempotence the CLI\u0027s\r\nseed loader relies on."
+      },
+      "BulkImportFirmsResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "relationshipsWritten": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FirmDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "BusinessProcessDto": {
         "type": "object",
         "properties": {
@@ -14114,6 +18548,245 @@
           }
         },
         "additionalProperties": false
+      },
+      "CalibrationDiffDto": {
+        "type": "object",
+        "properties": {
+          "calibrationRunId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "priorAssumptionSetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fittedAssumptionSetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "fitted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalibrationParameterDiffDto"
+            }
+          },
+          "unfitted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalibrationUnfittedDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "CalibrationInput": {
+        "type": "object",
+        "properties": {
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "flowPriors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlowPrior"
+            }
+          },
+          "salesCyclePriors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalesCyclePrior"
+            }
+          },
+          "opportunities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpportunityOutcome"
+            }
+          },
+          "churnEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChurnEvent"
+            }
+          },
+          "arrivalCounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArrivalCount"
+            }
+          },
+          "relationshipSpans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipSpan"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "CalibrationParameterDiffDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "clientSegmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "flowKind": {
+            "$ref": "#/components/schemas/SimulationFlowKind"
+          },
+          "moduleProductId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "prior": {
+            "$ref": "#/components/schemas/DistributionSpecDto"
+          },
+          "posterior": {
+            "$ref": "#/components/schemas/DistributionSpecDto"
+          },
+          "priorMean": {
+            "type": "number",
+            "format": "double"
+          },
+          "posteriorMean": {
+            "type": "number",
+            "format": "double"
+          },
+          "priorStdDev": {
+            "type": "number",
+            "format": "double"
+          },
+          "posteriorStdDev": {
+            "type": "number",
+            "format": "double"
+          },
+          "shift": {
+            "type": "number",
+            "format": "double"
+          },
+          "sampleSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Prior vs posterior for one parameter, with the evidence that moved it."
+      },
+      "CalibrationProvenance": {
+        "enum": [
+          "Asserted",
+          "Calibrated",
+          "Default"
+        ],
+        "type": "string"
+      },
+      "CalibrationRunDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "factsAsOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "priorAssumptionSetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fittedAssumptionSetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isExecuted": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CalibrationRunResultDto": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/CalibrationRunDto"
+          },
+          "diff": {
+            "$ref": "#/components/schemas/CalibrationDiffDto"
+          }
+        },
+        "additionalProperties": false,
+        "description": "A calibration run plus the diff it produced \u2014 what POST returns."
+      },
+      "CalibrationUnfittedDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "clientSegmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "flowKind": {
+            "$ref": "#/components/schemas/SimulationFlowKind"
+          },
+          "moduleProductId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "distribution": {
+            "$ref": "#/components/schemas/DistributionSpecDto"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "A prior the evidence could not move, passed through with the reason why."
       },
       "CapacityWarningDto": {
         "type": "object",
@@ -14152,6 +18825,92 @@
         },
         "additionalProperties": false
       },
+      "ChannelDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "marketId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "originatesOpportunities": {
+            "type": "boolean"
+          },
+          "carriesOnlyListedProducts": {
+            "type": "boolean"
+          },
+          "segmentReaches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelSegmentReachDto"
+            }
+          },
+          "productAffinities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelProductAffinityDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChannelProductAffinityDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bias": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Signed utility bias a channel applies to a product it presents. 0 is neutral."
+      },
+      "ChannelSegmentReachDto": {
+        "type": "object",
+        "properties": {
+          "clientSegmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reach": {
+            "type": "number",
+            "format": "double"
+          },
+          "originationShare": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "One segment a channel touches: how much of it the channel can reach, and how much of its\r\nopportunity flow the channel originates. Reach and origination are separate questions \u2014 a\r\nconsultant may see a whole segment yet originate nothing \u2014 and the choice engine draws an\r\nopportunity\u0027s channel with weight reach \u00D7 originationShare."
+      },
+      "ChurnEvent": {
+        "type": "object",
+        "properties": {
+          "segmentId": {
+            "type": "string"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "additionalProperties": false
+      },
       "ClientSegmentDto": {
         "type": "object",
         "properties": {
@@ -14185,6 +18944,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SegmentModulePenetrationDto"
+            }
+          },
+          "approachAdoptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SegmentApproachAdoptionDto"
             }
           }
         },
@@ -14425,6 +19190,54 @@
         },
         "additionalProperties": false
       },
+      "CreateCalibrationRunRequest": {
+        "type": "object",
+        "properties": {
+          "assumptionSetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Fits the prior assumption set to the facts ledger as it stood on \u0060asOfDate\u0060: only facts\r\nrecorded on or before that date are read, so a fit can honestly reconstruct what was known then.\r\nThe run is immutable and produces a new assumption set (parent = the prior, provenance\r\nCalibrated) rather than editing the prior in place. \u0060name\u0060 labels both the run and the\r\nassumption set it produces; omitted, the set is named \u0022{prior} (calibrated {asOfDate})\u0022."
+      },
+      "CreateChannelRequest": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "originatesOpportunities": {
+            "type": "boolean"
+          },
+          "carriesOnlyListedProducts": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "description": "A route to market; direct sales is just another channel.\r\n\u0060carriesOnlyListedProducts\u0060 turns the channel\u0027s affinity list into a whitelist: products it\r\ndoes not carry drop out of the consideration set of the opportunities it originates."
+      },
       "CreateClientSegmentRequest": {
         "type": "object",
         "properties": {
@@ -14578,10 +19391,15 @@
           "notes": {
             "type": "string",
             "nullable": true
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "additionalProperties": false,
-        "description": "Appends one observation. For a covariate reading use\r\n\u0060kind = CovariateObserved\u0060, \u0060subjectType = \u0022Covariate\u0022\u0060, \u0060subjectId\u0060 = the\r\ncovariate, and a payload of \u0060{\u0022value\u0022: 1234.5}\u0060 \u2014 that is what the covariate history\r\nendpoint reads back."
+        "description": "Appends one observation. For a covariate reading use\r\n\u0060kind = CovariateObserved\u0060, \u0060subjectType = \u0022Covariate\u0022\u0060, \u0060subjectId\u0060 = the\r\ncovariate, and a payload of \u0060{\u0022value\u0022: 1234.5}\u0060 \u2014 that is what the covariate history\r\nendpoint reads back.\r\n            \r\n\n\u0060recordedAt\u0060 is the \u003Cb\u003Eimport / backfill path\u003C/b\u003E: when history is loaded from a CRM export,\r\na seed file or a transcript, the honest recorded date is when that observation was originally\r\nknown, not when the loader ran. Omit it for a live observation and the server stamps now. It may\r\nbe backdated but never post-dated \u2014 a fact cannot have been known before it was written \u2014 and\r\n\u0060effectiveDate\u0060 rules are unchanged either way (a fact may be effective before, on, or after\r\nthe date it was recorded).\r\n"
       },
       "CreateFeatureRequest": {
         "type": "object",
@@ -14604,6 +19422,45 @@
           }
         },
         "additionalProperties": false
+      },
+      "CreateFirmProductRelationshipRequest": {
+        "type": "object",
+        "properties": {
+          "firmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "servedProcessIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "priceLevel": {
+            "type": "number",
+            "format": "double"
+          },
+          "pricePaidPerPeriod": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "acquisitionDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "\u0060servedProcessIds\u0060 may be empty \u2014 that reads as \u0022whatever the product covers\u0022, the honest\r\n            state of a relationship nobody has decomposed into modules yet. \u0060priceLevel\u0060 is a\r\n            multiplier on list price (1.0 = list, 0.8 = a 20% discount)."
       },
       "CreateFirmRequest": {
         "type": "object",
@@ -14670,6 +19527,29 @@
           }
         },
         "additionalProperties": false
+      },
+      "CreateIntegrationRequest": {
+        "type": "object",
+        "properties": {
+          "productAId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productBId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "qualityScore": {
+            "type": "number",
+            "format": "double"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "A Product\u2194Product edge with a quality score in [0, 1]. The edge is symmetric: posting (A, B) and\r\n(B, A) describe the same integration, and the second is rejected as a duplicate."
       },
       "CreateMarketEventRequest": {
         "type": "object",
@@ -14779,6 +19659,52 @@
         },
         "additionalProperties": false,
         "description": "A demand edge. Exactly one of \u0060firmId\u0060 / \u0060clientSegmentId\u0060 must be given: a need is\r\neither one firm\u0027s or a whole segment\u0027s."
+      },
+      "CreateOpportunityRequest": {
+        "type": "object",
+        "properties": {
+          "firmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "channelId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "crossSellModuleProductId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "scopeProcessIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "competitorIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Opens an opportunity: a firm seeking coverage for a scoped set of business processes.\r\nA cross-sell is not a special case \u2014 it is an opportunity at an existing client scoped to new\r\nprocesses, and \u0060crossSellModuleProductId\u0060 names the module being sold."
       },
       "CreateProductRequest": {
         "type": "object",
@@ -14929,6 +19855,9 @@
             },
             "description": "Hypothetical events to inject \u2014 the \u0022what if the incident happened\u0022 arm.",
             "nullable": true
+          },
+          "engineMode": {
+            "$ref": "#/components/schemas/SimulationEngineMode"
           }
         },
         "additionalProperties": false,
@@ -14959,6 +19888,31 @@
           }
         },
         "additionalProperties": false
+      },
+      "DecideOpportunityRequest": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/OpportunityStage"
+          },
+          "winningProductId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Records the decision. \u0060outcome\u0060 must be Won, Lost or NoDecision, and a won deal must name\r\nthe winning product (ours or a competitor\u0027s). Deciding also appends an\r\n\u0060OpportunityDecided\u0060 fact carrying a self-contained copy of the deal, which is what\r\ncalibration later reads \u2014 the ledger, not this row, is the history.\r\n            \r\n\n\u0060at\u0060 is when the decision happened (the fact\u0027s effective date); \u0060recordedAt\u0060 is when we\r\nlearned of it, and exists for the same import/backfill reason as on \u0060POST /api/facts\u0060:\r\nloading last year\u0027s closed deals must not stamp them all as learned today, or every backdated\r\ncalibration reads an empty ledger. Omitted, it is stamped now; it may be backdated, never\r\npost-dated.\r\n"
       },
       "DistributionSpecDto": {
         "type": "object",
@@ -15020,6 +19974,27 @@
             "format": "int32"
           },
           "multiplier": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EngineChannelFunnel": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string"
+          },
+          "opened": {
+            "type": "number",
+            "format": "double"
+          },
+          "won": {
+            "type": "number",
+            "format": "double"
+          },
+          "winRate": {
             "type": "number",
             "format": "double"
           }
@@ -15163,6 +20138,40 @@
             "$ref": "#/components/schemas/EngineFlowKind"
           },
           "multiplier": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EngineFirmLevelDiagnostics": {
+        "type": "object",
+        "properties": {
+          "funnelBySegment": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EngineSegmentFunnel"
+            }
+          },
+          "funnelByChannel": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EngineChannelFunnel"
+            }
+          },
+          "avgSalesCycleMonths": {
+            "type": "number",
+            "format": "double"
+          },
+          "expansionCount": {
+            "type": "number",
+            "format": "double"
+          },
+          "meanUtilityGapLostDeals": {
+            "type": "number",
+            "format": "double"
+          },
+          "syntheticFirmsCreated": {
             "type": "number",
             "format": "double"
           }
@@ -15367,6 +20376,43 @@
         },
         "additionalProperties": false
       },
+      "EngineSegmentFunnel": {
+        "type": "object",
+        "properties": {
+          "segmentId": {
+            "type": "string"
+          },
+          "opened": {
+            "type": "number",
+            "format": "double"
+          },
+          "qualified": {
+            "type": "number",
+            "format": "double"
+          },
+          "won": {
+            "type": "number",
+            "format": "double"
+          },
+          "lost": {
+            "type": "number",
+            "format": "double"
+          },
+          "noDecision": {
+            "type": "number",
+            "format": "double"
+          },
+          "stillOpen": {
+            "type": "number",
+            "format": "double"
+          },
+          "winRate": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "EngineSegmentInput": {
         "type": "object",
         "properties": {
@@ -15510,7 +20556,9 @@
           "PricingChanged",
           "IncidentOccurred",
           "CovariateObserved",
-          "Other"
+          "Other",
+          "OpportunityDecided",
+          "SegmentArrivalObserved"
         ],
         "type": "string"
       },
@@ -15643,6 +20691,184 @@
         },
         "additionalProperties": false
       },
+      "FirmImportItem": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "clientSegmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "epistemicStatus": {
+            "$ref": "#/components/schemas/EpistemicStatus"
+          },
+          "attributesJson": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FirmImportRelationship"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "One firm in a bulk import, with the relationships it already holds."
+      },
+      "FirmImportRelationship": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "servedProcessIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "priceLevel": {
+            "type": "number",
+            "format": "double"
+          },
+          "pricePaidPerPeriod": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "acquisitionDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FirmProductRelationshipDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "servedProcessIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "priceLevel": {
+            "type": "number",
+            "format": "double"
+          },
+          "pricePaidPerPeriod": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "acquisitionDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "\u0022Being a client\u0022 as an edge: which product, which processes it actually serves at the firm\r\n(the modules held), what fraction of list price is paid, and when it started and ended."
+      },
+      "FlowPrior": {
+        "type": "object",
+        "properties": {
+          "segmentId": {
+            "type": "string"
+          },
+          "flowKind": {
+            "$ref": "#/components/schemas/EngineFlowKind"
+          },
+          "moduleId": {
+            "type": "string",
+            "nullable": true
+          },
+          "distribution": {
+            "$ref": "#/components/schemas/EngineDistributionSpec"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/CalibrationProvenance"
+          },
+          "rationale": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GenerateSyntheticFirmsRequest": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Fills a market\u0027s segment stocks with deterministically generated synthetic firms. Regeneration\r\nreplaces the previous synthetic population rather than adding a second one."
+      },
+      "GenerateSyntheticFirmsResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "removed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "relationshipsCreated": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyntheticSegmentFillDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "InitiativeDto": {
         "type": "object",
         "properties": {
@@ -15678,6 +20904,32 @@
               "type": "string",
               "format": "uuid"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "IntegrationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productAId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productBId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "qualityScore": {
+            "type": "number",
+            "format": "double"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -15835,6 +21087,149 @@
         },
         "additionalProperties": false
       },
+      "OpportunityDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "channelId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "stage": {
+            "$ref": "#/components/schemas/OpportunityStage"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "qualifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "competitorIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "winningProductId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "crossSellModuleProductId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isCrossSell": {
+            "type": "boolean"
+          },
+          "isDecided": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "scope": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpportunityScopeItemDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "OpportunityOutcome": {
+        "type": "object",
+        "properties": {
+          "segmentId": {
+            "type": "string"
+          },
+          "channelId": {
+            "type": "string",
+            "nullable": true
+          },
+          "openedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "decidedDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/OpportunityResult"
+          },
+          "scopeProcessIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "winnerProductId": {
+            "type": "string",
+            "nullable": true
+          },
+          "isCrossSell": {
+            "type": "boolean"
+          },
+          "moduleId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OpportunityResult": {
+        "enum": [
+          "Won",
+          "Lost",
+          "NoDecision"
+        ],
+        "type": "string"
+      },
+      "OpportunityScopeItemDto": {
+        "type": "object",
+        "properties": {
+          "businessProcessId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OpportunityStage": {
+        "enum": [
+          "Open",
+          "Qualified",
+          "Won",
+          "Lost",
+          "NoDecision"
+        ],
+        "type": "string"
+      },
       "PagedResponseOfApproachDto": {
         "type": "object",
         "properties": {
@@ -15902,6 +21297,66 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BusinessProcessDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "One page of a list endpoint\u0027s results."
+      },
+      "PagedResponseOfCalibrationRunDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalibrationRunDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "One page of a list endpoint\u0027s results."
+      },
+      "PagedResponseOfChannelDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelDto"
             }
           },
           "page": {
@@ -16135,6 +21590,36 @@
         "additionalProperties": false,
         "description": "One page of a list endpoint\u0027s results."
       },
+      "PagedResponseOfFirmProductRelationshipDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FirmProductRelationshipDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "One page of a list endpoint\u0027s results."
+      },
       "PagedResponseOfInitiativeDto": {
         "type": "object",
         "properties": {
@@ -16142,6 +21627,36 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/InitiativeDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "One page of a list endpoint\u0027s results."
+      },
+      "PagedResponseOfIntegrationDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationDto"
             }
           },
           "page": {
@@ -16232,6 +21747,36 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NeedDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "One page of a list endpoint\u0027s results."
+      },
+      "PagedResponseOfOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpportunityDto"
             }
           },
           "page": {
@@ -16675,6 +22220,35 @@
         ],
         "type": "string"
       },
+      "QualifyOpportunityRequest": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RelationshipSpan": {
+        "type": "object",
+        "properties": {
+          "segmentId": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ReorderRoadmapRequest": {
         "type": "object",
         "properties": {
@@ -16804,6 +22378,46 @@
         },
         "additionalProperties": false
       },
+      "SalesCyclePrior": {
+        "type": "object",
+        "properties": {
+          "segmentId": {
+            "type": "string"
+          },
+          "productId": {
+            "type": "string",
+            "nullable": true
+          },
+          "mu": {
+            "type": "number",
+            "format": "double"
+          },
+          "sigma": {
+            "type": "number",
+            "format": "double"
+          },
+          "priorWeight": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SegmentApproachAdoptionDto": {
+        "type": "object",
+        "properties": {
+          "approachId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "share": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Share of a segment\u0027s firms using one alternative approach to a process."
+      },
       "SegmentModulePenetrationDto": {
         "type": "object",
         "properties": {
@@ -16890,6 +22504,38 @@
         ],
         "type": "string"
       },
+      "SetChannelProductAffinityRequest": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bias": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SetChannelSegmentReachRequest": {
+        "type": "object",
+        "properties": {
+          "clientSegmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reach": {
+            "type": "number",
+            "format": "double"
+          },
+          "originationShare": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "SetEffortDemandRequest": {
         "type": "object",
         "properties": {
@@ -16930,6 +22576,20 @@
           "usageBasedPlaceholder": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SetSegmentApproachAdoptionRequest": {
+        "type": "object",
+        "properties": {
+          "approachId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "share": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -17010,6 +22670,13 @@
         "additionalProperties": false,
         "description": "Upserts a team\u0027s capacity for one period. Points are FTE-months or story points \u2014 a unit choice made in data."
       },
+      "SimulationEngineMode": {
+        "enum": [
+          "Aggregate",
+          "FirmLevel"
+        ],
+        "type": "string"
+      },
       "SimulationFlowKind": {
         "enum": [
           "NewFirmArrival",
@@ -17082,6 +22749,46 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "engineMode": {
+            "$ref": "#/components/schemas/SimulationEngineMode"
+          },
+          "hasDiagnostics": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SyntheticSegmentFillDto": {
+        "type": "object",
+        "properties": {
+          "clientSegmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prospectTarget": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "observedProspects": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "syntheticProspects": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "clientTarget": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "observedClients": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "syntheticClients": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -17198,6 +22905,25 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateChannelRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "originatesOpportunities": {
+            "type": "boolean"
+          },
+          "carriesOnlyListedProducts": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -17324,6 +23050,42 @@
         },
         "additionalProperties": false
       },
+      "UpdateFirmProductRelationshipRequest": {
+        "type": "object",
+        "properties": {
+          "servedProcessIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "priceLevel": {
+            "type": "number",
+            "format": "double"
+          },
+          "pricePaidPerPeriod": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "acquisitionDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Replaces the whole edge. Omitting \u0060endDate\u0060 reopens a relationship that had ended \u2014 a PUT\r\nstates what is true now, and \u0022no end date\u0022 means \u0022still a client\u0022."
+      },
       "UpdateFirmRequest": {
         "type": "object",
         "properties": {
@@ -17377,6 +23139,20 @@
               "type": "string",
               "format": "uuid"
             },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateIntegrationRequest": {
+        "type": "object",
+        "properties": {
+          "qualityScore": {
+            "type": "number",
+            "format": "double"
+          },
+          "notes": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -17459,6 +23235,34 @@
           },
           "conditionality": {
             "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateOpportunityRequest": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "crossSellModuleProductId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "competitorIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
             "nullable": true
           },
           "notes": {
@@ -17669,6 +23473,10 @@
       "description": "Single-user sign-in. Phase 1 has one shared password and one bearer token."
     },
     {
+      "name": "CalibrationRuns",
+      "description": "Immutable fits: the prior assumption set plus the facts ledger \u003Cem\u003Eas of a date\u003C/em\u003E produce a\r\nnew, fitted assumption set, diffable against the prior.\r\n            \r\n\n\r\nThe as-of cut is the whole point. Only facts whose \u0060recordedDate\u0060 falls on or before the\r\ndate are read, so a fit reconstructs what was actually known then rather than quietly borrowing\r\nhindsight \u2014 which is the difference between a backtest and a flattering story about one.\r\n\n\r\nA fit never edits the prior: it creates a branch whose fitted parameters carry provenance\r\nCalibrated and an auto-generated rationale naming the evidence (\u0022fitted from 42 decided\r\nopportunities\u0022), so every number stays traceable to what moved it.\r\n"
+    },
+    {
       "name": "Facts",
       "description": "The bi-temporal facts ledger: every market observation, with when it was true and when we\r\nlearned it. Append-only by construction \u2014 there is no update and no delete, because rewriting\r\nhistory is exactly what would make \u0022what we knew as of date D\u0022 a lie."
     },
@@ -17727,6 +23535,22 @@
     {
       "name": "MarketEvents",
       "description": "Typed shocks that modulate simulated flows for a duration. Real events mirror the facts ledger;\r\nhypothetical ones are injected into a scenario \u2014 \u0022with the incident\u0022 vs \u0022without\u0022."
+    },
+    {
+      "name": "Opportunities",
+      "description": "The central hinge of the market model: a firm seeking coverage for a scoped set of business\r\nprocesses. Scope can expand mid-cycle (land-and-expand); the lifecycle is open \u2192 qualified \u2192\r\ndecided (won / lost / no-decision), and \u0022no decision\u0022 is a real outcome rather than a missing one.\r\n            \r\n\n\r\nDeciding an opportunity also appends an ProductManager.Domain.Common.FactEventKind.OpportunityDecided entry to\r\nthe bi-temporal ledger, carrying a self-contained copy of the deal. Calibration reads that\r\nledger, never these rows: a fit \u0022as of date D\u0022 must see what was recorded by D, and an\r\nopportunity row keeps changing afterwards.\r\n"
+    },
+    {
+      "name": "Channels",
+      "description": "Routes to market: reach into segments, opportunity origination, per-product bias. Direct sales\r\nis just another channel \u2014 there is no special-case \u0022direct\u0022 entity, and an opportunity with no\r\nchannel is simply unrouted."
+    },
+    {
+      "name": "Integrations",
+      "description": "Product\u2194Product edges with a quality score, including integrations with partial competitors.\r\nThey are what makes a best-of-breed choice rational: a candidate is judged partly on how well it\r\nfits the stack a firm already runs."
+    },
+    {
+      "name": "FirmRelationships",
+      "description": "\u0022Being a client\u0022 as an edge: firm holds product, serving these processes, at this share of list\r\nprice, from this date. The same shape carries competitors\u0027 client relationships \u2014 which is what\r\nmakes an incumbent\u0027s position measurable rather than assumed."
     },
     {
       "name": "Projects",

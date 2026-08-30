@@ -1,0 +1,1891 @@
+{
+  "marketDynamics": {
+    "marketName": "Institutional Portfolio Management",
+    "channels": [
+      {
+        "name": "Prime Broker Referrals",
+        "description": "Prime brokers steering their institutional clients toward a portfolio system during onboarding or a platform review.",
+        "originatesOpportunities": true,
+        "carriesOnlyListedProducts": false,
+        "segmentReaches": [
+          {
+            "segmentName": "Enterprise Asset Managers",
+            "reach": 0.6,
+            "originationShare": 0.35
+          },
+          {
+            "segmentName": "Mid-Market RIAs",
+            "reach": 0.25,
+            "originationShare": 0.08
+          },
+          {
+            "segmentName": "Boutique Family Offices",
+            "reach": 0.15,
+            "originationShare": 0.04
+          }
+        ],
+        "productAffinities": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "bias": 0.08
+          }
+        ]
+      },
+      {
+        "name": "Consultant Network",
+        "description": "Independent consultants advising RIAs and family offices on platform selection \u2014 historically tilted toward Apex's brand recognition.",
+        "originatesOpportunities": true,
+        "carriesOnlyListedProducts": false,
+        "segmentReaches": [
+          {
+            "segmentName": "Enterprise Asset Managers",
+            "reach": 0.35,
+            "originationShare": 0.12
+          },
+          {
+            "segmentName": "Mid-Market RIAs",
+            "reach": 0.55,
+            "originationShare": 0.22
+          },
+          {
+            "segmentName": "Boutique Family Offices",
+            "reach": 0.4,
+            "originationShare": 0.15
+          }
+        ],
+        "productAffinities": [
+          {
+            "productName": "Apex OMS Platform",
+            "bias": 0.35
+          },
+          {
+            "productName": "Meridian Portfolio Suite",
+            "bias": -0.1
+          }
+        ]
+      }
+    ],
+    "integrations": [
+      {
+        "productAName": "Meridian Trading Module",
+        "productBName": "Meridian Reporting Module",
+        "qualityScore": 0.9,
+        "notes": "Native cross-module integration \u2014 shared position and trade data model."
+      },
+      {
+        "productAName": "Meridian Portfolio Suite",
+        "productBName": "Apex OMS Platform",
+        "qualityScore": 0.35,
+        "notes": "The partial-competitor story: some enterprise clients run our reporting layer alongside Apex's OMS during a phased migration."
+      },
+      {
+        "productAName": "Meridian Portfolio Suite",
+        "productBName": "Ledgerline Portfolio Cloud",
+        "qualityScore": 0.3,
+        "notes": "An informal bridge a handful of boutique clients built while evaluating a full switch."
+      }
+    ],
+    "firms": [
+      {
+        "name": "Highland Peak Capital",
+        "segmentName": "Enterprise Asset Managers",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-03-01"
+          },
+          {
+            "productName": "Meridian Trading Module",
+            "servedProcessNames": [
+              "Order Management",
+              "Trade Execution",
+              "Rebalancing"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-09-01"
+          }
+        ]
+      },
+      {
+        "name": "Northbridge Asset Management",
+        "segmentName": "Enterprise Asset Managers",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-03-01"
+          },
+          {
+            "productName": "Meridian Trading Module",
+            "servedProcessNames": [
+              "Order Management",
+              "Trade Execution",
+              "Rebalancing"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-09-01"
+          },
+          {
+            "productName": "Meridian Reporting Module",
+            "servedProcessNames": [
+              "Performance Reporting",
+              "Client Reporting",
+              "Regulatory Reporting"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-09-01"
+          }
+        ]
+      },
+      {
+        "name": "Calloway Global Investors",
+        "segmentName": "Enterprise Asset Managers",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-03-01"
+          }
+        ]
+      },
+      {
+        "name": "Sentinel Rock Partners",
+        "segmentName": "Enterprise Asset Managers",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Apex OMS Platform.",
+        "relationships": [
+          {
+            "productName": "Apex OMS Platform",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-03-01"
+          }
+        ]
+      },
+      {
+        "name": "Wexford Capital Advisors",
+        "segmentName": "Enterprise Asset Managers",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Ledgerline Portfolio Cloud.",
+        "relationships": [
+          {
+            "productName": "Ledgerline Portfolio Cloud",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-03-01"
+          }
+        ]
+      },
+      {
+        "name": "Ashford Lane Management",
+        "segmentName": "Enterprise Asset Managers",
+        "epistemicStatus": "Observed",
+        "notes": "Not yet a client of ours or a named competitor.",
+        "relationships": []
+      },
+      {
+        "name": "Ironwood Institutional",
+        "segmentName": "Enterprise Asset Managers",
+        "epistemicStatus": "Inferred",
+        "notes": "Not yet a client of ours or a named competitor.",
+        "relationships": []
+      },
+      {
+        "name": "Corbett & Hale Capital",
+        "segmentName": "Enterprise Asset Managers",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Apex OMS Platform.",
+        "relationships": [
+          {
+            "productName": "Apex OMS Platform",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-03-01"
+          }
+        ]
+      },
+      {
+        "name": "Fenwick Ridge Advisors",
+        "segmentName": "Enterprise Asset Managers",
+        "epistemicStatus": "Observed",
+        "notes": "Not yet a client of ours or a named competitor.",
+        "relationships": []
+      },
+      {
+        "name": "Thistledown Asset Partners",
+        "segmentName": "Enterprise Asset Managers",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-03-01"
+          },
+          {
+            "productName": "Meridian Reporting Module",
+            "servedProcessNames": [
+              "Performance Reporting",
+              "Client Reporting",
+              "Regulatory Reporting"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2022-09-01"
+          }
+        ]
+      },
+      {
+        "name": "Brightwater Wealth Partners",
+        "segmentName": "Mid-Market RIAs",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-01-15"
+          },
+          {
+            "productName": "Meridian Trading Module",
+            "servedProcessNames": [
+              "Order Management",
+              "Trade Execution",
+              "Rebalancing"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-07-15"
+          }
+        ]
+      },
+      {
+        "name": "Cedar Hollow Advisors",
+        "segmentName": "Mid-Market RIAs",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-01-15"
+          },
+          {
+            "productName": "Meridian Reporting Module",
+            "servedProcessNames": [
+              "Performance Reporting",
+              "Client Reporting",
+              "Regulatory Reporting"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-07-15"
+          }
+        ]
+      },
+      {
+        "name": "Palmetto Ridge Capital",
+        "segmentName": "Mid-Market RIAs",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-01-15"
+          }
+        ]
+      },
+      {
+        "name": "Winslow & Voss RIA",
+        "segmentName": "Mid-Market RIAs",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Apex OMS Platform.",
+        "relationships": [
+          {
+            "productName": "Apex OMS Platform",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-01-15"
+          }
+        ]
+      },
+      {
+        "name": "Havermill Financial Group",
+        "segmentName": "Mid-Market RIAs",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Ledgerline Portfolio Cloud.",
+        "relationships": [
+          {
+            "productName": "Ledgerline Portfolio Cloud",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-01-15"
+          }
+        ]
+      },
+      {
+        "name": "Quarry Stone Advisors",
+        "segmentName": "Mid-Market RIAs",
+        "epistemicStatus": "Observed",
+        "notes": "Not yet a client of ours or a named competitor.",
+        "relationships": []
+      },
+      {
+        "name": "Birchgate Wealth",
+        "segmentName": "Mid-Market RIAs",
+        "epistemicStatus": "Inferred",
+        "notes": "Not yet a client of ours or a named competitor.",
+        "relationships": []
+      },
+      {
+        "name": "Stonebridge RIA Partners",
+        "segmentName": "Mid-Market RIAs",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Apex OMS Platform.",
+        "relationships": [
+          {
+            "productName": "Apex OMS Platform",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-01-15"
+          }
+        ]
+      },
+      {
+        "name": "Larkspur Capital Advisors",
+        "segmentName": "Mid-Market RIAs",
+        "epistemicStatus": "Observed",
+        "notes": "Not yet a client of ours or a named competitor.",
+        "relationships": []
+      },
+      {
+        "name": "Millbrook Financial Advisors",
+        "segmentName": "Mid-Market RIAs",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-01-15"
+          },
+          {
+            "productName": "Meridian Trading Module",
+            "servedProcessNames": [
+              "Order Management",
+              "Trade Execution",
+              "Rebalancing"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-07-15"
+          },
+          {
+            "productName": "Meridian Reporting Module",
+            "servedProcessNames": [
+              "Performance Reporting",
+              "Client Reporting",
+              "Regulatory Reporting"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-07-15"
+          }
+        ]
+      },
+      {
+        "name": "Ashcombe Family Office",
+        "segmentName": "Boutique Family Offices",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-09-01"
+          }
+        ]
+      },
+      {
+        "name": "Renwick Family Capital",
+        "segmentName": "Boutique Family Offices",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-09-01"
+          },
+          {
+            "productName": "Meridian Trading Module",
+            "servedProcessNames": [
+              "Order Management",
+              "Trade Execution",
+              "Rebalancing"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2024-03-01"
+          }
+        ]
+      },
+      {
+        "name": "Thornfield Private Wealth",
+        "segmentName": "Boutique Family Offices",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Ledgerline Portfolio Cloud.",
+        "relationships": [
+          {
+            "productName": "Ledgerline Portfolio Cloud",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-09-01"
+          }
+        ]
+      },
+      {
+        "name": "Oakleigh Family Holdings",
+        "segmentName": "Boutique Family Offices",
+        "epistemicStatus": "Observed",
+        "notes": "Not yet a client of ours or a named competitor.",
+        "relationships": []
+      },
+      {
+        "name": "Marlowe Family Office",
+        "segmentName": "Boutique Family Offices",
+        "epistemicStatus": "Inferred",
+        "notes": "Not yet a client of ours or a named competitor.",
+        "relationships": []
+      },
+      {
+        "name": "Kingsford Family Capital",
+        "segmentName": "Boutique Family Offices",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Apex OMS Platform.",
+        "relationships": [
+          {
+            "productName": "Apex OMS Platform",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-09-01"
+          }
+        ]
+      },
+      {
+        "name": "Wrenfield Private Office",
+        "segmentName": "Boutique Family Offices",
+        "epistemicStatus": "Observed",
+        "notes": "Not yet a client of ours or a named competitor.",
+        "relationships": []
+      },
+      {
+        "name": "Hollowbrook Family Trust",
+        "segmentName": "Boutique Family Offices",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Meridian Portfolio Suite.",
+        "relationships": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-09-01"
+          }
+        ]
+      },
+      {
+        "name": "Sablewood Family Capital",
+        "segmentName": "Boutique Family Offices",
+        "epistemicStatus": "Observed",
+        "notes": "Not yet a client of ours or a named competitor.",
+        "relationships": []
+      },
+      {
+        "name": "Pemberton Family Office",
+        "segmentName": "Boutique Family Offices",
+        "epistemicStatus": "Observed",
+        "notes": "Existing client of Apex OMS Platform.",
+        "relationships": [
+          {
+            "productName": "Apex OMS Platform",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2023-09-01"
+          }
+        ]
+      }
+    ],
+    "assumptionSets": [
+      {
+        "name": "FY27 Baseline",
+        "notes": "Phase 3 addendum: choice-model parameters (switching cost, expansion propensity, sales-cycle lognormals, per-process importance weights, brand bias) layered onto the Phase 2 flow parameters of the same assumption set.",
+        "parameters": [
+          {
+            "choiceKind": "PriceScale",
+            "distType": "Point",
+            "p1": 5000,
+            "provenance": "Asserted",
+            "rationale": "Anchors the utility scale: at the default price sensitivity of 1.0, $5,000 of monthly subscription costs exactly one unit of utility - and one unit of utility is what a maximum-importance process gains going from not-playing to gold. $5,000/month is the middle of this market's list prices ($4,000 boutique to $8,000 enterprise for the suite), i.e. a firm will trade roughly the whole platform price for market-leading capability on the single process it cares most about. The engine default of 1,000 made the price term 4-8 utility units against a total coverage term of at most ~2.5, so no offer could ever beat the outside option and 84% of deals ended in no-decision regardless of what we shipped."
+          },
+          {
+            "choiceKind": "NoDecisionUtility",
+            "distType": "Point",
+            "p1": 0,
+            "provenance": "Asserted",
+            "rationale": "The outside option is the origin of the utility scale: 'keep the status quo' scores zero, and every candidate is measured as coverage minus price relative to it. Asserted explicitly rather than left to the default so the anchor is visible with its provenance. With price-scale 5,000 this puts baseline no-decision at roughly one evaluated opportunity in six."
+          },
+          {
+            "choiceKind": "SwitchingCostBase",
+            "distType": "Point",
+            "p1": 0.35,
+            "provenance": "Asserted",
+            "rationale": "Baseline switching friction: moving off an incumbent costs about 0.35 utility units, i.e. $1,750/month-equivalent of disruption on the price scale - roughly a third of a mid-market monthly subscription."
+          },
+          {
+            "choiceKind": "WorkaroundCostWeight",
+            "distType": "Point",
+            "p1": 0.0002,
+            "provenance": "Asserted",
+            "rationale": "Puts a need's monthly workaround cost on exactly the same utility scale as the price term: 1 / choice.price-scale (5,000), so a dollar of workaround cost and a dollar of subscription hurt equally. A $600/month filing workaround is then worth 0.12 utility units."
+          },
+          {
+            "choiceKind": "ExpansionPropensity",
+            "distType": "Point",
+            "p1": 0.12,
+            "provenance": "Asserted",
+            "rationale": "Baseline probability an opportunity's scope expands mid-cycle when we hold a coverage advantage on adjacent processes."
+          },
+          {
+            "choiceKind": "SalesCycleMu",
+            "segmentName": "Enterprise Asset Managers",
+            "distType": "Point",
+            "p1": 1.9459,
+            "p2": 0,
+            "provenance": "Asserted",
+            "rationale": "log(7 months) \u2014 typical enterprise RFP cycle length."
+          },
+          {
+            "choiceKind": "SalesCycleSigma",
+            "segmentName": "Enterprise Asset Managers",
+            "distType": "Point",
+            "p1": 0.35,
+            "p2": 0,
+            "provenance": "Asserted",
+            "rationale": "Enterprise cycle-length spread on the log scale."
+          },
+          {
+            "choiceKind": "SalesCycleMu",
+            "segmentName": "Mid-Market RIAs",
+            "distType": "Point",
+            "p1": 1.2528,
+            "p2": 0,
+            "provenance": "Asserted",
+            "rationale": "log(3.5 months) \u2014 typical mid-market evaluation length."
+          },
+          {
+            "choiceKind": "SalesCycleSigma",
+            "segmentName": "Mid-Market RIAs",
+            "distType": "Point",
+            "p1": 0.3,
+            "p2": 0,
+            "provenance": "Asserted",
+            "rationale": "Mid-market cycle-length spread on the log scale."
+          },
+          {
+            "choiceKind": "SalesCycleMu",
+            "segmentName": "Boutique Family Offices",
+            "distType": "Point",
+            "p1": 0.6931,
+            "p2": 0,
+            "provenance": "Asserted",
+            "rationale": "log(2 months) \u2014 boutique deals move fast, often a single decision-maker."
+          },
+          {
+            "choiceKind": "SalesCycleSigma",
+            "segmentName": "Boutique Family Offices",
+            "distType": "Point",
+            "p1": 0.25,
+            "p2": 0,
+            "provenance": "Asserted",
+            "rationale": "Boutique cycle-length spread on the log scale."
+          },
+          {
+            "choiceKind": "SalesCycleMu",
+            "segmentName": "Enterprise Asset Managers",
+            "moduleProductName": "Meridian Portfolio Suite",
+            "distType": "Point",
+            "p1": 1.7918,
+            "p2": 0,
+            "provenance": "Asserted",
+            "rationale": "log(6 months) \u2014 our flagship suite is well understood in enterprise RFPs, slightly faster than the segment average."
+          },
+          {
+            "choiceKind": "SalesCycleSigma",
+            "segmentName": "Enterprise Asset Managers",
+            "moduleProductName": "Meridian Portfolio Suite",
+            "distType": "Point",
+            "p1": 0.3,
+            "p2": 0,
+            "provenance": "Asserted",
+            "rationale": "Product-specific cycle-length spread for the flagship suite in this segment."
+          },
+          {
+            "choiceKind": "ImportanceWeight",
+            "segmentName": "Enterprise Asset Managers",
+            "businessProcessName": "Portfolio Construction",
+            "distType": "Normal",
+            "p1": 0.85,
+            "p2": 0.08,
+            "provenance": "Asserted",
+            "rationale": "Enterprise buyers weight core portfolio construction highest among all processes."
+          },
+          {
+            "choiceKind": "ImportanceWeight",
+            "segmentName": "Enterprise Asset Managers",
+            "businessProcessName": "Compliance Monitoring",
+            "distType": "Normal",
+            "p1": 0.8,
+            "p2": 0.1,
+            "provenance": "Asserted",
+            "rationale": "Regulatory exposure makes compliance monitoring a top enterprise concern."
+          },
+          {
+            "choiceKind": "ImportanceWeight",
+            "segmentName": "Mid-Market RIAs",
+            "businessProcessName": "Portfolio Construction",
+            "distType": "Normal",
+            "p1": 0.7,
+            "p2": 0.1,
+            "provenance": "Asserted",
+            "rationale": "Mid-market RIAs care about portfolio construction, but less exclusively than enterprise buyers."
+          },
+          {
+            "choiceKind": "ImportanceWeight",
+            "segmentName": "Mid-Market RIAs",
+            "businessProcessName": "Client Reporting",
+            "distType": "Normal",
+            "p1": 0.65,
+            "p2": 0.12,
+            "provenance": "Asserted",
+            "rationale": "Client-facing reporting quality is a differentiator in RIA sales cycles."
+          },
+          {
+            "choiceKind": "ImportanceWeight",
+            "segmentName": "Boutique Family Offices",
+            "businessProcessName": "Client Reporting",
+            "distType": "Normal",
+            "p1": 0.75,
+            "p2": 0.1,
+            "provenance": "Asserted",
+            "rationale": "Boutique family offices sell white-glove reporting to their own principals \u2014 this is a top priority."
+          },
+          {
+            "choiceKind": "ImportanceWeight",
+            "segmentName": "Boutique Family Offices",
+            "businessProcessName": "Compliance Monitoring",
+            "distType": "Normal",
+            "p1": 0.6,
+            "p2": 0.15,
+            "provenance": "Asserted",
+            "rationale": "Compliance matters less acutely for boutique family offices than for regulated enterprise managers."
+          },
+          {
+            "choiceKind": "BrandBias",
+            "moduleProductName": "Meridian Portfolio Suite",
+            "segmentName": "Enterprise Asset Managers",
+            "distType": "Point",
+            "p1": 0.1,
+            "p2": 0,
+            "provenance": "Asserted",
+            "rationale": "Established brand recognition among enterprise asset managers."
+          },
+          {
+            "choiceKind": "BrandBias",
+            "moduleProductName": "Apex OMS Platform",
+            "segmentName": "Boutique Family Offices",
+            "distType": "Point",
+            "p1": -0.05,
+            "p2": 0,
+            "provenance": "Asserted",
+            "rationale": "Apex is less known/trusted among boutique family offices than in the enterprise segment."
+          }
+        ]
+      }
+    ],
+    "opportunities": [
+      {
+        "firmName": "Highland Peak Capital",
+        "channelName": "Prime Broker Referrals",
+        "openedDate": "2025-09-01",
+        "qualifiedDate": null,
+        "decidedDate": "2026-04-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Performance Reporting",
+          "Client Reporting"
+        ],
+        "winningProductName": "Meridian Reporting Module",
+        "crossSellModuleProductName": "Meridian Reporting Module",
+        "notes": "Cross-sell opportunity at Highland Peak Capital. Originated via Prime Broker Referrals.",
+        "recordedDate": "2026-04-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Northbridge Asset Management",
+        "channelName": "Consultant Network",
+        "openedDate": "2025-10-01",
+        "qualifiedDate": "2025-12-01",
+        "decidedDate": "2026-05-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Portfolio Construction",
+          "Compliance Monitoring"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Northbridge Asset Management. Originated via Consultant Network.",
+        "recordedDate": "2026-05-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Calloway Global Investors",
+        "channelName": null,
+        "openedDate": "2025-11-01",
+        "qualifiedDate": "2026-01-01",
+        "decidedDate": "2026-06-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Client Reporting"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Calloway Global Investors.",
+        "recordedDate": "2026-06-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Sentinel Rock Partners",
+        "channelName": null,
+        "openedDate": "2025-12-01",
+        "qualifiedDate": "2026-02-01",
+        "decidedDate": "2026-07-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Client Reporting",
+          "Regulatory Reporting"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Sentinel Rock Partners.",
+        "recordedDate": "2026-07-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Wexford Capital Advisors",
+        "channelName": null,
+        "openedDate": "2026-01-01",
+        "qualifiedDate": "2026-03-01",
+        "decidedDate": "2026-08-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Trade Execution"
+        ],
+        "winningProductName": "Apex OMS Platform",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Wexford Capital Advisors.",
+        "recordedDate": "2026-08-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Ashford Lane Management",
+        "channelName": "Prime Broker Referrals",
+        "openedDate": "2025-09-01",
+        "qualifiedDate": "2025-11-01",
+        "decidedDate": "2026-04-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Order Management",
+          "Trade Execution"
+        ],
+        "winningProductName": "Ledgerline Portfolio Cloud",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Ashford Lane Management. Originated via Prime Broker Referrals.",
+        "recordedDate": "2026-04-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Ironwood Institutional",
+        "channelName": "Consultant Network",
+        "openedDate": "2025-10-01",
+        "qualifiedDate": "2025-12-01",
+        "decidedDate": "2026-05-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Compliance Monitoring",
+          "Regulatory Reporting"
+        ],
+        "winningProductName": "Apex OMS Platform",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Ironwood Institutional. Originated via Consultant Network.",
+        "recordedDate": "2026-05-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Corbett & Hale Capital",
+        "channelName": null,
+        "openedDate": "2025-11-01",
+        "qualifiedDate": "2026-01-01",
+        "decidedDate": "2026-06-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Rebalancing"
+        ],
+        "winningProductName": "Ledgerline Portfolio Cloud",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Corbett & Hale Capital.",
+        "recordedDate": "2026-06-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Fenwick Ridge Advisors",
+        "channelName": null,
+        "openedDate": "2025-12-01",
+        "qualifiedDate": "2026-02-01",
+        "decidedDate": "2026-07-01",
+        "outcome": "NoDecision",
+        "scopeProcessNames": [
+          "Portfolio Construction",
+          "Client Reporting",
+          "Compliance Monitoring"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Fenwick Ridge Advisors.",
+        "recordedDate": "2026-07-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Thistledown Asset Partners",
+        "channelName": null,
+        "openedDate": "2026-01-01",
+        "qualifiedDate": "2026-03-01",
+        "decidedDate": "2026-08-01",
+        "outcome": "NoDecision",
+        "scopeProcessNames": [
+          "Order Management",
+          "Trade Execution"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": "Meridian Trading Module",
+        "notes": "Cross-sell opportunity at Thistledown Asset Partners.",
+        "recordedDate": "2026-08-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Brightwater Wealth Partners",
+        "channelName": "Prime Broker Referrals",
+        "openedDate": "2025-09-01",
+        "qualifiedDate": "2025-10-01",
+        "decidedDate": "2025-12-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Portfolio Construction"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Brightwater Wealth Partners. Originated via Prime Broker Referrals.",
+        "recordedDate": "2026-02-01",
+        "lateRecorded": true
+      },
+      {
+        "firmName": "Cedar Hollow Advisors",
+        "channelName": "Consultant Network",
+        "openedDate": "2025-10-01",
+        "qualifiedDate": "2025-11-01",
+        "decidedDate": "2026-01-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Portfolio Construction",
+          "Compliance Monitoring"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Cedar Hollow Advisors. Originated via Consultant Network.",
+        "recordedDate": "2026-01-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Palmetto Ridge Capital",
+        "channelName": null,
+        "openedDate": "2025-11-01",
+        "qualifiedDate": "2025-12-01",
+        "decidedDate": "2026-02-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Client Reporting"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Palmetto Ridge Capital.",
+        "recordedDate": "2026-02-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Winslow & Voss RIA",
+        "channelName": null,
+        "openedDate": "2025-12-01",
+        "qualifiedDate": null,
+        "decidedDate": "2026-03-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Client Reporting",
+          "Regulatory Reporting"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Winslow & Voss RIA.",
+        "recordedDate": "2026-03-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Havermill Financial Group",
+        "channelName": null,
+        "openedDate": "2026-01-01",
+        "qualifiedDate": "2026-02-01",
+        "decidedDate": "2026-04-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Trade Execution"
+        ],
+        "winningProductName": "Apex OMS Platform",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Havermill Financial Group.",
+        "recordedDate": "2026-04-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Quarry Stone Advisors",
+        "channelName": "Prime Broker Referrals",
+        "openedDate": "2026-02-01",
+        "qualifiedDate": "2026-03-01",
+        "decidedDate": "2026-05-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Order Management",
+          "Trade Execution"
+        ],
+        "winningProductName": "Ledgerline Portfolio Cloud",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Quarry Stone Advisors. Originated via Prime Broker Referrals.",
+        "recordedDate": "2026-05-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Birchgate Wealth",
+        "channelName": "Consultant Network",
+        "openedDate": "2026-03-01",
+        "qualifiedDate": "2026-04-01",
+        "decidedDate": "2026-06-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Compliance Monitoring",
+          "Regulatory Reporting"
+        ],
+        "winningProductName": "Apex OMS Platform",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Birchgate Wealth. Originated via Consultant Network.",
+        "recordedDate": "2026-06-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Stonebridge RIA Partners",
+        "channelName": null,
+        "openedDate": "2026-04-01",
+        "qualifiedDate": "2026-05-01",
+        "decidedDate": "2026-07-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Rebalancing"
+        ],
+        "winningProductName": "Ledgerline Portfolio Cloud",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Stonebridge RIA Partners.",
+        "recordedDate": "2026-07-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Larkspur Capital Advisors",
+        "channelName": null,
+        "openedDate": "2026-05-01",
+        "qualifiedDate": "2026-06-01",
+        "decidedDate": "2026-08-01",
+        "outcome": "NoDecision",
+        "scopeProcessNames": [
+          "Portfolio Construction",
+          "Client Reporting",
+          "Compliance Monitoring"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Larkspur Capital Advisors.",
+        "recordedDate": "2026-08-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Millbrook Financial Advisors",
+        "channelName": null,
+        "openedDate": "2025-09-01",
+        "qualifiedDate": "2025-10-01",
+        "decidedDate": "2025-12-01",
+        "outcome": "NoDecision",
+        "scopeProcessNames": [
+          "Risk Analytics"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Millbrook Financial Advisors.",
+        "recordedDate": "2026-02-01",
+        "lateRecorded": true
+      },
+      {
+        "firmName": "Ashcombe Family Office",
+        "channelName": "Prime Broker Referrals",
+        "openedDate": "2025-09-01",
+        "qualifiedDate": "2025-10-01",
+        "decidedDate": "2025-11-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Portfolio Construction"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Ashcombe Family Office. Originated via Prime Broker Referrals.",
+        "recordedDate": "2026-01-01",
+        "lateRecorded": true
+      },
+      {
+        "firmName": "Renwick Family Capital",
+        "channelName": "Consultant Network",
+        "openedDate": "2025-10-01",
+        "qualifiedDate": "2025-11-01",
+        "decidedDate": "2025-12-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Portfolio Construction",
+          "Compliance Monitoring"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Renwick Family Capital. Originated via Consultant Network.",
+        "recordedDate": "2025-12-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Thornfield Private Wealth",
+        "channelName": null,
+        "openedDate": "2025-11-01",
+        "qualifiedDate": "2025-12-01",
+        "decidedDate": "2026-01-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Client Reporting"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Thornfield Private Wealth.",
+        "recordedDate": "2026-01-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Oakleigh Family Holdings",
+        "channelName": null,
+        "openedDate": "2025-12-01",
+        "qualifiedDate": "2026-01-01",
+        "decidedDate": "2026-02-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Client Reporting",
+          "Regulatory Reporting"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Oakleigh Family Holdings.",
+        "recordedDate": "2026-02-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Marlowe Family Office",
+        "channelName": null,
+        "openedDate": "2026-01-01",
+        "qualifiedDate": "2026-02-01",
+        "decidedDate": "2026-03-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Trade Execution"
+        ],
+        "winningProductName": "Apex OMS Platform",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Marlowe Family Office.",
+        "recordedDate": "2026-03-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Kingsford Family Capital",
+        "channelName": "Prime Broker Referrals",
+        "openedDate": "2026-02-01",
+        "qualifiedDate": "2026-03-01",
+        "decidedDate": "2026-04-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Order Management",
+          "Trade Execution"
+        ],
+        "winningProductName": "Ledgerline Portfolio Cloud",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Kingsford Family Capital. Originated via Prime Broker Referrals.",
+        "recordedDate": "2026-04-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Wrenfield Private Office",
+        "channelName": "Consultant Network",
+        "openedDate": "2026-03-01",
+        "qualifiedDate": null,
+        "decidedDate": "2026-05-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Compliance Monitoring",
+          "Regulatory Reporting"
+        ],
+        "winningProductName": "Apex OMS Platform",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Wrenfield Private Office. Originated via Consultant Network.",
+        "recordedDate": "2026-05-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Hollowbrook Family Trust",
+        "channelName": null,
+        "openedDate": "2026-04-01",
+        "qualifiedDate": "2026-05-01",
+        "decidedDate": "2026-06-01",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Order Management",
+          "Trade Execution"
+        ],
+        "winningProductName": "Ledgerline Portfolio Cloud",
+        "crossSellModuleProductName": "Meridian Trading Module",
+        "notes": "Cross-sell opportunity at Hollowbrook Family Trust.",
+        "recordedDate": "2026-06-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Sablewood Family Capital",
+        "channelName": null,
+        "openedDate": "2026-05-01",
+        "qualifiedDate": "2026-06-01",
+        "decidedDate": "2026-07-01",
+        "outcome": "NoDecision",
+        "scopeProcessNames": [
+          "Portfolio Construction",
+          "Client Reporting",
+          "Compliance Monitoring"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Sablewood Family Capital.",
+        "recordedDate": "2026-07-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Pemberton Family Office",
+        "channelName": null,
+        "openedDate": "2026-06-01",
+        "qualifiedDate": "2026-07-01",
+        "decidedDate": "2026-08-01",
+        "outcome": "NoDecision",
+        "scopeProcessNames": [
+          "Risk Analytics"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Pemberton Family Office.",
+        "recordedDate": "2026-08-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Highland Peak Capital",
+        "channelName": "Prime Broker Referrals",
+        "openedDate": "2025-09-01",
+        "qualifiedDate": "2025-11-01",
+        "decidedDate": "2026-04-01",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Portfolio Construction"
+        ],
+        "winningProductName": "Meridian Portfolio Suite",
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Highland Peak Capital. Originated via Prime Broker Referrals.",
+        "recordedDate": "2026-04-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Thistledown Asset Partners",
+        "channelName": null,
+        "openedDate": "2026-01-01",
+        "qualifiedDate": null,
+        "decidedDate": "2026-08-01",
+        "outcome": "NoDecision",
+        "scopeProcessNames": [
+          "Risk Analytics"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "New-logo opportunity at Thistledown Asset Partners.",
+        "recordedDate": "2026-08-01",
+        "lateRecorded": false
+      }
+    ],
+    "churnEvents": [
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "effectiveDate": "2025-11-15",
+        "notes": "Logo churn observed in the ordinary course (not attributed to a specific market event).",
+        "recordedDate": "2025-11-15"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "effectiveDate": "2026-04-10",
+        "notes": "Logo churn observed in the ordinary course (not attributed to a specific market event).",
+        "recordedDate": "2026-04-10"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "effectiveDate": "2025-10-05",
+        "notes": "Logo churn observed in the ordinary course (not attributed to a specific market event).",
+        "recordedDate": "2025-10-05"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "effectiveDate": "2026-01-20",
+        "notes": "Logo churn observed in the ordinary course (not attributed to a specific market event).",
+        "recordedDate": "2026-01-20"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "effectiveDate": "2026-06-12",
+        "notes": "Logo churn observed in the ordinary course (not attributed to a specific market event).",
+        "recordedDate": "2026-06-12"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "effectiveDate": "2025-12-01",
+        "notes": "Logo churn observed in the ordinary course (not attributed to a specific market event).",
+        "recordedDate": "2025-12-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "effectiveDate": "2026-03-18",
+        "notes": "Logo churn observed in the ordinary course (not attributed to a specific market event).",
+        "recordedDate": "2026-03-18"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "effectiveDate": "2026-07-22",
+        "notes": "Logo churn observed in the ordinary course (not attributed to a specific market event).",
+        "recordedDate": "2026-07-22"
+      }
+    ],
+    "arrivalCounts": [
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-09-01",
+        "count": 0,
+        "exposure": 1.0,
+        "recordedDate": "2025-09-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-09-01",
+        "count": 7,
+        "exposure": 180.0,
+        "recordedDate": "2025-09-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-09-01",
+        "count": 3,
+        "exposure": 1.0,
+        "recordedDate": "2025-09-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-09-01",
+        "count": 54,
+        "exposure": 1200.0,
+        "recordedDate": "2025-09-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-09-01",
+        "count": 0,
+        "exposure": 1.0,
+        "recordedDate": "2025-09-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-09-01",
+        "count": 14,
+        "exposure": 400.0,
+        "recordedDate": "2025-09-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-10-01",
+        "count": 1,
+        "exposure": 1.0,
+        "recordedDate": "2025-10-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-10-01",
+        "count": 8,
+        "exposure": 180.0,
+        "recordedDate": "2025-10-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-10-01",
+        "count": 4,
+        "exposure": 1.0,
+        "recordedDate": "2025-10-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-10-01",
+        "count": 55,
+        "exposure": 1200.0,
+        "recordedDate": "2025-10-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-10-01",
+        "count": 1,
+        "exposure": 1.0,
+        "recordedDate": "2025-10-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-10-01",
+        "count": 15,
+        "exposure": 400.0,
+        "recordedDate": "2025-10-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-11-01",
+        "count": 2,
+        "exposure": 1.0,
+        "recordedDate": "2025-11-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-11-01",
+        "count": 9,
+        "exposure": 180.0,
+        "recordedDate": "2025-11-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-11-01",
+        "count": 5,
+        "exposure": 1.0,
+        "recordedDate": "2025-11-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-11-01",
+        "count": 56,
+        "exposure": 1200.0,
+        "recordedDate": "2025-11-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-11-01",
+        "count": 2,
+        "exposure": 1.0,
+        "recordedDate": "2025-11-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-11-01",
+        "count": 16,
+        "exposure": 400.0,
+        "recordedDate": "2025-11-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-12-01",
+        "count": 3,
+        "exposure": 1.0,
+        "recordedDate": "2025-12-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-12-01",
+        "count": 10,
+        "exposure": 180.0,
+        "recordedDate": "2025-12-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-12-01",
+        "count": 6,
+        "exposure": 1.0,
+        "recordedDate": "2025-12-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-12-01",
+        "count": 57,
+        "exposure": 1200.0,
+        "recordedDate": "2025-12-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-12-01",
+        "count": 3,
+        "exposure": 1.0,
+        "recordedDate": "2025-12-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-12-01",
+        "count": 17,
+        "exposure": 400.0,
+        "recordedDate": "2025-12-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-01-01",
+        "count": 0,
+        "exposure": 1.0,
+        "recordedDate": "2026-01-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-01-01",
+        "count": 7,
+        "exposure": 180.0,
+        "recordedDate": "2026-01-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-01-01",
+        "count": 3,
+        "exposure": 1.0,
+        "recordedDate": "2026-01-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-01-01",
+        "count": 54,
+        "exposure": 1200.0,
+        "recordedDate": "2026-01-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-01-01",
+        "count": 0,
+        "exposure": 1.0,
+        "recordedDate": "2026-01-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-01-01",
+        "count": 14,
+        "exposure": 400.0,
+        "recordedDate": "2026-01-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-02-01",
+        "count": 1,
+        "exposure": 1.0,
+        "recordedDate": "2026-02-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-02-01",
+        "count": 8,
+        "exposure": 180.0,
+        "recordedDate": "2026-02-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-02-01",
+        "count": 4,
+        "exposure": 1.0,
+        "recordedDate": "2026-02-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-02-01",
+        "count": 55,
+        "exposure": 1200.0,
+        "recordedDate": "2026-02-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-02-01",
+        "count": 1,
+        "exposure": 1.0,
+        "recordedDate": "2026-02-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-02-01",
+        "count": 15,
+        "exposure": 400.0,
+        "recordedDate": "2026-02-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-03-01",
+        "count": 2,
+        "exposure": 1.0,
+        "recordedDate": "2026-03-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-03-01",
+        "count": 9,
+        "exposure": 180.0,
+        "recordedDate": "2026-03-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-03-01",
+        "count": 5,
+        "exposure": 1.0,
+        "recordedDate": "2026-03-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-03-01",
+        "count": 56,
+        "exposure": 1200.0,
+        "recordedDate": "2026-03-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-03-01",
+        "count": 2,
+        "exposure": 1.0,
+        "recordedDate": "2026-03-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-03-01",
+        "count": 16,
+        "exposure": 400.0,
+        "recordedDate": "2026-03-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-04-01",
+        "count": 3,
+        "exposure": 1.0,
+        "recordedDate": "2026-04-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-04-01",
+        "count": 10,
+        "exposure": 180.0,
+        "recordedDate": "2026-04-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-04-01",
+        "count": 6,
+        "exposure": 1.0,
+        "recordedDate": "2026-04-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-04-01",
+        "count": 57,
+        "exposure": 1200.0,
+        "recordedDate": "2026-04-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-04-01",
+        "count": 3,
+        "exposure": 1.0,
+        "recordedDate": "2026-04-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-04-01",
+        "count": 17,
+        "exposure": 400.0,
+        "recordedDate": "2026-04-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-05-01",
+        "count": 0,
+        "exposure": 1.0,
+        "recordedDate": "2026-05-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-05-01",
+        "count": 7,
+        "exposure": 180.0,
+        "recordedDate": "2026-05-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-05-01",
+        "count": 3,
+        "exposure": 1.0,
+        "recordedDate": "2026-05-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-05-01",
+        "count": 54,
+        "exposure": 1200.0,
+        "recordedDate": "2026-05-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-05-01",
+        "count": 0,
+        "exposure": 1.0,
+        "recordedDate": "2026-05-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-05-01",
+        "count": 14,
+        "exposure": 400.0,
+        "recordedDate": "2026-05-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-06-01",
+        "count": 1,
+        "exposure": 1.0,
+        "recordedDate": "2026-06-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-06-01",
+        "count": 8,
+        "exposure": 180.0,
+        "recordedDate": "2026-06-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-06-01",
+        "count": 4,
+        "exposure": 1.0,
+        "recordedDate": "2026-06-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-06-01",
+        "count": 55,
+        "exposure": 1200.0,
+        "recordedDate": "2026-06-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-06-01",
+        "count": 1,
+        "exposure": 1.0,
+        "recordedDate": "2026-06-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-06-01",
+        "count": 15,
+        "exposure": 400.0,
+        "recordedDate": "2026-06-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-07-01",
+        "count": 2,
+        "exposure": 1.0,
+        "recordedDate": "2026-07-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-07-01",
+        "count": 9,
+        "exposure": 180.0,
+        "recordedDate": "2026-07-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-07-01",
+        "count": 5,
+        "exposure": 1.0,
+        "recordedDate": "2026-07-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-07-01",
+        "count": 56,
+        "exposure": 1200.0,
+        "recordedDate": "2026-07-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-07-01",
+        "count": 2,
+        "exposure": 1.0,
+        "recordedDate": "2026-07-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-07-01",
+        "count": 16,
+        "exposure": 400.0,
+        "recordedDate": "2026-07-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-08-01",
+        "count": 3,
+        "exposure": 1.0,
+        "recordedDate": "2026-08-01"
+      },
+      {
+        "segmentName": "Enterprise Asset Managers",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-08-01",
+        "count": 10,
+        "exposure": 180.0,
+        "recordedDate": "2026-08-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-08-01",
+        "count": 6,
+        "exposure": 1.0,
+        "recordedDate": "2026-08-01"
+      },
+      {
+        "segmentName": "Mid-Market RIAs",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-08-01",
+        "count": 57,
+        "exposure": 1200.0,
+        "recordedDate": "2026-08-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "NewFirmArrival",
+        "month": "2026-08-01",
+        "count": 3,
+        "exposure": 1.0,
+        "recordedDate": "2026-08-01"
+      },
+      {
+        "segmentName": "Boutique Family Offices",
+        "flowKind": "ConversionToMarket",
+        "month": "2026-08-01",
+        "count": 17,
+        "exposure": 400.0,
+        "recordedDate": "2026-08-01"
+      }
+    ]
+  }
+}

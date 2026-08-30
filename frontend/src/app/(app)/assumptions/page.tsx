@@ -136,7 +136,13 @@ export default function AssumptionsPage() {
   const covariates = useCovariates(workspaceId);
   const modules = useAllModules(workspaceId);
 
-  const [chosenId, setChosenId] = React.useState<string | null>(null);
+  // Deep link from Calibration ("open the fitted set"): /assumptions?set=<id>
+  const [chosenId, setChosenId] = React.useState<string | null>(() =>
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("set"),
+  );
+
   const rows = React.useMemo(() => flattenSetTree(sets.data ?? []), [sets.data]);
   const selected =
     sets.data?.find((s) => s.id === chosenId) ?? rows[0]?.set ?? null;

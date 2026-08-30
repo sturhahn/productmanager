@@ -212,6 +212,15 @@ public sealed record FactEventDto(
 /// <c>kind = CovariateObserved</c>, <c>subjectType = "Covariate"</c>, <c>subjectId</c> = the
 /// covariate, and a payload of <c>{"value": 1234.5}</c> — that is what the covariate history
 /// endpoint reads back.
+///
+/// <para>
+/// <c>recordedAt</c> is the <b>import / backfill path</b>: when history is loaded from a CRM export,
+/// a seed file or a transcript, the honest recorded date is when that observation was originally
+/// known, not when the loader ran. Omit it for a live observation and the server stamps now. It may
+/// be backdated but never post-dated — a fact cannot have been known before it was written — and
+/// <c>effectiveDate</c> rules are unchanged either way (a fact may be effective before, on, or after
+/// the date it was recorded).
+/// </para>
 /// </summary>
 public sealed record CreateFactEventRequest(
     [Required] Guid WorkspaceId,
@@ -220,7 +229,8 @@ public sealed record CreateFactEventRequest(
     string? SubjectType = null,
     Guid? SubjectId = null,
     string? PayloadJson = null,
-    string? Notes = null);
+    string? Notes = null,
+    DateTimeOffset? RecordedAt = null);
 
 public static class FactMapping
 {

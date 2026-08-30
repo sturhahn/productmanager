@@ -111,3 +111,29 @@ public sealed class SegmentModulePenetration
         ArpuPerMonth = arpuPerMonth;
     }
 }
+
+/// <summary>
+/// Share of a segment's firms using one alternative approach to a business process. Shares are
+/// normalized where they are consumed, so a mix that does not sum to 1 is a rounding detail rather
+/// than an error. Owned by <see cref="ClientSegment"/>.
+/// </summary>
+public sealed class SegmentApproachAdoption
+{
+    public Guid ApproachId { get; private set; }
+
+    /// <summary>Share of the segment's firms on this approach, in [0, 1].</summary>
+    public double Share { get; private set; }
+
+    private SegmentApproachAdoption() { } // EF
+
+    public SegmentApproachAdoption(Guid approachId, double share)
+    {
+        if (approachId == Guid.Empty)
+            throw new ArgumentException("ApproachId is required.", nameof(approachId));
+        if (share is < 0 or > 1 || double.IsNaN(share))
+            throw new ArgumentOutOfRangeException(nameof(share), "An adoption share must be in [0, 1].");
+
+        ApproachId = approachId;
+        Share = share;
+    }
+}

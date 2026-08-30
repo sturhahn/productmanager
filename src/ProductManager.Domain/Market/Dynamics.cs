@@ -25,21 +25,49 @@ public sealed class Opportunity : Entity
     /// <summary>The product that won (ours or a competitor's), when decided Won.</summary>
     public Guid? WinningProductId { get; private set; }
 
+    /// <summary>
+    /// The module being sold when this is a cross-sell — an opportunity scoped to new processes at
+    /// an existing client. Non-null *is* the cross-sell flag: cross-sell needs no special case in
+    /// the model, only a pointer at which module it was selling, because that is what calibration
+    /// keys a CrossSellRate on.
+    /// </summary>
+    public Guid? CrossSellModuleProductId { get; private set; }
+
     public string? Notes { get; set; }
 
     public IReadOnlyCollection<OpportunityScopeItem> Scope => _scope.AsReadOnly();
 
     private Opportunity() { } // EF
 
-    public Opportunity(Guid firmId, DateTimeOffset openedAt, Guid? channelId = null)
+    public Opportunity(Guid firmId, DateTimeOffset openedAt, Guid? channelId = null,
+        Guid? crossSellModuleProductId = null)
     {
         if (firmId == Guid.Empty) throw new ArgumentException("FirmId is required.", nameof(firmId));
         FirmId = firmId;
         OpenedAt = openedAt;
         ChannelId = channelId;
+        CrossSellModuleProductId = crossSellModuleProductId;
     }
 
     public bool IsDecided => Stage is OpportunityStage.Won or OpportunityStage.Lost or OpportunityStage.NoDecision;
+
+    /// <summary>True when this opportunity sells new processes into an existing client relationship.</summary>
+    public bool IsCrossSell => CrossSellModuleProductId is not null;
+
+    /// <summary>Replaces the competitors present in the deal (deduplicated).</summary>
+    public void SetCompetitors(IEnumerable<Guid> competitorIds)
+    {
+        ArgumentNullException.ThrowIfNull(competitorIds);
+        CompetitorIds = competitorIds.Where(c => c != Guid.Empty).Distinct().ToList();
+    }
+
+    /// <summary>Points the opportunity at the module it cross-sells (or clears it). Not after a decision.</summary>
+    public void SetCrossSellModule(Guid? moduleProductId)
+    {
+        if (IsDecided)
+            throw new DomainConflictException("Cannot change the cross-sell module of a decided opportunity.");
+        CrossSellModuleProductId = moduleProductId;
+    }
 
     /// <summary>Adds a business process to the scope (idempotent). Scope can expand mid-cycle until decided.</summary>
     public void AddToScope(Guid businessProcessId, DateTimeOffset addedAt)
@@ -50,6 +78,14 @@ public sealed class Opportunity : Entity
             throw new DomainConflictException("Cannot change the scope of a decided opportunity.");
         if (_scope.All(s => s.BusinessProcessId != businessProcessId))
             _scope.Add(new OpportunityScopeItem(businessProcessId, addedAt));
+    }
+
+    /// <summary>Drops a business process from the scope. False when it was not in scope.</summary>
+    public bool RemoveFromScope(Guid businessProcessId)
+    {
+        if (IsDecided)
+            throw new DomainConflictException("Cannot change the scope of a decided opportunity.");
+        return _scope.RemoveAll(s => s.BusinessProcessId == businessProcessId) > 0;
     }
 
     public void Qualify(DateTimeOffset at)

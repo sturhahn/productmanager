@@ -162,6 +162,32 @@ public sealed class SeedCoverage
     public string? EffectiveDate { get; set; }
 }
 
+/// <summary>
+/// A segment-level demand edge. The firm-level choice engine reads its importance weights from
+/// these rows, so a market with coverage but no needs has a supply side and no demand side: every
+/// product's coverage term is multiplied by a zero weight, and
+/// <c>utility.importance-weight:{segment}:{process}</c> parameters (which only ever *override* a
+/// need's point weight) never fire.
+/// </summary>
+public sealed class SeedNeed
+{
+    public string SegmentName { get; set; } = "";
+    public string BusinessProcessName { get; set; } = "";
+    public double ImportanceWeight { get; set; }
+
+    /// <summary>Hard needs disqualify a product scoring below <see cref="RequiredCoverage"/>; soft ones charge the workaround cost.</summary>
+    public bool IsHard { get; set; }
+
+    /// <summary>Effective-coverage floor in [0, 1], written to the need's <c>requiredDepthJson</c>. Null = the engine's default (0.4 for a hard need, none for a soft one).</summary>
+    public double? RequiredCoverage { get; set; }
+
+    /// <summary>Monthly cost of working around this need when it is unmet, in the market's currency.</summary>
+    public double? WorkaroundCostPerPeriod { get; set; }
+
+    public string? Conditionality { get; set; }
+    public string? Notes { get; set; }
+}
+
 public sealed class SeedMarket
 {
     public string Name { get; set; } = "";
@@ -172,6 +198,7 @@ public sealed class SeedMarket
     public List<SeedCompetitor> Competitors { get; set; } = [];
     public List<SeedProduct> Products { get; set; } = [];
     public List<SeedCoverage> Coverages { get; set; } = [];
+    public List<SeedNeed> Needs { get; set; } = [];
 }
 
 // ---------- Phase 2: market dynamics / simulation ----------
@@ -208,6 +235,11 @@ public sealed class SeedCovariateObservation
     public string EffectiveDate { get; set; } = "";
     public double Value { get; set; }
     public string? Notes { get; set; }
+
+    /// <summary>Passed through as the CovariateObserved fact's recordedAt so seeded readings are
+    /// backdated like every other historical fact (omitted = recorded "now") — see
+    /// <see cref="SeedOpportunity.RecordedDate"/>. Backdating only; a future date is refused.</summary>
+    public string? RecordedDate { get; set; }
 }
 
 public sealed class SeedCovariate
@@ -224,11 +256,16 @@ public sealed class SeedCovariate
 public sealed class SeedParameter
 {
     /// <summary>Engine parameter: give SegmentName + FlowKind (+ ModuleProductName for
-    /// CrossSellRate). Free-form parameter: give Key instead.</summary>
+    /// CrossSellRate). Free-form parameter: give Key instead. Choice-model parameter (Phase 3):
+    /// give ChoiceKind instead — see <see cref="ProductManager.Cli.Commands.ChoiceParameterKeys"/>
+    /// for the vocabulary; SegmentName/BusinessProcessName/ModuleProductName (reused as "the
+    /// product this concerns") resolve the key's ids.</summary>
     public string? SegmentName { get; set; }
     public string? FlowKind { get; set; }
     public string? ModuleProductName { get; set; }
     public string? Key { get; set; }
+    public string? ChoiceKind { get; set; }
+    public string? BusinessProcessName { get; set; }
     public string DistType { get; set; } = "Point";
     public double P1 { get; set; }
     public double P2 { get; set; }
@@ -274,4 +311,121 @@ public sealed class SeedMarketDynamics
     public List<SeedCovariate> Covariates { get; set; } = [];
     public List<SeedAssumptionSet> AssumptionSets { get; set; } = [];
     public List<SeedMarketEvent> MarketEvents { get; set; } = [];
+
+    // ---------- Phase 3: firm-level choice engine ----------
+
+    public List<SeedChannel> Channels { get; set; } = [];
+    public List<SeedIntegration> Integrations { get; set; } = [];
+    public List<SeedFirm> Firms { get; set; } = [];
+
+    /// <summary>Historical facts the calibration engine fits against — RecordedDate on each entry is
+    /// passed through to the API as the bi-temporal recordedAt (see SeedLoader), so a backdated
+    /// calibration reads the ledger as it honestly stood on that date.</summary>
+    public List<SeedOpportunity> Opportunities { get; set; } = [];
+    public List<SeedChurnEvent> ChurnEvents { get; set; } = [];
+    public List<SeedArrivalCount> ArrivalCounts { get; set; } = [];
+}
+
+// ---------- Phase 3: channels, integrations, firms, opportunities (historical facts) ----------
+
+public sealed class SeedChannelSegmentReach
+{
+    public string SegmentName { get; set; } = "";
+    public double Reach { get; set; }
+    public double OriginationShare { get; set; }
+}
+
+public sealed class SeedChannelProductAffinity
+{
+    public string ProductName { get; set; } = "";
+    public double Bias { get; set; }
+}
+
+public sealed class SeedChannel
+{
+    public string Name { get; set; } = "";
+    public string? Description { get; set; }
+    public bool OriginatesOpportunities { get; set; }
+    public bool CarriesOnlyListedProducts { get; set; }
+    public List<SeedChannelSegmentReach> SegmentReaches { get; set; } = [];
+    public List<SeedChannelProductAffinity> ProductAffinities { get; set; } = [];
+}
+
+public sealed class SeedIntegration
+{
+    public string ProductAName { get; set; } = "";
+    public string ProductBName { get; set; } = "";
+    public double QualityScore { get; set; }
+    public string? Notes { get; set; }
+}
+
+public sealed class SeedFirmRelationship
+{
+    public string ProductName { get; set; } = "";
+    public List<string> ServedProcessNames { get; set; } = [];
+    public double PriceLevel { get; set; } = 1.0;
+    public string? AcquisitionDate { get; set; }
+}
+
+public sealed class SeedFirm
+{
+    public string Name { get; set; } = "";
+    public string? SegmentName { get; set; }
+    public string EpistemicStatus { get; set; } = "Observed";
+    public string? AttributesJson { get; set; }
+    public string? Notes { get; set; }
+    public List<SeedFirmRelationship> Relationships { get; set; } = [];
+}
+
+/// <summary>
+/// One historical, already-decided opportunity — calibration data, loaded via the real
+/// open/qualify/decide lifecycle so the API appends the same OpportunityDecided fact a live user's
+/// decision would. <c>RecordedDate</c>, when given, is passed to the decide call as
+/// <c>recordedAt</c> (the bi-temporal backdating path — see <c>DecideOpportunityRequest</c>) so this
+/// fact is honestly known-as-of that date rather than "now"; omitted, the server stamps now instead.
+/// Backdating only — a future RecordedDate would be refused by the API.
+/// </summary>
+public sealed class SeedOpportunity
+{
+    public string FirmName { get; set; } = "";
+    public string? ChannelName { get; set; }
+    public string OpenedDate { get; set; } = "";
+    public string? QualifiedDate { get; set; }
+    public string DecidedDate { get; set; } = "";
+
+    /// <summary>Won | Lost | NoDecision, from our perspective (a competitor winning is "Lost").</summary>
+    public string Outcome { get; set; } = "NoDecision";
+    public List<string> ScopeProcessNames { get; set; } = [];
+    public string? WinningProductName { get; set; }
+    public string? CrossSellModuleProductName { get; set; }
+    public string? Notes { get; set; }
+    public string? RecordedDate { get; set; }
+
+    /// <summary>True for the handful deliberately recorded a month or more after DecidedDate — see
+    /// the class remarks. Purely descriptive; SeedFileTests checks it against RecordedDate.</summary>
+    public bool LateRecorded { get; set; }
+}
+
+public sealed class SeedChurnEvent
+{
+    public string SegmentName { get; set; } = "";
+    public string EffectiveDate { get; set; } = "";
+    public string? Notes { get; set; }
+
+    /// <summary>Passed through as the fact's recordedAt — see <see cref="SeedOpportunity.RecordedDate"/>.</summary>
+    public string? RecordedDate { get; set; }
+}
+
+public sealed class SeedArrivalCount
+{
+    public string SegmentName { get; set; } = "";
+    public string FlowKind { get; set; } = "NewFirmArrival";
+
+    /// <summary>The observed month, as yyyy-MM-dd (any day in the month; the loader normalizes to the 1st).</summary>
+    public string Month { get; set; } = "";
+    public int Count { get; set; }
+    public double Exposure { get; set; } = 1.0;
+
+    /// <summary>Passed through as the fact's recordedAt — see <see cref="SeedOpportunity.RecordedDate"/>.</summary>
+    public string? RecordedDate { get; set; }
 }

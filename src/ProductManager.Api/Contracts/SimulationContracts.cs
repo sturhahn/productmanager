@@ -93,7 +93,9 @@ public sealed record SimulationRunDto(
     string? ModelVersion,
     bool IsExecuted,
     long? ElapsedMs,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    SimulationEngineMode EngineMode,
+    bool HasDiagnostics);
 
 /// <summary>
 /// Executes one simulation synchronously and stores it. The run is immutable once executed: the
@@ -112,6 +114,12 @@ public sealed record SimulationRunDto(
 /// <param name="MarketId">Restricts the simulated segments to one market; omit to simulate the whole workspace.</param>
 /// <param name="EventIds">Real market events to overlay.</param>
 /// <param name="HypotheticalEventIds">Hypothetical events to inject — the "what if the incident happened" arm.</param>
+/// <param name="EngineMode">
+/// Which engine executes the run. <c>Aggregate</c> (the default) is engine v0: stock-and-flow per
+/// segment, the fast preview. <c>FirmLevel</c> is engine v1: opportunities, consideration sets and
+/// utilities over the actual firm roster (synthetic firms included). Both emit the same trajectory
+/// format, so a comparison can mix them; only the firm-level mode also produces diagnostics.
+/// </param>
 public sealed record CreateSimulationRunRequest(
     [Required] Guid RoadmapId,
     [Required] Guid AssumptionSetId,
@@ -124,7 +132,8 @@ public sealed record CreateSimulationRunRequest(
     DateOnly? StartDate = null,
     Guid? MarketId = null,
     IReadOnlyList<Guid>? EventIds = null,
-    IReadOnlyList<Guid>? HypotheticalEventIds = null);
+    IReadOnlyList<Guid>? HypotheticalEventIds = null,
+    SimulationEngineMode EngineMode = SimulationEngineMode.Aggregate);
 
 public static class SimulationMapping
 {
@@ -139,5 +148,5 @@ public static class SimulationMapping
     public static SimulationRunDto ToDto(this SimulationRun r) =>
         new(r.Id, r.WorkspaceId, r.RoadmapId, r.AssumptionSetId, r.Name, r.StartDate, r.HorizonMonths, r.Paths,
             r.Seed, r.DiscountRateAnnual, r.TerminalGrowthAnnual, r.ModelVersion, r.IsExecuted, r.ElapsedMs,
-            r.CreatedAt);
+            r.CreatedAt, r.EngineMode, r.DiagnosticsJson is not null);
 }

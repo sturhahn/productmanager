@@ -191,11 +191,28 @@ public sealed class CalibrationRun : Entity
     public Guid PriorAssumptionSetId { get; private set; }
     public Guid? FittedAssumptionSetId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>Optional human label for the fit ("Q3 refit", "after the migration window").</summary>
+    public string? Name { get; private set; }
+
+    /// <summary>
+    /// The exact calibration input this run was executed against (JSON): priors plus the
+    /// observations mapped out of the ledger as of <see cref="FactsAsOfDate"/>. Re-running the pure
+    /// calibration module on this document alone reproduces the stored output.
+    /// </summary>
+    public string? InputSnapshotJson { get; private set; }
+
+    /// <summary>The fitted posteriors and their prior/posterior diffs (JSON), once executed.</summary>
+    public string? OutputJson { get; private set; }
+
     public string? Notes { get; set; }
+
+    /// <summary>True once the fit has run and produced a fitted assumption set.</summary>
+    public bool IsExecuted => OutputJson is not null;
 
     private CalibrationRun() { } // EF
 
-    public CalibrationRun(Guid workspaceId, DateOnly factsAsOfDate, Guid priorAssumptionSetId)
+    public CalibrationRun(Guid workspaceId, DateOnly factsAsOfDate, Guid priorAssumptionSetId, string? name = null)
     {
         if (workspaceId == Guid.Empty) throw new ArgumentException("WorkspaceId is required.", nameof(workspaceId));
         if (priorAssumptionSetId == Guid.Empty)
@@ -203,13 +220,20 @@ public sealed class CalibrationRun : Entity
         WorkspaceId = workspaceId;
         FactsAsOfDate = factsAsOfDate;
         PriorAssumptionSetId = priorAssumptionSetId;
+        Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
     }
 
-    public void RecordFit(Guid fittedAssumptionSetId)
+    /// <summary>
+    /// Records the fit: the assumption set it produced, and the input/output documents that make it
+    /// reproducible and diffable. A run is immutable once fitted.
+    /// </summary>
+    public void RecordFit(Guid fittedAssumptionSetId, string? inputSnapshotJson = null, string? outputJson = null)
     {
         if (FittedAssumptionSetId is not null)
             throw new DomainConflictException("A calibration run is immutable once fitted.");
         FittedAssumptionSetId = fittedAssumptionSetId;
+        InputSnapshotJson = inputSnapshotJson;
+        OutputJson = outputJson;
     }
 }
 
@@ -245,6 +269,19 @@ public sealed class SimulationRun : Entity
     public string? ModelVersion { get; private set; }
 
     /// <summary>
+    /// Which engine executed the run. Both modes emit the same trajectory format, so this is
+    /// recorded for provenance and for reading the diagnostics, never to reshape the result.
+    /// </summary>
+    public SimulationEngineMode EngineMode { get; private set; } = SimulationEngineMode.Aggregate;
+
+    /// <summary>
+    /// Firm-level diagnostics (JSON) — opportunity funnels, sales-cycle length, expansions. Null on
+    /// aggregate runs, which have no opportunities to count. Kept beside the trajectories rather
+    /// than inside them so the trajectory document stays byte-identical across both modes.
+    /// </summary>
+    public string? DiagnosticsJson { get; private set; }
+
+    /// <summary>
     /// Full engine input snapshot (JSON). This is the reproducibility guarantee: re-running the
     /// engine on this snapshot alone — no database reads — reproduces the stored result byte for byte.
     /// </summary>
@@ -275,7 +312,8 @@ public sealed class SimulationRun : Entity
         string? name = null,
         string? covariateScenarioJson = null,
         string? eventOverlayJson = null,
-        string? modelVersion = null)
+        string? modelVersion = null,
+        SimulationEngineMode engineMode = SimulationEngineMode.Aggregate)
     {
         if (workspaceId == Guid.Empty) throw new ArgumentException("WorkspaceId is required.", nameof(workspaceId));
         if (roadmapId == Guid.Empty) throw new ArgumentException("RoadmapId is required.", nameof(roadmapId));
@@ -299,14 +337,17 @@ public sealed class SimulationRun : Entity
         CovariateScenarioJson = covariateScenarioJson;
         EventOverlayJson = eventOverlayJson;
         ModelVersion = modelVersion;
+        EngineMode = engineMode;
     }
 
-    public void RecordResult(string inputSnapshotJson, string trajectoriesJson, long? elapsedMs = null)
+    public void RecordResult(string inputSnapshotJson, string trajectoriesJson, long? elapsedMs = null,
+        string? diagnosticsJson = null)
     {
         if (TrajectoriesJson is not null)
             throw new DomainConflictException("A simulation run is immutable once executed.");
         InputSnapshotJson = inputSnapshotJson;
         TrajectoriesJson = trajectoriesJson;
         ElapsedMs = elapsedMs;
+        DiagnosticsJson = diagnosticsJson;
     }
 }

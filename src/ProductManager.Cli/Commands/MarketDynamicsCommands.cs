@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Text.Json;
 using ProductManager.Cli.Client;
 
 namespace ProductManager.Cli.Commands;
@@ -92,7 +93,54 @@ internal static class FirmCommands
         firm.Subcommands.Add(create);
         firm.Subcommands.Add(update);
         firm.Subcommands.Add(delete);
+        firm.Subcommands.Add(BuildImport(marketIdOption));
+        firm.Subcommands.Add(BuildGenerateSynthetic());
         return firm;
+    }
+
+    private static Command BuildImport(Option<Guid?> marketIdOption)
+    {
+        var fileOption = new Option<string>("--file") { Required = true, Description = "Path to a JSON file containing an array of firm-import items (see FirmImportItem)." };
+
+        var cmd = new Command("import", "Imports a roster of firms (with relationships) into one market in a single call. Matches existing firms by (market, name), so re-importing the same roster updates rather than duplicates it.");
+        cmd.Options.Add(marketIdOption);
+        cmd.Options.Add(fileOption);
+        cmd.SetAction((parseResult, ct) => CliInfrastructure.RunAsync(async ct2 =>
+        {
+            var marketId = parseResult.GetValue(marketIdOption) ?? throw new ArgumentException("--market-id is required.");
+            var path = parseResult.GetValue(fileOption)!;
+            if (!File.Exists(path))
+                throw new ArgumentException($"Firm import file not found: {path}");
+
+            List<FirmImportItem> items;
+            try
+            {
+                var json = await File.ReadAllTextAsync(path, ct2);
+                items = JsonSerializer.Deserialize<List<FirmImportItem>>(json, ProductManagerApiClient.JsonOptions)
+                    ?? throw new ArgumentException($"Firm import file '{path}' is empty or not valid JSON.");
+            }
+            catch (JsonException ex)
+            {
+                throw new ArgumentException($"Firm import file '{path}' could not be parsed: {ex.Message}", ex);
+            }
+
+            var client = CliInfrastructure.BuildAuthenticatedClient(parseResult);
+            CliInfrastructure.WriteJson(await client.BulkImportFirmsAsync(new BulkImportFirmsRequest(marketId, items), ct2));
+        }, ct));
+        return cmd;
+    }
+
+    private static Command BuildGenerateSynthetic()
+    {
+        var marketIdOption = new Option<Guid>("--market") { Required = true };
+        var cmd = new Command("generate-synthetic", "Fills a market's segment stocks with deterministically generated synthetic firms. Regeneration replaces the previous synthetic population.");
+        cmd.Options.Add(marketIdOption);
+        cmd.SetAction((parseResult, ct) => CliInfrastructure.RunAsync(async ct2 =>
+        {
+            var client = CliInfrastructure.BuildAuthenticatedClient(parseResult);
+            CliInfrastructure.WriteJson(await client.GenerateSyntheticFirmsAsync(parseResult.GetValue(marketIdOption), ct2));
+        }, ct));
+        return cmd;
     }
 }
 

@@ -217,6 +217,11 @@ public sealed record SegmentStockStateDto(
 /// <summary>Starting penetration and pricing of one cross-sellable module within the segment.</summary>
 public sealed record SegmentModulePenetrationDto(Guid ModuleProductId, double Penetration, double ArpuPerMonth);
 
+/// <summary>Share of a segment's firms using one alternative approach to a process.</summary>
+public sealed record SegmentApproachAdoptionDto(Guid ApproachId, double Share);
+
+public sealed record SetSegmentApproachAdoptionRequest(Guid ApproachId, double Share);
+
 public sealed record ClientSegmentDto(
     Guid Id,
     Guid MarketId,
@@ -225,7 +230,8 @@ public sealed record ClientSegmentDto(
     double SuiteAffinity,
     double ConsolidationPreference,
     SegmentStockStateDto StockState,
-    IReadOnlyList<SegmentModulePenetrationDto> ModulePenetrations);
+    IReadOnlyList<SegmentModulePenetrationDto> ModulePenetrations,
+    IReadOnlyList<SegmentApproachAdoptionDto> ApproachAdoptions);
 
 public sealed record CreateClientSegmentRequest(
     Guid MarketId,
@@ -476,7 +482,8 @@ public sealed record CreateFactEventRequest(
     string? SubjectType = null,
     Guid? SubjectId = null,
     string? PayloadJson = null,
-    string? Notes = null);
+    string? Notes = null,
+    DateTimeOffset? RecordedAt = null);
 
 // ---------- Distribution / AssumptionSet / Parameter ----------
 
@@ -545,9 +552,13 @@ public sealed record SimulationRunDto(
     string? ModelVersion,
     bool IsExecuted,
     long? ElapsedMs,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    SimulationEngineMode EngineMode,
+    bool HasDiagnostics);
 
-/// <summary>Executes one simulation synchronously and stores it — immutable once executed.</summary>
+/// <summary>Executes one simulation synchronously and stores it — immutable once executed.
+/// <c>EngineMode</c> selects Aggregate (engine v0, the default fast preview) or FirmLevel (engine
+/// v1: opportunities/consideration-sets/utilities over the actual firm roster).</summary>
 public sealed record CreateSimulationRunRequest(
     Guid RoadmapId,
     Guid AssumptionSetId,
@@ -560,7 +571,250 @@ public sealed record CreateSimulationRunRequest(
     DateOnly? StartDate = null,
     Guid? MarketId = null,
     IReadOnlyList<Guid>? EventIds = null,
-    IReadOnlyList<Guid>? HypotheticalEventIds = null);
+    IReadOnlyList<Guid>? HypotheticalEventIds = null,
+    SimulationEngineMode EngineMode = SimulationEngineMode.Aggregate);
+
+// ---------- Phase 3: channels, integrations, firm relationships, opportunities, calibration ----------
+
+/// <summary>One segment a channel touches: how much of it the channel can reach, and how much of its
+/// opportunity flow the channel originates.</summary>
+public sealed record ChannelSegmentReachDto(Guid ClientSegmentId, double Reach, double OriginationShare);
+
+/// <summary>Signed utility bias a channel applies to a product it presents. 0 is neutral.</summary>
+public sealed record ChannelProductAffinityDto(Guid ProductId, double Bias);
+
+public sealed record ChannelDto(
+    Guid Id,
+    Guid MarketId,
+    string Name,
+    string? Description,
+    bool OriginatesOpportunities,
+    bool CarriesOnlyListedProducts,
+    IReadOnlyList<ChannelSegmentReachDto> SegmentReaches,
+    IReadOnlyList<ChannelProductAffinityDto> ProductAffinities);
+
+/// <summary>A route to market; direct sales is just another channel. <c>CarriesOnlyListedProducts</c>
+/// turns the affinity list into a whitelist.</summary>
+public sealed record CreateChannelRequest(
+    Guid MarketId,
+    string Name,
+    string? Description = null,
+    bool OriginatesOpportunities = false,
+    bool CarriesOnlyListedProducts = false);
+
+public sealed record UpdateChannelRequest(
+    string Name,
+    string? Description = null,
+    bool OriginatesOpportunities = false,
+    bool CarriesOnlyListedProducts = false);
+
+public sealed record SetChannelSegmentReachRequest(Guid ClientSegmentId, double Reach, double OriginationShare = 0);
+
+public sealed record SetChannelProductAffinityRequest(Guid ProductId, double Bias);
+
+public sealed record IntegrationDto(Guid Id, Guid ProductAId, Guid ProductBId, double QualityScore, string? Notes);
+
+/// <summary>A Product↔Product edge with a quality score in [0, 1]. The edge is symmetric: (A, B) and
+/// (B, A) are the same integration, and posting the reverse pair is a conflict.</summary>
+public sealed record CreateIntegrationRequest(Guid ProductAId, Guid ProductBId, double QualityScore, string? Notes = null);
+
+public sealed record UpdateIntegrationRequest(double QualityScore, string? Notes = null);
+
+/// <summary>"Being a client" as an edge: which product, which processes it actually serves at the
+/// firm (the modules held), what fraction of list price is paid, and when it started and ended.</summary>
+public sealed record FirmProductRelationshipDto(
+    Guid Id,
+    Guid FirmId,
+    Guid ProductId,
+    IReadOnlyList<Guid> ServedProcessIds,
+    double PriceLevel,
+    MoneyDto? PricePaidPerPeriod,
+    DateOnly? AcquisitionDate,
+    DateOnly? EndDate,
+    bool IsActive,
+    string? Notes);
+
+public sealed record CreateFirmProductRelationshipRequest(
+    Guid FirmId,
+    Guid ProductId,
+    IReadOnlyList<Guid>? ServedProcessIds = null,
+    double PriceLevel = 1.0,
+    MoneyDto? PricePaidPerPeriod = null,
+    DateOnly? AcquisitionDate = null,
+    string? Notes = null);
+
+/// <summary>Replaces the whole edge. Omitting <c>EndDate</c> reopens a relationship that had ended.</summary>
+public sealed record UpdateFirmProductRelationshipRequest(
+    IReadOnlyList<Guid>? ServedProcessIds = null,
+    double PriceLevel = 1.0,
+    MoneyDto? PricePaidPerPeriod = null,
+    DateOnly? AcquisitionDate = null,
+    DateOnly? EndDate = null,
+    string? Notes = null);
+
+/// <summary>One firm in a bulk import, with the relationships it already holds.</summary>
+public sealed record FirmImportItem(
+    string Name,
+    Guid? ClientSegmentId = null,
+    EpistemicStatus EpistemicStatus = EpistemicStatus.Observed,
+    string? AttributesJson = null,
+    string? Notes = null,
+    IReadOnlyList<FirmImportRelationship>? Relationships = null);
+
+public sealed record FirmImportRelationship(
+    Guid ProductId,
+    IReadOnlyList<Guid>? ServedProcessIds = null,
+    double PriceLevel = 1.0,
+    MoneyDto? PricePaidPerPeriod = null,
+    DateOnly? AcquisitionDate = null);
+
+/// <summary>Imports a roster of firms into one market. Matching is by natural key (market, name).</summary>
+public sealed record BulkImportFirmsRequest(Guid MarketId, IReadOnlyList<FirmImportItem> Firms);
+
+public sealed record BulkImportFirmsResponse(Guid MarketId, int Created, int Updated, int RelationshipsWritten, IReadOnlyList<FirmDto> Firms);
+
+/// <summary>Fills a market's segment stocks with deterministically generated synthetic firms.
+/// Regeneration replaces the previous synthetic population rather than adding a second one.</summary>
+public sealed record GenerateSyntheticFirmsRequest(Guid MarketId);
+
+public sealed record SyntheticSegmentFillDto(
+    Guid ClientSegmentId,
+    int ProspectTarget,
+    int ObservedProspects,
+    int SyntheticProspects,
+    int ClientTarget,
+    int ObservedClients,
+    int SyntheticClients);
+
+public sealed record GenerateSyntheticFirmsResponse(
+    Guid MarketId,
+    int Removed,
+    int Created,
+    int RelationshipsCreated,
+    IReadOnlyList<SyntheticSegmentFillDto> Segments);
+
+public sealed record OpportunityScopeItemDto(Guid BusinessProcessId, DateTimeOffset AddedAt);
+
+public sealed record OpportunityDto(
+    Guid Id,
+    Guid FirmId,
+    Guid? ChannelId,
+    OpportunityStage Stage,
+    DateTimeOffset OpenedAt,
+    DateTimeOffset? QualifiedAt,
+    DateTimeOffset? DecidedAt,
+    IReadOnlyList<Guid> CompetitorIds,
+    Guid? WinningProductId,
+    Guid? CrossSellModuleProductId,
+    bool IsCrossSell,
+    bool IsDecided,
+    string? Notes,
+    IReadOnlyList<OpportunityScopeItemDto> Scope);
+
+/// <summary>Opens an opportunity: a firm seeking coverage for a scoped set of business processes. A
+/// cross-sell is not a special case — <c>CrossSellModuleProductId</c> names the module being sold.</summary>
+public sealed record CreateOpportunityRequest(
+    Guid FirmId,
+    DateTimeOffset? OpenedAt = null,
+    Guid? ChannelId = null,
+    Guid? CrossSellModuleProductId = null,
+    IReadOnlyList<Guid>? ScopeProcessIds = null,
+    IReadOnlyList<Guid>? CompetitorIds = null,
+    string? Notes = null);
+
+public sealed record UpdateOpportunityRequest(
+    Guid? ChannelId = null,
+    Guid? CrossSellModuleProductId = null,
+    IReadOnlyList<Guid>? CompetitorIds = null,
+    string? Notes = null);
+
+/// <summary>Adds one business process to the scope. Scope can expand mid-cycle until the decision.</summary>
+public sealed record AddOpportunityScopeRequest(Guid BusinessProcessId, DateTimeOffset? AddedAt = null);
+
+public sealed record QualifyOpportunityRequest(DateTimeOffset? At = null);
+
+/// <summary>Records the decision. <c>Outcome</c> must be Won, Lost or NoDecision; a won deal must
+/// name the winning product (ours or a competitor's).</summary>
+public sealed record DecideOpportunityRequest(
+    OpportunityStage Outcome,
+    Guid? WinningProductId = null,
+    DateTimeOffset? At = null,
+    DateTimeOffset? RecordedAt = null);
+
+// ---------- Calibration ----------
+
+public sealed record CalibrationRunDto(
+    Guid Id,
+    Guid WorkspaceId,
+    string? Name,
+    DateOnly FactsAsOfDate,
+    Guid PriorAssumptionSetId,
+    Guid? FittedAssumptionSetId,
+    bool IsExecuted,
+    DateTimeOffset CreatedAt,
+    string? Notes);
+
+/// <summary>Fits the prior assumption set to the facts ledger as it stood on <c>AsOfDate</c>: only
+/// facts recorded on or before that date are read. The run is immutable and produces a new
+/// assumption set (parent = the prior, provenance Calibrated) rather than editing the prior.</summary>
+public sealed record CreateCalibrationRunRequest(
+    Guid AssumptionSetId,
+    DateOnly? AsOfDate = null,
+    string? Name = null,
+    string? Notes = null);
+
+/// <summary>Prior vs posterior for one parameter, with the evidence that moved it.</summary>
+public sealed record CalibrationParameterDiffDto(
+    string Key,
+    Guid? ClientSegmentId,
+    SimulationFlowKind? FlowKind,
+    Guid? ModuleProductId,
+    Guid? ProductId,
+    DistributionSpecDto? Prior,
+    DistributionSpecDto? Posterior,
+    double PriorMean,
+    double PosteriorMean,
+    double PriorStdDev,
+    double PosteriorStdDev,
+    double Shift,
+    int SampleSize,
+    string Rationale);
+
+/// <summary>A prior the evidence could not move, passed through with the reason why.</summary>
+public sealed record CalibrationUnfittedDto(
+    string Key,
+    Guid? ClientSegmentId,
+    SimulationFlowKind? FlowKind,
+    Guid? ModuleProductId,
+    Guid? ProductId,
+    DistributionSpecDto? Distribution,
+    string Reason);
+
+public sealed record CalibrationDiffDto(
+    Guid CalibrationRunId,
+    DateOnly AsOfDate,
+    Guid PriorAssumptionSetId,
+    Guid? FittedAssumptionSetId,
+    IReadOnlyList<CalibrationParameterDiffDto> Fitted,
+    IReadOnlyList<CalibrationUnfittedDto> Unfitted);
+
+/// <summary>A calibration run plus the diff it produced — what POST returns.</summary>
+public sealed record CalibrationRunResultDto(CalibrationRunDto Run, CalibrationDiffDto Diff);
+
+// ---------- Firm-level diagnostics (mirrors ProductManager.Engine.FirmLevelContracts — see openapi's Engine-prefixed schemas) ----------
+
+public sealed record EngineSegmentFunnel(
+    string SegmentId, double Opened, double Qualified, double Won, double Lost, double NoDecision, double StillOpen, double WinRate);
+
+public sealed record EngineChannelFunnel(string ChannelId, double Opened, double Won, double WinRate);
+
+public sealed record EngineFirmLevelDiagnostics(
+    IReadOnlyList<EngineSegmentFunnel> FunnelBySegment,
+    IReadOnlyList<EngineChannelFunnel> FunnelByChannel,
+    double AvgSalesCycleMonths,
+    double ExpansionCount,
+    double MeanUtilityGapLostDeals,
+    double SyntheticFirmsCreated);
 
 // ---------- Engine (mirrors ProductManager.Engine — see openapi's Engine-prefixed schemas) ----------
 

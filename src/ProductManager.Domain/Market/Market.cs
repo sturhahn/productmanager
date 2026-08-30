@@ -34,6 +34,7 @@ public sealed class Market : Entity
 public sealed class ClientSegment : Entity
 {
     private readonly List<SegmentModulePenetration> _modulePenetrations = [];
+    private readonly List<SegmentApproachAdoption> _approachAdoptions = [];
 
     public Guid MarketId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -53,6 +54,14 @@ public sealed class ClientSegment : Entity
 
     /// <summary>Per-module starting penetration and pricing inside this segment.</summary>
     public IReadOnlyCollection<SegmentModulePenetration> ModulePenetrations => _modulePenetrations.AsReadOnly();
+
+    /// <summary>
+    /// How this segment's firms split across the alternative approaches to a process (e.g. 99%
+    /// DTCC / 1% chain). Empty means one implicit approach — the common case. A firm's effective
+    /// coverage is the tier weighted by this mix, which is what stops "gold on blockchain × 1%
+    /// adoption" from reading as gold.
+    /// </summary>
+    public IReadOnlyCollection<SegmentApproachAdoption> ApproachAdoptions => _approachAdoptions.AsReadOnly();
 
     private ClientSegment() { } // EF
 
@@ -97,6 +106,19 @@ public sealed class ClientSegment : Entity
     /// <summary>Drops a module from the segment's starting state. Returns false when it was not there.</summary>
     public bool RemoveModulePenetration(Guid moduleProductId) =>
         _modulePenetrations.RemoveAll(m => m.ModuleProductId == moduleProductId) > 0;
+
+    /// <summary>Sets (upserting by approach) the share of this segment's firms using one approach.</summary>
+    public SegmentApproachAdoption SetApproachAdoption(Guid approachId, double share)
+    {
+        var row = new SegmentApproachAdoption(approachId, share);
+        _approachAdoptions.RemoveAll(a => a.ApproachId == approachId);
+        _approachAdoptions.Add(row);
+        return row;
+    }
+
+    /// <summary>Drops one approach from the segment's adoption mix. False when it was not there.</summary>
+    public bool RemoveApproachAdoption(Guid approachId) =>
+        _approachAdoptions.RemoveAll(a => a.ApproachId == approachId) > 0;
 }
 
 /// <summary>
@@ -125,6 +147,20 @@ public sealed class Firm : Entity
         MarketId = marketId;
         EpistemicStatus = epistemicStatus;
         ClientSegmentId = clientSegmentId;
+    }
+
+    /// <summary>
+    /// A generated firm filling part of the unobserved market, with a caller-supplied identity.
+    /// The id is an argument rather than a fresh Guid so generation can be *deterministic*:
+    /// regenerating a market's synthetic population from the same stocks must produce the same
+    /// firms, not a second population beside the first.
+    /// </summary>
+    public static Firm Synthetic(Guid id, Guid marketId, Guid clientSegmentId, string name)
+    {
+        if (id == Guid.Empty) throw new ArgumentException("A synthetic firm needs an id.", nameof(id));
+        if (clientSegmentId == Guid.Empty)
+            throw new ArgumentException("A synthetic firm belongs to a segment.", nameof(clientSegmentId));
+        return new Firm(marketId, name, EpistemicStatus.Synthetic, clientSegmentId) { Id = id };
     }
 
     public void Rename(string name)

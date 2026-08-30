@@ -203,6 +203,12 @@ public sealed class ProductManagerApiClient(HttpClient http)
     public Task<ClientSegmentDto> RemoveSegmentModulePenetrationAsync(Guid id, Guid moduleProductId, CancellationToken ct) =>
         DeleteReturningAsync<ClientSegmentDto>($"api/client-segments/{id}/module-penetrations/{moduleProductId}", ct);
 
+    public Task<ClientSegmentDto> SetSegmentApproachAdoptionAsync(Guid id, SetSegmentApproachAdoptionRequest request, CancellationToken ct) =>
+        PutAsync<SetSegmentApproachAdoptionRequest, ClientSegmentDto>($"api/client-segments/{id}/approach-mix", request, ct);
+
+    public Task<ClientSegmentDto> RemoveSegmentApproachAdoptionAsync(Guid id, Guid approachId, CancellationToken ct) =>
+        DeleteReturningAsync<ClientSegmentDto>($"api/client-segments/{id}/approach-mix/{approachId}", ct);
+
     public Task<PagedResponse<BusinessProcessDto>> ListBusinessProcessesAsync(Guid? marketId, Guid? parentProcessId, int? page, int? pageSize, CancellationToken ct) =>
         GetAsync<PagedResponse<BusinessProcessDto>>(
             Query("api/business-processes", ("marketId", marketId), ("parentProcessId", parentProcessId), ("page", page), ("pageSize", pageSize)), ct);
@@ -263,6 +269,121 @@ public sealed class ProductManagerApiClient(HttpClient http)
         PutAsync<UpdateFirmRequest, FirmDto>($"api/firms/{id}", request, ct);
 
     public Task DeleteFirmAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/firms/{id}", ct);
+
+    /// <summary>Imports a whole roster into one market, relationships included. Matching is by
+    /// natural key (market, name), so re-importing the same roster updates rather than duplicates it.</summary>
+    public Task<BulkImportFirmsResponse> BulkImportFirmsAsync(BulkImportFirmsRequest request, CancellationToken ct) =>
+        PostAsync<BulkImportFirmsRequest, BulkImportFirmsResponse>("api/firms/bulk", request, ct);
+
+    /// <summary>Fills a market's segment stocks with deterministically generated synthetic firms.
+    /// Regeneration replaces the previous synthetic population rather than adding a second one.</summary>
+    public Task<GenerateSyntheticFirmsResponse> GenerateSyntheticFirmsAsync(Guid marketId, CancellationToken ct) =>
+        PostAsync<GenerateSyntheticFirmsRequest, GenerateSyntheticFirmsResponse>(
+            "api/firms/generate-synthetic", new GenerateSyntheticFirmsRequest(marketId), ct);
+
+    // ---------- Channels ----------
+
+    public Task<PagedResponse<ChannelDto>> ListChannelsAsync(Guid? marketId, bool? originatesOpportunities, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<ChannelDto>>(
+            Query("api/channels", ("marketId", marketId), ("originatesOpportunities", originatesOpportunities), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<ChannelDto> GetChannelAsync(Guid id, CancellationToken ct) => GetAsync<ChannelDto>($"api/channels/{id}", ct);
+
+    public Task<ChannelDto> CreateChannelAsync(CreateChannelRequest request, CancellationToken ct) =>
+        PostAsync<CreateChannelRequest, ChannelDto>("api/channels", request, ct);
+
+    public Task<ChannelDto> UpdateChannelAsync(Guid id, UpdateChannelRequest request, CancellationToken ct) =>
+        PutAsync<UpdateChannelRequest, ChannelDto>($"api/channels/{id}", request, ct);
+
+    public Task DeleteChannelAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/channels/{id}", ct);
+
+    public Task<ChannelDto> SetChannelSegmentReachAsync(Guid id, SetChannelSegmentReachRequest request, CancellationToken ct) =>
+        PutAsync<SetChannelSegmentReachRequest, ChannelDto>($"api/channels/{id}/segment-reaches", request, ct);
+
+    public Task<ChannelDto> RemoveChannelSegmentReachAsync(Guid id, Guid clientSegmentId, CancellationToken ct) =>
+        DeleteReturningAsync<ChannelDto>($"api/channels/{id}/segment-reaches/{clientSegmentId}", ct);
+
+    public Task<ChannelDto> SetChannelProductAffinityAsync(Guid id, SetChannelProductAffinityRequest request, CancellationToken ct) =>
+        PutAsync<SetChannelProductAffinityRequest, ChannelDto>($"api/channels/{id}/product-affinities", request, ct);
+
+    public Task<ChannelDto> RemoveChannelProductAffinityAsync(Guid id, Guid productId, CancellationToken ct) =>
+        DeleteReturningAsync<ChannelDto>($"api/channels/{id}/product-affinities/{productId}", ct);
+
+    // ---------- Integrations ----------
+
+    public Task<PagedResponse<IntegrationDto>> ListIntegrationsAsync(Guid? productId, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<IntegrationDto>>(Query("api/integrations", ("productId", productId), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<IntegrationDto> GetIntegrationAsync(Guid id, CancellationToken ct) => GetAsync<IntegrationDto>($"api/integrations/{id}", ct);
+
+    public Task<IntegrationDto> CreateIntegrationAsync(CreateIntegrationRequest request, CancellationToken ct) =>
+        PostAsync<CreateIntegrationRequest, IntegrationDto>("api/integrations", request, ct);
+
+    public Task<IntegrationDto> UpdateIntegrationAsync(Guid id, UpdateIntegrationRequest request, CancellationToken ct) =>
+        PutAsync<UpdateIntegrationRequest, IntegrationDto>($"api/integrations/{id}", request, ct);
+
+    public Task DeleteIntegrationAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/integrations/{id}", ct);
+
+    // ---------- Firm↔Product relationships ----------
+
+    public Task<PagedResponse<FirmProductRelationshipDto>> ListFirmRelationshipsAsync(Guid? firmId, Guid? productId, bool? activeOnly, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<FirmProductRelationshipDto>>(
+            Query("api/firm-relationships", ("firmId", firmId), ("productId", productId), ("activeOnly", activeOnly), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<FirmProductRelationshipDto> GetFirmRelationshipAsync(Guid id, CancellationToken ct) =>
+        GetAsync<FirmProductRelationshipDto>($"api/firm-relationships/{id}", ct);
+
+    public Task<FirmProductRelationshipDto> CreateFirmRelationshipAsync(CreateFirmProductRelationshipRequest request, CancellationToken ct) =>
+        PostAsync<CreateFirmProductRelationshipRequest, FirmProductRelationshipDto>("api/firm-relationships", request, ct);
+
+    public Task<FirmProductRelationshipDto> UpdateFirmRelationshipAsync(Guid id, UpdateFirmProductRelationshipRequest request, CancellationToken ct) =>
+        PutAsync<UpdateFirmProductRelationshipRequest, FirmProductRelationshipDto>($"api/firm-relationships/{id}", request, ct);
+
+    public Task DeleteFirmRelationshipAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/firm-relationships/{id}", ct);
+
+    // ---------- Opportunities ----------
+
+    public Task<PagedResponse<OpportunityDto>> ListOpportunitiesAsync(Guid? firmId, Guid? channelId, OpportunityStage? stage, bool? isCrossSell, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<OpportunityDto>>(
+            Query("api/opportunities", ("firmId", firmId), ("channelId", channelId), ("stage", stage), ("isCrossSell", isCrossSell), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<OpportunityDto> GetOpportunityAsync(Guid id, CancellationToken ct) => GetAsync<OpportunityDto>($"api/opportunities/{id}", ct);
+
+    public Task<OpportunityDto> CreateOpportunityAsync(CreateOpportunityRequest request, CancellationToken ct) =>
+        PostAsync<CreateOpportunityRequest, OpportunityDto>("api/opportunities", request, ct);
+
+    public Task<OpportunityDto> UpdateOpportunityAsync(Guid id, UpdateOpportunityRequest request, CancellationToken ct) =>
+        PutAsync<UpdateOpportunityRequest, OpportunityDto>($"api/opportunities/{id}", request, ct);
+
+    public Task DeleteOpportunityAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/opportunities/{id}", ct);
+
+    public Task<OpportunityDto> AddOpportunityScopeAsync(Guid id, AddOpportunityScopeRequest request, CancellationToken ct) =>
+        PostAsync<AddOpportunityScopeRequest, OpportunityDto>($"api/opportunities/{id}/scope", request, ct);
+
+    public Task<OpportunityDto> RemoveOpportunityScopeAsync(Guid id, Guid businessProcessId, CancellationToken ct) =>
+        DeleteReturningAsync<OpportunityDto>($"api/opportunities/{id}/scope/{businessProcessId}", ct);
+
+    public Task<OpportunityDto> QualifyOpportunityAsync(Guid id, QualifyOpportunityRequest request, CancellationToken ct) =>
+        PostAsync<QualifyOpportunityRequest, OpportunityDto>($"api/opportunities/{id}/qualify", request, ct);
+
+    public Task<OpportunityDto> DecideOpportunityAsync(Guid id, DecideOpportunityRequest request, CancellationToken ct) =>
+        PostAsync<DecideOpportunityRequest, OpportunityDto>($"api/opportunities/{id}/decide", request, ct);
+
+    // ---------- Calibration runs ----------
+
+    public Task<PagedResponse<CalibrationRunDto>> ListCalibrationRunsAsync(Guid? workspaceId, Guid? priorAssumptionSetId, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<CalibrationRunDto>>(
+            Query("api/calibration-runs", ("workspaceId", workspaceId), ("priorAssumptionSetId", priorAssumptionSetId), ("page", page), ("pageSize", pageSize)), ct);
+
+    public Task<CalibrationRunDto> GetCalibrationRunAsync(Guid id, CancellationToken ct) => GetAsync<CalibrationRunDto>($"api/calibration-runs/{id}", ct);
+
+    public Task<CalibrationDiffDto> GetCalibrationRunDiffAsync(Guid id, CancellationToken ct) =>
+        GetAsync<CalibrationDiffDto>($"api/calibration-runs/{id}/diff", ct);
+
+    public Task<CalibrationRunResultDto> CreateCalibrationRunAsync(CreateCalibrationRunRequest request, CancellationToken ct) =>
+        PostAsync<CreateCalibrationRunRequest, CalibrationRunResultDto>("api/calibration-runs", request, ct);
+
+    public Task DeleteCalibrationRunAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/calibration-runs/{id}", ct);
 
     // ---------- Needs ----------
 
@@ -367,6 +488,11 @@ public sealed class ProductManagerApiClient(HttpClient http)
     public Task<EngineResult> GetSimulationRunResultAsync(Guid id, CancellationToken ct) => GetAsync<EngineResult>($"api/simulation-runs/{id}/result", ct);
 
     public Task<EngineInput> GetSimulationRunInputAsync(Guid id, CancellationToken ct) => GetAsync<EngineInput>($"api/simulation-runs/{id}/input", ct);
+
+    /// <summary>Firm-level diagnostics: opportunity funnels, sales-cycle length, expansions, and the
+    /// mean utility gap on lost deals. 404s on an aggregate run.</summary>
+    public Task<EngineFirmLevelDiagnostics> GetSimulationRunDiagnosticsAsync(Guid id, CancellationToken ct) =>
+        GetAsync<EngineFirmLevelDiagnostics>($"api/simulation-runs/{id}/diagnostics", ct);
 
     public Task<SimulationRunDto> CreateSimulationRunAsync(CreateSimulationRunRequest request, CancellationToken ct) =>
         PostAsync<CreateSimulationRunRequest, SimulationRunDto>("api/simulation-runs", request, ct);

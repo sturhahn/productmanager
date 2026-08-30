@@ -22,11 +22,18 @@ public sealed record CovariateObservation(Guid CovariateId, DateOnly EffectiveDa
 /// <param name="BusinessProcessId">Process whose coverage moves.</param>
 /// <param name="ToTier">Tier the process reaches once the delta is live.</param>
 /// <param name="LiveFrom">Planned end date of the delivering project.</param>
+/// <param name="ApproachId">
+/// Approach the delta applies to; null = the default cell covering every approach without one of
+/// its own. Carried through so a feature that only improves one method of doing the work (an
+/// algorithmic router, a self-serve onboarding flow) lands on that approach's cell rather than on
+/// the generic one, where the approach-specific cells would shadow it away.
+/// </param>
 public sealed record PlannedCoverageDelta(
     Guid? ClientSegmentId,
     Guid BusinessProcessId,
     CoverageTier ToTier,
-    DateOnly LiveFrom);
+    DateOnly LiveFrom,
+    Guid? ApproachId = null);
 
 /// <summary>Everything the builder needs, already loaded — kept pure so it is directly testable.</summary>
 public sealed record SimulationWorld(
@@ -246,7 +253,7 @@ public static class SimulationInputBuilder
         return schedule;
     }
 
-    private static CovariateInput BuildCovariate(
+    internal static CovariateInput BuildCovariate(
         Covariate covariate,
         IReadOnlyList<CovariateObservation> observations,
         DateOnly startDate,
@@ -274,7 +281,7 @@ public static class SimulationInputBuilder
         return new CovariateInput(covariate.Id.ToString(), MonthlyPath: path);
     }
 
-    private static EventInput? BuildEvent(MarketEvent marketEvent, DateOnly startDate, int horizonMonths)
+    internal static EventInput? BuildEvent(MarketEvent marketEvent, DateOnly startDate, int horizonMonths)
     {
         int start = MonthIndex(startDate, marketEvent.StartDate);
         int end = marketEvent.EndDate is null ? horizonMonths - 1 : MonthIndex(startDate, marketEvent.EndDate.Value);
@@ -319,7 +326,7 @@ public static class SimulationInputBuilder
         _ => throw new ArgumentOutOfRangeException(nameof(flowKind), flowKind, "Unknown simulation flow kind.")
     };
 
-    private static DistributionSpec ToEngineDistribution(Distribution distribution) => new(
+    internal static DistributionSpec ToEngineDistribution(Distribution distribution) => new(
         distribution.Type switch
         {
             DomainDistributionType.Point => EngineDistributionType.Point,

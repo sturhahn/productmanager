@@ -69,8 +69,12 @@ public class OpportunityConfiguration : IEntityTypeConfiguration<Opportunity>
         b.HasOne<Firm>().WithMany().HasForeignKey(x => x.FirmId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne<Channel>().WithMany().HasForeignKey(x => x.ChannelId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne<Product>().WithMany().HasForeignKey(x => x.WinningProductId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne<Product>().WithMany().HasForeignKey(x => x.CrossSellModuleProductId)
+            .OnDelete(DeleteBehavior.SetNull);
         b.HasIndex(x => x.FirmId);
         b.HasIndex(x => x.Stage);
+        b.Ignore(x => x.IsCrossSell);
+        b.Ignore(x => x.IsDecided);
         // CompetitorIds maps to a uuid[] column via Npgsql array support.
 
         b.OwnsMany(x => x.Scope, scope =>

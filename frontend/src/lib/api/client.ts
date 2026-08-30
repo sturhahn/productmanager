@@ -3,6 +3,7 @@
  * Base URL comes from NEXT_PUBLIC_API_URL (default: the API's dev port).
  */
 import type {
+  AddOpportunityScopeRequest,
   AddProjectDependencyRequest,
   AdoptBranchRequest,
   ApproachDto,
@@ -10,6 +11,10 @@ import type {
   BranchAssumptionSetRequest,
   BranchRoadmapRequest,
   BusinessProcessDto,
+  CalibrationDiffDto,
+  CalibrationRunDto,
+  CalibrationRunResultDto,
+  ChannelDto,
   ClientSegmentDto,
   CompetitorDto,
   CovariateDto,
@@ -18,46 +23,62 @@ import type {
   CreateApproachRequest,
   CreateAssumptionSetRequest,
   CreateBusinessProcessRequest,
+  CreateCalibrationRunRequest,
+  CreateChannelRequest,
   CreateClientSegmentRequest,
   CreateCompetitorRequest,
   CreateCovariateRequest,
   CreateCoverageRequest,
   CreateFactEventRequest,
   CreateFeatureRequest,
+  CreateFirmProductRelationshipRequest,
   CreateFirmRequest,
   CreateInitiativeRequest,
+  CreateIntegrationRequest,
   CreateMarketEventRequest,
   CreateMarketRequest,
   CreateNeedRequest,
+  CreateOpportunityRequest,
   CreateProductRequest,
   CreateProjectRequest,
   CreateRoadmapRequest,
   CreateSimulationRunRequest,
   CreateTeamRequest,
   CreateWorkspaceRequest,
+  DecideOpportunityRequest,
+  EngineFirmLevelDiagnostics,
   EngineInputSnapshot,
   EngineResult,
   FactEventDto,
   FactEventKind,
   FeatureDto,
   FirmDto,
+  FirmProductRelationshipDto,
+  GenerateSyntheticFirmsResponse,
   InitiativeDto,
+  IntegrationDto,
   LinkFeatureRequest,
   MarketDto,
   MarketEventDto,
   NeedDto,
+  OpportunityDto,
+  OpportunityStage,
   PagedResponse,
   PlanProjectRequest,
   ProblemDetails,
   ProductDto,
   ProjectDto,
+  QualifyOpportunityRequest,
   ReorderRoadmapRequest,
   RescheduleItemRequest,
   RoadmapDto,
   RoadmapFeasibilityDto,
   RoadmapItemDto,
+  SetChannelProductAffinityRequest,
+  SetChannelSegmentReachRequest,
   SetEffortDemandRequest,
   SetProductPriceRequest,
+  SetSegmentApproachAdoptionRequest,
   SetSegmentModulePenetrationRequest,
   SetSegmentStockStateRequest,
   SetTeamCapacityRequest,
@@ -67,16 +88,20 @@ import type {
   UpdateApproachRequest,
   UpdateAssumptionSetRequest,
   UpdateBusinessProcessRequest,
+  UpdateChannelRequest,
   UpdateClientSegmentRequest,
   UpdateCompetitorRequest,
   UpdateCovariateRequest,
   UpdateCoverageRequest,
   UpdateFeatureRequest,
+  UpdateFirmProductRelationshipRequest,
   UpdateFirmRequest,
   UpdateInitiativeRequest,
+  UpdateIntegrationRequest,
   UpdateMarketEventRequest,
   UpdateMarketRequest,
   UpdateNeedRequest,
+  UpdateOpportunityRequest,
   UpdateProductRequest,
   UpdateProjectRequest,
   UpdateRoadmapRequest,
@@ -423,6 +448,15 @@ export const api = {
         "DELETE",
         `/client-segments/${id}/module-penetrations/${moduleProductId}`,
       ),
+    setApproachAdoption: (id: string, body: SetSegmentApproachAdoptionRequest) =>
+      request<ClientSegmentDto>("PUT", `/client-segments/${id}/approach-mix`, {
+        body,
+      }),
+    removeApproachAdoption: (id: string, approachId: string) =>
+      request<void>(
+        "DELETE",
+        `/client-segments/${id}/approach-mix/${approachId}`,
+      ),
   },
 
   competitors: {
@@ -521,11 +555,141 @@ export const api = {
       request<PagedResponse<FirmDto>>("GET", "/firms", {
         query: { ...filters, ...paging },
       }),
+    /** Server-side paging for the firms table (rosters can be thousands deep). */
+    page: (
+      filters: {
+        marketId?: string;
+        clientSegmentId?: string;
+        epistemicStatus?: string;
+      },
+      page: number,
+      pageSize: number,
+    ) =>
+      request<PagedResponse<FirmDto>>("GET", "/firms", {
+        query: { ...filters, page, pageSize },
+      }),
+    get: (id: string) => request<FirmDto>("GET", `/firms/${id}`),
     create: (body: CreateFirmRequest) =>
       request<FirmDto>("POST", "/firms", { body }),
     update: (id: string, body: UpdateFirmRequest) =>
       request<FirmDto>("PUT", `/firms/${id}`, { body }),
     delete: (id: string) => request<void>("DELETE", `/firms/${id}`),
+    generateSynthetic: (marketId: string) =>
+      request<GenerateSyntheticFirmsResponse>(
+        "POST",
+        "/firms/generate-synthetic",
+        { body: { marketId } },
+      ),
+  },
+
+  // ------------------------------------------------------------------
+  // Phase 3 — firm-level choice engine
+  // ------------------------------------------------------------------
+
+  channels: {
+    list: (marketId: string) =>
+      request<PagedResponse<ChannelDto>>("GET", "/channels", {
+        query: { marketId, ...paging },
+      }),
+    create: (body: CreateChannelRequest) =>
+      request<ChannelDto>("POST", "/channels", { body }),
+    update: (id: string, body: UpdateChannelRequest) =>
+      request<ChannelDto>("PUT", `/channels/${id}`, { body }),
+    delete: (id: string) => request<void>("DELETE", `/channels/${id}`),
+    setSegmentReach: (id: string, body: SetChannelSegmentReachRequest) =>
+      request<ChannelDto>("PUT", `/channels/${id}/segment-reaches`, { body }),
+    removeSegmentReach: (id: string, clientSegmentId: string) =>
+      request<void>(
+        "DELETE",
+        `/channels/${id}/segment-reaches/${clientSegmentId}`,
+      ),
+    setProductAffinity: (id: string, body: SetChannelProductAffinityRequest) =>
+      request<ChannelDto>("PUT", `/channels/${id}/product-affinities`, {
+        body,
+      }),
+    removeProductAffinity: (id: string, productId: string) =>
+      request<void>(
+        "DELETE",
+        `/channels/${id}/product-affinities/${productId}`,
+      ),
+  },
+
+  integrations: {
+    list: (productId?: string) =>
+      request<PagedResponse<IntegrationDto>>("GET", "/integrations", {
+        query: { productId, ...paging },
+      }),
+    create: (body: CreateIntegrationRequest) =>
+      request<IntegrationDto>("POST", "/integrations", { body }),
+    update: (id: string, body: UpdateIntegrationRequest) =>
+      request<IntegrationDto>("PUT", `/integrations/${id}`, { body }),
+    delete: (id: string) => request<void>("DELETE", `/integrations/${id}`),
+  },
+
+  firmRelationships: {
+    list: (filters: {
+      firmId?: string;
+      productId?: string;
+      activeOnly?: boolean;
+    }) =>
+      request<PagedResponse<FirmProductRelationshipDto>>(
+        "GET",
+        "/firm-relationships",
+        { query: { ...filters, ...paging } },
+      ),
+    create: (body: CreateFirmProductRelationshipRequest) =>
+      request<FirmProductRelationshipDto>("POST", "/firm-relationships", {
+        body,
+      }),
+    update: (id: string, body: UpdateFirmProductRelationshipRequest) =>
+      request<FirmProductRelationshipDto>("PUT", `/firm-relationships/${id}`, {
+        body,
+      }),
+    delete: (id: string) =>
+      request<void>("DELETE", `/firm-relationships/${id}`),
+  },
+
+  opportunities: {
+    list: (filters: {
+      firmId?: string;
+      channelId?: string;
+      stage?: OpportunityStage;
+      isCrossSell?: boolean;
+    }) =>
+      request<PagedResponse<OpportunityDto>>("GET", "/opportunities", {
+        query: { ...filters, ...paging },
+      }),
+    get: (id: string) => request<OpportunityDto>("GET", `/opportunities/${id}`),
+    create: (body: CreateOpportunityRequest) =>
+      request<OpportunityDto>("POST", "/opportunities", { body }),
+    update: (id: string, body: UpdateOpportunityRequest) =>
+      request<OpportunityDto>("PUT", `/opportunities/${id}`, { body }),
+    delete: (id: string) => request<void>("DELETE", `/opportunities/${id}`),
+    addScope: (id: string, body: AddOpportunityScopeRequest) =>
+      request<OpportunityDto>("POST", `/opportunities/${id}/scope`, { body }),
+    removeScope: (id: string, businessProcessId: string) =>
+      request<void>(
+        "DELETE",
+        `/opportunities/${id}/scope/${businessProcessId}`,
+      ),
+    qualify: (id: string, body: QualifyOpportunityRequest) =>
+      request<OpportunityDto>("POST", `/opportunities/${id}/qualify`, { body }),
+    decide: (id: string, body: DecideOpportunityRequest) =>
+      request<OpportunityDto>("POST", `/opportunities/${id}/decide`, { body }),
+  },
+
+  calibrationRuns: {
+    list: (workspaceId: string) =>
+      request<PagedResponse<CalibrationRunDto>>("GET", "/calibration-runs", {
+        query: { workspaceId, ...paging },
+      }),
+    get: (id: string) =>
+      request<CalibrationRunDto>("GET", `/calibration-runs/${id}`),
+    create: (body: CreateCalibrationRunRequest) =>
+      request<CalibrationRunResultDto>("POST", "/calibration-runs", { body }),
+    delete: (id: string) => request<void>("DELETE", `/calibration-runs/${id}`),
+    diff: (id: string) =>
+      request<CalibrationDiffDto>("GET", `/calibration-runs/${id}/diff`),
   },
 
   marketEvents: {
@@ -629,5 +793,10 @@ export const api = {
       request<EngineResult>("GET", `/simulation-runs/${id}/result`),
     input: (id: string) =>
       request<EngineInputSnapshot>("GET", `/simulation-runs/${id}/input`),
+    diagnostics: (id: string) =>
+      request<EngineFirmLevelDiagnostics>(
+        "GET",
+        `/simulation-runs/${id}/diagnostics`,
+      ),
   },
 };

@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Building2Icon,
   BuildingIcon,
   CalendarRangeIcon,
   CompassIcon,
+  FlaskConicalIcon,
   FoldersIcon,
   Grid3x3Icon,
   GlobeIcon,
@@ -13,8 +15,10 @@ import {
   PackageIcon,
   PlayIcon,
   PuzzleIcon,
+  RouteIcon,
   SlidersHorizontalIcon,
   SwordsIcon,
+  TargetIcon,
   UsersIcon,
   WorkflowIcon,
 } from "lucide-react";
@@ -40,10 +44,13 @@ const NAV_SECTIONS = [
     items: [
       { href: "/markets", label: "Markets", icon: GlobeIcon },
       { href: "/segments", label: "Segments", icon: BuildingIcon },
+      { href: "/firms", label: "Firms", icon: Building2Icon },
       { href: "/products", label: "Products", icon: PackageIcon },
       { href: "/competitors", label: "Competitors", icon: SwordsIcon },
+      { href: "/channels", label: "Channels", icon: RouteIcon },
       { href: "/processes", label: "Processes", icon: WorkflowIcon },
       { href: "/coverage", label: "Coverage", icon: Grid3x3Icon },
+      { href: "/opportunities", label: "Pipeline", icon: TargetIcon },
     ],
   },
   {
@@ -51,6 +58,7 @@ const NAV_SECTIONS = [
     items: [
       { href: "/assumptions", label: "Assumptions", icon: SlidersHorizontalIcon },
       { href: "/simulate", label: "Runs", icon: PlayIcon },
+      { href: "/calibration", label: "Calibration", icon: FlaskConicalIcon },
     ],
   },
 ] as const;

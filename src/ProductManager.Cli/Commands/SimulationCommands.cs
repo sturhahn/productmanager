@@ -55,6 +55,14 @@ internal static class SimulationCommands
             CliInfrastructure.WriteJson(await client.GetSimulationRunInputAsync(parseResult.GetValue(idArg), ct2));
         }, ct));
 
+        var diagnostics = new Command("diagnostics", "A firm-level run's opportunity funnels, sales-cycle length, expansions, and lost-deal utility gap. 404s on an aggregate run.");
+        diagnostics.Arguments.Add(idArg);
+        diagnostics.SetAction((parseResult, ct) => CliInfrastructure.RunAsync(async ct2 =>
+        {
+            var client = CliInfrastructure.BuildAuthenticatedClient(parseResult);
+            CliInfrastructure.WriteJson(await client.GetSimulationRunDiagnosticsAsync(parseResult.GetValue(idArg), ct2));
+        }, ct));
+
         var delete = new Command("delete", "Deletes a run.");
         delete.Arguments.Add(idArg);
         delete.SetAction((parseResult, ct) => CliInfrastructure.RunAsync(async ct2 =>
@@ -70,6 +78,7 @@ internal static class SimulationCommands
         sim.Subcommands.Add(show);
         sim.Subcommands.Add(result);
         sim.Subcommands.Add(input);
+        sim.Subcommands.Add(diagnostics);
         sim.Subcommands.Add(delete);
         sim.Subcommands.Add(BuildCompare());
         return sim;
@@ -89,8 +98,9 @@ internal static class SimulationCommands
         var marketIdOption = new Option<Guid?>("--market-id") { Description = "Restricts to one market; omit to simulate the whole workspace." };
         var eventIdsOption = new Option<string?>("--event-ids") { Description = "Comma-separated real MarketEvent ids to overlay." };
         var hypotheticalEventIdsOption = new Option<string?>("--hypothetical-event-ids") { Description = "Comma-separated hypothetical MarketEvent ids to inject." };
+        var modeOption = new Option<string?>("--mode") { Description = "aggregate | firm-level. Defaults to aggregate (engine v0, the fast preview)." };
 
-        var cmd = new Command("run", "Executes one simulation synchronously and prints the run id plus a headline-metrics digest.");
+        var cmd = new Command("run", "Executes one simulation synchronously and prints the run id plus a headline-metrics digest (and the funnel diagnostics, for --mode firm-level).");
         cmd.Options.Add(roadmapIdOption);
         cmd.Options.Add(assumptionSetIdOption);
         cmd.Options.Add(horizonMonthsOption);
@@ -103,6 +113,7 @@ internal static class SimulationCommands
         cmd.Options.Add(marketIdOption);
         cmd.Options.Add(eventIdsOption);
         cmd.Options.Add(hypotheticalEventIdsOption);
+        cmd.Options.Add(modeOption);
         cmd.SetAction((parseResult, ct) => CliInfrastructure.RunAsync(async ct2 =>
         {
             var client = CliInfrastructure.BuildAuthenticatedClient(parseResult);
@@ -117,7 +128,8 @@ internal static class SimulationCommands
                 ParseHelpers.ParseOptionalDate(parseResult.GetValue(startDateOption), "--start-date"),
                 parseResult.GetValue(marketIdOption),
                 ParseHelpers.ParseGuidList(parseResult.GetValue(eventIdsOption)),
-                ParseHelpers.ParseGuidList(parseResult.GetValue(hypotheticalEventIdsOption)));
+                ParseHelpers.ParseGuidList(parseResult.GetValue(hypotheticalEventIdsOption)),
+                Phase3ParseHelpers.ParseEngineMode(parseResult.GetValue(modeOption)));
 
             var run = await client.CreateSimulationRunAsync(request, ct2);
             var engineResult = await client.GetSimulationRunResultAsync(run.Id, ct2);
@@ -127,6 +139,7 @@ internal static class SimulationCommands
             {
                 runId = run.Id,
                 name = run.Name,
+                engineMode = run.EngineMode,
                 horizonMonths = run.HorizonMonths,
                 paths = run.Paths,
                 npvMean = headline.NpvMean,
@@ -136,6 +149,13 @@ internal static class SimulationCommands
                 terminalArr = headline.TerminalArr,
                 cumulativeBookings = headline.CumulativeBookings
             });
+
+            if (run.HasDiagnostics)
+            {
+                var diagnostics = await client.GetSimulationRunDiagnosticsAsync(run.Id, ct2);
+                Console.WriteLine();
+                Console.WriteLine(SimulationSummary.FormatFunnel(diagnostics));
+            }
         }, ct));
         return cmd;
     }
@@ -145,7 +165,7 @@ internal static class SimulationCommands
         var runAArg = new Argument<Guid>("run-a");
         var runBArg = new Argument<Guid>("run-b");
 
-        var cmd = new Command("compare", "Fetches two runs' results and prints a side-by-side delta table of headline metrics (B minus A).");
+        var cmd = new Command("compare", "Fetches two runs' metadata and results and prints a side-by-side delta table of headline metrics (B minus A), labeled with each run's engine mode.");
         cmd.Arguments.Add(runAArg);
         cmd.Arguments.Add(runBArg);
         cmd.SetAction((parseResult, ct) => CliInfrastructure.RunAsync(async ct2 =>
@@ -154,14 +174,25 @@ internal static class SimulationCommands
             var runA = parseResult.GetValue(runAArg);
             var runB = parseResult.GetValue(runBArg);
 
+            // Metadata (not just /result) so each column can be labeled with the engine mode it was
+            // run under — Aggregate and FirmLevel numbers are not directly comparable, and a reader
+            // scanning bare numbers has no way to notice a cross-mode comparison without this.
+            var metaA = await client.GetSimulationRunAsync(runA, ct2);
+            var metaB = await client.GetSimulationRunAsync(runB, ct2);
             var resultA = await client.GetSimulationRunResultAsync(runA, ct2);
             var resultB = await client.GetSimulationRunResultAsync(runB, ct2);
             var rows = SimulationSummary.Compare(resultA, resultB);
+            var crossMode = metaA.EngineMode != metaB.EngineMode;
 
             CliInfrastructure.WriteJson(new
             {
                 runA,
+                runAEngineMode = metaA.EngineMode,
                 runB,
+                runBEngineMode = metaB.EngineMode,
+                crossModeWarning = crossMode
+                    ? $"Run A ran in {metaA.EngineMode} mode and run B ran in {metaB.EngineMode} mode — cross-mode magnitude comparisons are not meaningful."
+                    : null,
                 metrics = rows.Select(r => new
                 {
                     metric = r.Metric,
@@ -171,6 +202,9 @@ internal static class SimulationCommands
                     percentDelta = r.PercentDelta
                 })
             });
+
+            Console.WriteLine();
+            Console.WriteLine(SimulationSummary.FormatCompareTable(runA, metaA.EngineMode, runB, metaB.EngineMode, rows));
         }, ct));
         return cmd;
     }

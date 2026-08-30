@@ -18,6 +18,11 @@ root.Subcommands.Add(MarketEventCommands.Build());
 root.Subcommands.Add(CovariateCommands.Build());
 root.Subcommands.Add(CoverageCommands.Build());
 root.Subcommands.Add(AssumptionSetCommands.Build());
+root.Subcommands.Add(ChannelCommands.Build());
+root.Subcommands.Add(IntegrationCommands.Build());
+root.Subcommands.Add(FirmRelationshipCommands.Build());
+root.Subcommands.Add(OpportunityCommands.Build());
+root.Subcommands.Add(CalibrationCommands.Build());
 root.Subcommands.Add(SimulationCommands.Build());
 root.Subcommands.Add(SeedCommand.Build());
 

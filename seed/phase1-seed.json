@@ -387,12 +387,18 @@
       {
         "name": "Apex OMS Platform",
         "description": "Apex's order management and execution platform.",
-        "competitorName": "Apex Financial Systems"
+        "competitorName": "Apex Financial Systems",
+        "prices": [
+          { "recurringAmount": 7500, "currency": "USD", "implementationFeeAmount": 45000, "implementationFeeCurrency": "USD" }
+        ]
       },
       {
         "name": "Ledgerline Portfolio Cloud",
         "description": "Ledgerline's cloud reporting and client portal platform.",
-        "competitorName": "Ledgerline Technologies"
+        "competitorName": "Ledgerline Technologies",
+        "prices": [
+          { "recurringAmount": 5500, "currency": "USD", "implementationFeeAmount": 30000, "implementationFeeCurrency": "USD" }
+        ]
       }
     ],
 
@@ -413,6 +419,11 @@
       { "productName": "Meridian Portfolio Suite", "businessProcessName": "Client Onboarding", "approachName": "White-Glove", "tier": "NotPlaying", "confidence": 0.95,
         "rationale": "We deliberately do not staff white-glove onboarding; self-serve only.", "effectiveDate": "2026-08-01" },
 
+      { "productName": "Meridian Trading Module", "businessProcessName": "Order Management", "tier": "Silver", "confidence": 0.9, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Trading Module", "businessProcessName": "Trade Execution", "tier": "Silver", "confidence": 0.85, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Reporting Module", "businessProcessName": "Client Reporting", "tier": "Bronze", "confidence": 0.9, "effectiveDate": "2026-08-01" },
+      { "productName": "Meridian Reporting Module", "businessProcessName": "Performance Reporting", "tier": "Silver", "confidence": 0.9, "effectiveDate": "2026-08-01" },
+
       { "productName": "Apex OMS Platform", "businessProcessName": "Order Management", "tier": "Gold", "confidence": 0.6,
         "rationale": "Inferred from win/loss notes and public materials; not directly observed." },
       { "productName": "Apex OMS Platform", "businessProcessName": "Trade Execution", "tier": "Gold", "confidence": 0.6 },
@@ -426,6 +437,31 @@
       { "productName": "Ledgerline Portfolio Cloud", "businessProcessName": "Portfolio Construction", "tier": "Silver", "confidence": 0.5 },
       { "productName": "Ledgerline Portfolio Cloud", "businessProcessName": "Risk Analytics", "tier": "NotPlaying", "isUnknown": true,
         "rationale": "No evidence either way yet — flagged unknown rather than guessed." }
+    ],
+
+    "needs": [
+      { "segmentName": "Enterprise Asset Managers", "businessProcessName": "Portfolio Construction", "importanceWeight": 0.85,
+        "notes": "Multi-desk model management is the reason these firms buy a platform at all." },
+      { "segmentName": "Enterprise Asset Managers", "businessProcessName": "Compliance Monitoring", "importanceWeight": 0.8, "isHard": true, "requiredCoverage": 0.35,
+        "notes": "Mandate and restricted-list checking is a gate: a platform that cannot do it is not evaluated." },
+      { "segmentName": "Enterprise Asset Managers", "businessProcessName": "Order Management", "importanceWeight": 0.7 },
+      { "segmentName": "Enterprise Asset Managers", "businessProcessName": "Trade Execution", "importanceWeight": 0.6 },
+      { "segmentName": "Enterprise Asset Managers", "businessProcessName": "Regulatory Reporting", "importanceWeight": 0.6, "workaroundCostPerPeriod": 600,
+        "notes": "Filings can be produced by an outside vendor when the platform will not — at a cost." },
+      { "segmentName": "Enterprise Asset Managers", "businessProcessName": "Client Reporting", "importanceWeight": 0.5, "workaroundCostPerPeriod": 400 },
+
+      { "segmentName": "Mid-Market RIAs", "businessProcessName": "Portfolio Construction", "importanceWeight": 0.7 },
+      { "segmentName": "Mid-Market RIAs", "businessProcessName": "Client Reporting", "importanceWeight": 0.65,
+        "notes": "The client-facing statement is the product as far as an RIA's own clients are concerned." },
+      { "segmentName": "Mid-Market RIAs", "businessProcessName": "Rebalancing", "importanceWeight": 0.5 },
+      { "segmentName": "Mid-Market RIAs", "businessProcessName": "Performance Reporting", "importanceWeight": 0.5 },
+      { "segmentName": "Mid-Market RIAs", "businessProcessName": "Compliance Monitoring", "importanceWeight": 0.4, "workaroundCostPerPeriod": 400 },
+
+      { "segmentName": "Boutique Family Offices", "businessProcessName": "Client Reporting", "importanceWeight": 0.75 },
+      { "segmentName": "Boutique Family Offices", "businessProcessName": "Performance Reporting", "importanceWeight": 0.6 },
+      { "segmentName": "Boutique Family Offices", "businessProcessName": "Compliance Monitoring", "importanceWeight": 0.6, "workaroundCostPerPeriod": 250 },
+      { "segmentName": "Boutique Family Offices", "businessProcessName": "Portfolio Construction", "importanceWeight": 0.5 },
+      { "segmentName": "Boutique Family Offices", "businessProcessName": "Reconciliation", "importanceWeight": 0.35 }
     ]
   }
 }

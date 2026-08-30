@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductManager.Api.Contracts;
@@ -5,6 +6,7 @@ using ProductManager.Api.Infrastructure;
 using ProductManager.Api.Persistence;
 using ProductManager.Api.Simulation;
 using ProductManager.Domain.Common;
+using ProductManager.Domain.Market;
 using ProductManager.Domain.Simulation;
 using ProductManager.Engine;
 
@@ -42,19 +44,49 @@ public sealed class SimulationRunsController(AppDbContext db) : ApiControllerBas
         return run is null ? NotFoundProblem("SimulationRun", id) : Ok(run.ToDto());
     }
 
-    /// <summary>The run's trajectories: per-segment and total bands (mean/P10/P50/P90) plus the NPV distribution.</summary>
+    /// <summary>
+    /// The run's trajectories: per-segment and total bands (mean/P10/P50/P90) plus the NPV
+    /// distribution. Firm-level runs carry an extra <c>diagnostics</c> property here (the same
+    /// document <c>GET {id}/diagnostics</c> returns); the trajectory fields are identical in both
+    /// modes, which is what lets a comparison put an aggregate run and a firm-level run side by side.
+    /// </summary>
     [HttpGet("{id:guid}/result")]
     [ProducesResponseType(typeof(EngineResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> Result(Guid id, CancellationToken ct)
     {
         var run = await db.SimulationRuns.AsNoTracking()
             .Where(r => r.Id == id)
-            .Select(r => new { r.TrajectoriesJson })
+            .Select(r => new { r.TrajectoriesJson, r.DiagnosticsJson })
             .FirstOrDefaultAsync(ct);
 
         if (run is null) return NotFoundProblem("SimulationRun", id);
         if (run.TrajectoriesJson is null) return NotFoundProblem("Result for simulation run", id);
-        return Content(run.TrajectoriesJson, "application/json");
+        if (run.DiagnosticsJson is null) return Content(run.TrajectoriesJson, "application/json");
+
+        // Composed on read rather than stored merged: the trajectory document a run stores has to
+        // stay a plain EngineResult for the byte-identical reproducibility check to mean anything.
+        var node = JsonNode.Parse(run.TrajectoriesJson)!.AsObject();
+        node["diagnostics"] = JsonNode.Parse(run.DiagnosticsJson);
+        return Content(node.ToJsonString(SimulationJson.Options), "application/json");
+    }
+
+    /// <summary>
+    /// Firm-level diagnostics: opportunity funnels by segment and by channel, average sales-cycle
+    /// length, scope expansions, the mean utility gap on lost deals, and how many synthetic firms
+    /// the run created. 404 on an aggregate run — it has no opportunities to count.
+    /// </summary>
+    [HttpGet("{id:guid}/diagnostics")]
+    [ProducesResponseType(typeof(FirmLevelDiagnostics), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Diagnostics(Guid id, CancellationToken ct)
+    {
+        var run = await db.SimulationRuns.AsNoTracking()
+            .Where(r => r.Id == id)
+            .Select(r => new { r.DiagnosticsJson })
+            .FirstOrDefaultAsync(ct);
+
+        if (run is null) return NotFoundProblem("SimulationRun", id);
+        if (run.DiagnosticsJson is null) return NotFoundProblem("Diagnostics for simulation run", id);
+        return Content(run.DiagnosticsJson, "application/json");
     }
 
     /// <summary>
@@ -152,22 +184,55 @@ public sealed class SimulationRunsController(AppDbContext db) : ApiControllerBas
             .ToListAsync(ct);
 
         var plannedDeltas = await LoadPlannedCoverageDeltasAsync(roadmap.Id, ct);
+        var observations = CovariateHistoryReader.ToObservations(covariateFacts);
+        var parameters = assumptionSet.Parameters.ToList();
 
-        var world = new SimulationWorld(
-            segments,
-            assumptionSet.Parameters.ToList(),
-            covariates,
-            CovariateHistoryReader.ToObservations(covariateFacts),
-            events,
-            coverages,
-            ourProductIds,
-            plannedDeltas);
+        string inputJson;
+        string modelVersion;
+        EngineResult result;
+        string? diagnosticsJson = null;
+        IReadOnlyList<CovariateInput> covariateScenario;
+        IReadOnlyList<EventInput> eventOverlay;
 
-        var input = SimulationInputBuilder.Build(
-            world, startDate, request.HorizonMonths, request.Paths, request.Seed,
-            request.DiscountRateAnnual, request.TerminalGrowthAnnual);
+        if (request.EngineMode == SimulationEngineMode.FirmLevel)
+        {
+            var firmWorld = await LoadFirmLevelWorldAsync(
+                marketIds, segments, parameters, covariates, observations, events, coverages, plannedDeltas, ct);
 
-        var result = SimulationEngine.Run(input);
+            var firmInput = FirmLevelInputBuilder.Build(
+                firmWorld, startDate, request.HorizonMonths, request.Paths, request.Seed,
+                request.DiscountRateAnnual, request.TerminalGrowthAnnual);
+
+            var firmResult = FirmLevelEngine.Run(firmInput);
+            result = firmResult.Result;
+            inputJson = SimulationJson.Serialize(firmInput);
+            modelVersion = FirmLevelInputBuilder.ModelVersion;
+            diagnosticsJson = SimulationJson.Serialize(firmResult.Diagnostics);
+            covariateScenario = firmInput.Covariates;
+            eventOverlay = firmInput.Events;
+        }
+        else
+        {
+            var world = new SimulationWorld(
+                segments,
+                parameters,
+                covariates,
+                observations,
+                events,
+                coverages,
+                ourProductIds,
+                plannedDeltas);
+
+            var input = SimulationInputBuilder.Build(
+                world, startDate, request.HorizonMonths, request.Paths, request.Seed,
+                request.DiscountRateAnnual, request.TerminalGrowthAnnual);
+
+            result = SimulationEngine.Run(input);
+            inputJson = SimulationJson.Serialize(input);
+            modelVersion = SimulationInputBuilder.ModelVersion;
+            covariateScenario = input.Covariates;
+            eventOverlay = input.Events;
+        }
 
         var run = new SimulationRun(
             workspaceId,
@@ -180,22 +245,86 @@ public sealed class SimulationRunsController(AppDbContext db) : ApiControllerBas
             request.DiscountRateAnnual,
             request.TerminalGrowthAnnual,
             request.Name,
-            SimulationJson.Serialize(input.Covariates),
-            SimulationJson.Serialize(input.Events),
-            SimulationInputBuilder.ModelVersion);
+            SimulationJson.Serialize(covariateScenario),
+            SimulationJson.Serialize(eventOverlay),
+            modelVersion,
+            request.EngineMode);
 
         // Wall-clock time is measurement, not result: it is stored on the run, and zeroed inside the
         // result document so two runs of the same input are byte-identical — which is what makes the
         // reproducibility guarantee checkable rather than merely claimed.
         run.RecordResult(
-            SimulationJson.Serialize(input),
+            inputJson,
             SimulationJson.Serialize(result with { ElapsedMs = 0 }),
-            result.ElapsedMs);
+            result.ElapsedMs,
+            diagnosticsJson);
 
         db.SimulationRuns.Add(run);
         await db.SaveChangesAsync(ct);
         return CreatedAtAction(nameof(Get), new { id = run.Id }, run.ToDto());
     }
+
+    /// <summary>
+    /// Loads what only the firm-level engine reads: the process catalog, the firm roster with its
+    /// relationships, products with pricing, channels, integrations and the demand edges.
+    /// </summary>
+    private async Task<FirmLevelWorld> LoadFirmLevelWorldAsync(
+        List<Guid> marketIds,
+        List<ClientSegment> segments,
+        List<Parameter> parameters,
+        List<Covariate> covariates,
+        IReadOnlyList<CovariateObservation> observations,
+        List<MarketEvent> events,
+        List<Coverage> coverages,
+        List<PlannedCoverageDelta> plannedDeltas,
+        CancellationToken ct)
+    {
+        var processes = await db.BusinessProcesses.AsNoTracking()
+            .Where(p => marketIds.Contains(p.MarketId))
+            .OrderBy(p => p.Id)
+            .ToListAsync(ct);
+
+        var products = await db.Products.AsNoTracking()
+            .Where(p => marketIds.Contains(p.MarketId))
+            .OrderBy(p => p.Id)
+            .ToListAsync(ct);
+
+        var segmentIds = segments.Select(s => s.Id).ToList();
+        var firms = await db.Firms.AsNoTracking()
+            .Where(f => marketIds.Contains(f.MarketId)
+                        && f.ClientSegmentId != null
+                        && segmentIds.Contains(f.ClientSegmentId.Value))
+            .OrderBy(f => f.Id)
+            .ToListAsync(ct);
+
+        var firmIds = firms.Select(f => f.Id).ToList();
+        var relationships = await db.FirmProductRelationships.AsNoTracking()
+            .Where(r => firmIds.Contains(r.FirmId))
+            .OrderBy(r => r.Id)
+            .ToListAsync(ct);
+
+        var channels = await db.Channels.AsNoTracking()
+            .Where(c => marketIds.Contains(c.MarketId))
+            .OrderBy(c => c.Id)
+            .ToListAsync(ct);
+
+        var productIds = products.Select(p => p.Id).ToList();
+        var integrations = await db.Integrations.AsNoTracking()
+            .Where(i => productIds.Contains(i.ProductAId) || productIds.Contains(i.ProductBId))
+            .OrderBy(i => i.Id)
+            .ToListAsync(ct);
+
+        var processIds = processes.Select(p => p.Id).ToList();
+        var needs = await db.Needs.AsNoTracking()
+            .Where(n => processIds.Contains(n.BusinessProcessId))
+            .OrderBy(n => n.Id)
+            .ToListAsync(ct);
+
+        return new FirmLevelWorld(
+            segments, processes, firms, relationships, products, coverages, channels, integrations, needs,
+            parameters, covariates, observations, events, plannedDeltas);
+    }
+
 
     /// <summary>Deletes a run. Deleting is the only write a stored run allows — it is never edited.</summary>
     [HttpDelete("{id:guid}")]
@@ -258,7 +387,8 @@ public sealed class SimulationRunsController(AppDbContext db) : ApiControllerBas
                 if (delta.Kind != FeatureDeltaKind.Coverage) continue;
                 if (delta.BusinessProcessId is null || delta.ToTier is null) continue;
                 deltas.Add(new PlannedCoverageDelta(
-                    delta.SegmentId, delta.BusinessProcessId.Value, delta.ToTier.Value, liveFrom));
+                    delta.SegmentId, delta.BusinessProcessId.Value, delta.ToTier.Value, liveFrom,
+                    delta.ApproachId));
             }
         }
 

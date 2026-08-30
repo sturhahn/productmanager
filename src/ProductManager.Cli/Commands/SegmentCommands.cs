@@ -40,6 +40,8 @@ internal static class SegmentCommands
         segment.Subcommands.Add(BuildSetStocks(idArg));
         segment.Subcommands.Add(BuildSetModulePenetration(idArg));
         segment.Subcommands.Add(BuildRemoveModulePenetration(idArg));
+        segment.Subcommands.Add(BuildSetApproachAdoption(idArg));
+        segment.Subcommands.Add(BuildRemoveApproachAdoption(idArg));
         return segment;
     }
 
@@ -113,6 +115,39 @@ internal static class SegmentCommands
             var client = CliInfrastructure.BuildAuthenticatedClient(parseResult);
             CliInfrastructure.WriteJson(await client.RemoveSegmentModulePenetrationAsync(
                 parseResult.GetValue(idArg), parseResult.GetValue(moduleIdOption), ct2));
+        }, ct));
+        return cmd;
+    }
+
+    private static Command BuildSetApproachAdoption(Argument<Guid> idArg)
+    {
+        var approachIdOption = new Option<Guid>("--approach-id") { Required = true, Description = "Upserts by approach." };
+        var shareOption = new Option<double>("--share") { Required = true, Description = "Fraction [0,1] of the segment's firms using this approach." };
+
+        var cmd = new Command("set-approach-adoption", "Sets (upserting by approach) the share of this segment's firms using one alternative approach to a process.");
+        cmd.Arguments.Add(idArg);
+        cmd.Options.Add(approachIdOption);
+        cmd.Options.Add(shareOption);
+        cmd.SetAction((parseResult, ct) => CliInfrastructure.RunAsync(async ct2 =>
+        {
+            var client = CliInfrastructure.BuildAuthenticatedClient(parseResult);
+            var request = new SetSegmentApproachAdoptionRequest(parseResult.GetValue(approachIdOption), parseResult.GetValue(shareOption));
+            CliInfrastructure.WriteJson(await client.SetSegmentApproachAdoptionAsync(parseResult.GetValue(idArg), request, ct2));
+        }, ct));
+        return cmd;
+    }
+
+    private static Command BuildRemoveApproachAdoption(Argument<Guid> idArg)
+    {
+        var approachIdOption = new Option<Guid>("--approach-id") { Required = true };
+        var cmd = new Command("remove-approach-adoption", "Removes an approach-adoption entry from a segment.");
+        cmd.Arguments.Add(idArg);
+        cmd.Options.Add(approachIdOption);
+        cmd.SetAction((parseResult, ct) => CliInfrastructure.RunAsync(async ct2 =>
+        {
+            var client = CliInfrastructure.BuildAuthenticatedClient(parseResult);
+            CliInfrastructure.WriteJson(await client.RemoveSegmentApproachAdoptionAsync(
+                parseResult.GetValue(idArg), parseResult.GetValue(approachIdOption), ct2));
         }, ct));
         return cmd;
     }

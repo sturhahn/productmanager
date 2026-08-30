@@ -72,6 +72,16 @@ public class ClientSegmentConfiguration : IEntityTypeConfiguration<ClientSegment
             penetration.HasIndex(p => p.ModuleProductId);
         });
         b.Navigation(x => x.ModulePenetrations).AutoInclude();
+
+        b.OwnsMany(x => x.ApproachAdoptions, adoption =>
+        {
+            adoption.ToTable("ClientSegmentApproachAdoptions");
+            adoption.WithOwner().HasForeignKey("ClientSegmentId");
+            adoption.Property<int>("Id");
+            adoption.HasKey("Id");
+            adoption.HasIndex(a => a.ApproachId);
+        });
+        b.Navigation(x => x.ApproachAdoptions).AutoInclude();
     }
 }
 
@@ -131,6 +141,8 @@ public class FirmProductRelationshipConfiguration : IEntityTypeConfiguration<Fir
         b.HasOne<Product>().WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(x => new { x.FirmId, x.ProductId });
         b.OwnMoney(x => x.PricePaidPerPeriod, "PricePaid");
+        // ServedProcessIds maps to a uuid[] column via Npgsql array support (delimited text
+        // elsewhere — see AppDbContext.OnModelCreating).
     }
 }
 

@@ -59,18 +59,18 @@
         "gbmDrift": 0.004,
         "gbmVol": 0.045,
         "observations": [
-          { "effectiveDate": "2025-09-01", "value": 100.0 },
-          { "effectiveDate": "2025-10-01", "value": 100.8 },
-          { "effectiveDate": "2025-11-01", "value": 102.1 },
-          { "effectiveDate": "2025-12-01", "value": 101.5 },
-          { "effectiveDate": "2026-01-01", "value": 103.4 },
-          { "effectiveDate": "2026-02-01", "value": 104.0 },
-          { "effectiveDate": "2026-03-01", "value": 103.2 },
-          { "effectiveDate": "2026-04-01", "value": 105.6 },
-          { "effectiveDate": "2026-05-01", "value": 106.9 },
-          { "effectiveDate": "2026-06-01", "value": 105.8 },
-          { "effectiveDate": "2026-07-01", "value": 107.4 },
-          { "effectiveDate": "2026-08-01", "value": 108.6 }
+          { "effectiveDate": "2025-09-01", "recordedDate": "2025-09-01", "value": 100.0 },
+          { "effectiveDate": "2025-10-01", "recordedDate": "2025-10-01", "value": 100.8 },
+          { "effectiveDate": "2025-11-01", "recordedDate": "2025-11-01", "value": 102.1 },
+          { "effectiveDate": "2025-12-01", "recordedDate": "2025-12-01", "value": 101.5 },
+          { "effectiveDate": "2026-01-01", "recordedDate": "2026-01-01", "value": 103.4 },
+          { "effectiveDate": "2026-02-01", "recordedDate": "2026-02-01", "value": 104.0 },
+          { "effectiveDate": "2026-03-01", "recordedDate": "2026-03-01", "value": 103.2 },
+          { "effectiveDate": "2026-04-01", "recordedDate": "2026-04-01", "value": 105.6 },
+          { "effectiveDate": "2026-05-01", "recordedDate": "2026-05-01", "value": 106.9 },
+          { "effectiveDate": "2026-06-01", "recordedDate": "2026-06-01", "value": 105.8 },
+          { "effectiveDate": "2026-07-01", "recordedDate": "2026-07-01", "value": 107.4 },
+          { "effectiveDate": "2026-08-01", "recordedDate": "2026-08-01", "value": 108.6 }
         ]
       }
     ],

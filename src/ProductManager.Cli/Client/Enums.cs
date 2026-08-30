@@ -91,7 +91,9 @@ public enum FactEventKind
     PricingChanged,
     IncidentOccurred,
     CovariateObserved,
-    Other
+    Other,
+    OpportunityDecided,
+    SegmentArrivalObserved
 }
 
 public enum EpistemicStatus
@@ -109,4 +111,24 @@ public enum MarketEventType
     RegulatoryChange,
     FeatureLaunch,
     Other
+}
+
+// ---------- Phase 3: firm-level choice engine ----------
+
+/// <summary>Opportunity lifecycle: open -&gt; qualified -&gt; decided (Won / Lost / NoDecision).
+/// "Outcome" on a decide request reuses this same enum — the outcome IS the terminal stage.</summary>
+public enum OpportunityStage
+{
+    Open,
+    Qualified,
+    Won,
+    Lost,
+    NoDecision
+}
+
+/// <summary>Which engine executes a simulation run. Both modes emit the same trajectory shape.</summary>
+public enum SimulationEngineMode
+{
+    Aggregate,
+    FirmLevel
 }

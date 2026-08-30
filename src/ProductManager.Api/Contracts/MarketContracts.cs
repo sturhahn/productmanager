@@ -44,7 +44,8 @@ public sealed record ClientSegmentDto(
     double SuiteAffinity,
     double ConsolidationPreference,
     SegmentStockStateDto StockState,
-    IReadOnlyList<SegmentModulePenetrationDto> ModulePenetrations);
+    IReadOnlyList<SegmentModulePenetrationDto> ModulePenetrations,
+    IReadOnlyList<SegmentApproachAdoptionDto> ApproachAdoptions);
 
 public sealed record CreateClientSegmentRequest(
     [Required] Guid MarketId,
@@ -218,6 +219,10 @@ public static class MarketMapping
             s.ModulePenetrations
                 .OrderBy(m => m.ModuleProductId)
                 .Select(m => new SegmentModulePenetrationDto(m.ModuleProductId, m.Penetration, m.ArpuPerMonth))
+                .ToList(),
+            s.ApproachAdoptions
+                .OrderBy(a => a.ApproachId)
+                .Select(a => new SegmentApproachAdoptionDto(a.ApproachId, a.Share))
                 .ToList());
 
     public static BusinessProcessDto ToDto(this BusinessProcess p) =>

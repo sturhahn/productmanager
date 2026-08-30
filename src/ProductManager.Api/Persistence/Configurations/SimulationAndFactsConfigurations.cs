@@ -53,6 +53,11 @@ public class CalibrationRunConfiguration : IEntityTypeConfiguration<CalibrationR
             .OnDelete(DeleteBehavior.Restrict);
         b.HasOne<AssumptionSet>().WithMany().HasForeignKey(x => x.FittedAssumptionSetId)
             .OnDelete(DeleteBehavior.Restrict);
+        b.Property(x => x.Name).HasMaxLength(200);
+        b.Property(x => x.InputSnapshotJson).HasColumnType("jsonb");
+        b.Property(x => x.OutputJson).HasColumnType("jsonb");
+        b.Ignore(x => x.IsExecuted);
+        b.HasIndex(x => x.CreatedAt);
     }
 }
 
@@ -67,6 +72,8 @@ public class SimulationRunConfiguration : IEntityTypeConfiguration<SimulationRun
         b.Property(x => x.EventOverlayJson).HasColumnType("jsonb");
         b.Property(x => x.InputSnapshotJson).HasColumnType("jsonb");
         b.Property(x => x.TrajectoriesJson).HasColumnType("jsonb");
+        b.Property(x => x.DiagnosticsJson).HasColumnType("jsonb");
+        b.Property(x => x.EngineMode).AsString();
         b.HasOne<Workspace>().WithMany().HasForeignKey(x => x.WorkspaceId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne<Roadmap>().WithMany().HasForeignKey(x => x.RoadmapId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<AssumptionSet>().WithMany().HasForeignKey(x => x.AssumptionSetId).OnDelete(DeleteBehavior.Restrict);

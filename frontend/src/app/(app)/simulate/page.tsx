@@ -11,24 +11,37 @@ import type { EChartsOption, SeriesOption } from "echarts";
 import { api } from "@/lib/api/client";
 import type {
   ClientSegmentDto,
+  EngineFirmLevelDiagnostics,
   EngineMetricTrajectory,
   EngineResult,
   MarketEventDto,
   RoadmapDto,
+  SimulationEngineMode,
   SimulationRunDto,
 } from "@/lib/api/types";
 import {
   queryKeys,
+  useAllChannels,
   useAllSegments,
   useAssumptionSets,
   useInvalidatingMutation,
   useMarketEvents,
   useMarkets,
   useRoadmaps,
+  useSimulationDiagnostics,
   useSimulationResult,
   useSimulationRuns,
   useWorkspace,
 } from "@/lib/queries";
+import {
+  channelWinRates,
+  formatMeanCount,
+  formatRate,
+  FUNNEL_OUTCOME_LABELS,
+  funnelParts,
+  funnelTotals,
+  segmentWinRates,
+} from "@/lib/funnel";
 import {
   compareHeadlines,
   fanSeries,
@@ -81,6 +94,18 @@ function runLabel(run: SimulationRunDto): string {
   return run.name || `Run ${run.id.slice(0, 8)}`;
 }
 
+function ModeBadge({ mode }: { mode: SimulationEngineMode }) {
+  return mode === "FirmLevel" ? (
+    <Badge className="bg-primary/15 text-[10px] text-primary">
+      Firm-level · full detail
+    </Badge>
+  ) : (
+    <Badge variant="secondary" className="text-[10px]">
+      Aggregate · fast preview
+    </Badge>
+  );
+}
+
 function roadmapLabel(r: RoadmapDto): string {
   const version = r.versionName ? ` · ${r.versionName}` : "";
   const live = r.isLive ? " (live)" : "";
@@ -94,6 +119,7 @@ export default function SimulatePage() {
   const roadmaps = useRoadmaps(workspaceId);
   const assumptionSets = useAssumptionSets(workspaceId);
   const segments = useAllSegments(workspaceId);
+  const channels = useAllChannels(workspaceId);
   const tokens = useChartTokens();
 
   const [selectedRunId, setSelectedRunId] = React.useState<string | null>(null);
@@ -159,6 +185,9 @@ export default function SimulatePage() {
                   key={selectedRun.id}
                   run={selectedRun}
                   segments={segments.data ?? []}
+                  channelNames={
+                    new Map((channels.data ?? []).map((c) => [c.id, c.name]))
+                  }
                   tokens={tokens}
                 />
               ) : (
@@ -200,6 +229,7 @@ export default function SimulatePage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Run</TableHead>
+                      <TableHead>Engine</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Horizon</TableHead>
                       <TableHead>Paths</TableHead>
@@ -221,6 +251,9 @@ export default function SimulatePage() {
                       >
                         <TableCell className="font-medium">
                           {runLabel(run)}
+                        </TableCell>
+                        <TableCell>
+                          <ModeBadge mode={run.engineMode} />
                         </TableCell>
                         <TableCell className="font-mono text-xs text-muted-foreground">
                           {new Date(run.createdAt).toLocaleString()}
@@ -334,6 +367,8 @@ function RunConfigPanel({
   );
 
   const [name, setName] = React.useState("");
+  const [engineMode, setEngineMode] =
+    React.useState<SimulationEngineMode>("Aggregate");
   const [roadmapId, setRoadmapId] = React.useState<string>("");
   const [assumptionSetId, setAssumptionSetId] = React.useState<string>("");
   const [marketId, setMarketId] = React.useState<string>("all");
@@ -363,6 +398,7 @@ function RunConfigPanel({
         marketId: marketId === "all" ? null : marketId,
         eventIds: [],
         hypotheticalEventIds: [...eventIds],
+        engineMode,
       }),
     () => [queryKeys.simulationRuns(workspaceId)],
     {
@@ -390,6 +426,42 @@ function RunConfigPanel({
         <p className="text-xs text-muted-foreground">
           Executes synchronously and lands in the runs list, immutable.
         </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label className="text-xs">Engine</Label>
+        <div className="flex flex-col gap-1 rounded-lg border p-1">
+          {(
+            [
+              {
+                mode: "Aggregate" as const,
+                title: "Aggregate",
+                hint: "fast preview — stock-and-flow per segment",
+              },
+              {
+                mode: "FirmLevel" as const,
+                title: "Firm-level",
+                hint: "full detail — opportunities, utilities, switching",
+              },
+            ]
+          ).map(({ mode, title, hint }) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={engineMode === mode}
+              onClick={() => setEngineMode(mode)}
+              className={cn(
+                "flex flex-col rounded-md px-2.5 py-1.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                engineMode === mode
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-accent/50",
+              )}
+            >
+              <span className="text-sm font-medium">{title}</span>
+              <span className="text-[11px] text-muted-foreground">{hint}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -588,13 +660,19 @@ function RunConfigPanel({
 function RunResults({
   run,
   segments,
+  channelNames,
   tokens,
 }: {
   run: SimulationRunDto;
   segments: ClientSegmentDto[];
+  channelNames: Map<string, string>;
   tokens: ChartTokens;
 }) {
   const result = useSimulationResult(run.id);
+  const diagnostics = useSimulationDiagnostics(
+    run.id,
+    run.engineMode === "FirmLevel" && run.hasDiagnostics,
+  );
   const [scope, setScope] = React.useState<string>("total");
 
   if (result.isPending) {
@@ -628,9 +706,12 @@ function RunResults({
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-heading text-lg font-semibold tracking-tight">
-            {runLabel(run)}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-heading text-lg font-semibold tracking-tight">
+              {runLabel(run)}
+            </h2>
+            <ModeBadge mode={run.engineMode} />
+          </div>
           <p className="text-xs text-muted-foreground">
             {run.paths} paths · seed {run.seed} · {run.horizonMonths} months
             from {run.startDate} · {data.elapsedMs || run.elapsedMs || 0}ms
@@ -689,6 +770,14 @@ function RunResults({
         />
       </div>
 
+      {run.engineMode === "FirmLevel" && diagnostics.data && (
+        <DiagnosticsPanel
+          diagnostics={diagnostics.data}
+          segmentName={segmentName}
+          channelNames={channelNames}
+        />
+      )}
+
       <div className="grid gap-4 xl:grid-cols-2">
         {CHART_METRICS.map((metric) => (
           <FanChartCard
@@ -701,6 +790,170 @@ function RunResults({
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Firm-level diagnostics
+// ---------------------------------------------------------------------
+
+const OUTCOME_COLORS: Record<string, string> = {
+  won: "var(--chart-4)",
+  lost: "var(--chart-5)",
+  noDecision: "var(--chart-3)",
+  stillOpen: "var(--muted-foreground)",
+};
+
+function DiagnosticsPanel({
+  diagnostics,
+  segmentName,
+  channelNames,
+}: {
+  diagnostics: EngineFirmLevelDiagnostics;
+  segmentName: (id: string) => string;
+  channelNames: Map<string, string>;
+}) {
+  const totals = funnelTotals(diagnostics.funnelBySegment);
+  const parts = funnelParts(totals);
+  const segRows = segmentWinRates(diagnostics.funnelBySegment);
+  const chanRows = channelWinRates(diagnostics.funnelByChannel);
+  const channelName = (id: string) =>
+    id === "direct" ? "Direct" : (channelNames.get(id) ?? id.slice(0, 8));
+
+  return (
+    <section className="rounded-xl border bg-card p-4">
+      <div className="mb-3 flex items-baseline justify-between">
+        <h3 className="text-sm font-semibold">Opportunity funnel</h3>
+        <span className="text-[10px] text-muted-foreground">
+          mean across paths · opened = won + lost + no decision + still open
+        </span>
+      </div>
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          label="Win rate (decided)"
+          value={formatRate(totals.winRate)}
+          sub={`${formatMeanCount(totals.won)} of ${formatMeanCount(totals.won + totals.lost + totals.noDecision)} decided · gap on lost ${diagnostics.meanUtilityGapLostDeals.toFixed(2)}`}
+          accent
+        />
+        <KpiCard
+          label="Opportunities opened"
+          value={formatMeanCount(totals.opened)}
+          sub={`${formatMeanCount(totals.qualified)} qualified`}
+        />
+        <KpiCard
+          label="Avg realized sales cycle"
+          value={`${diagnostics.avgSalesCycleMonths.toFixed(1)} mo`}
+          sub="open → decision, decided deals"
+        />
+        <KpiCard
+          label="Scope expansions"
+          value={formatMeanCount(diagnostics.expansionCount)}
+          sub={`${formatMeanCount(diagnostics.syntheticFirmsCreated)} synthetic firms filled`}
+        />
+      </div>
+
+      {totals.opened > 0 && (
+        <div className="mb-4">
+          <div
+            className="flex h-4 w-full overflow-hidden rounded-full"
+            role="img"
+            aria-label="Opportunity outcomes"
+          >
+            {parts
+              .filter((p) => p.fraction > 0)
+              .map((p) => (
+                <div
+                  key={p.key}
+                  style={{
+                    width: `${p.fraction * 100}%`,
+                    backgroundColor: OUTCOME_COLORS[p.key],
+                    opacity: p.key === "stillOpen" ? 0.35 : 0.85,
+                  }}
+                  title={`${FUNNEL_OUTCOME_LABELS[p.key]}: ${formatMeanCount(p.value)}`}
+                />
+              ))}
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+            {parts.map((p) => (
+              <span
+                key={p.key}
+                className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+              >
+                <span
+                  className="size-2 rounded-full"
+                  style={{
+                    backgroundColor: OUTCOME_COLORS[p.key],
+                    opacity: p.key === "stillOpen" ? 0.35 : 0.85,
+                  }}
+                />
+                {FUNNEL_OUTCOME_LABELS[p.key]}{" "}
+                <span className="font-mono">{formatMeanCount(p.value)}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <WinRateTable
+          title="Win rate by segment"
+          rows={segRows.map((r) => ({ ...r, name: segmentName(r.id) }))}
+        />
+        <WinRateTable
+          title="Win rate by channel"
+          rows={chanRows.map((r) => ({ ...r, name: channelName(r.id) }))}
+        />
+      </div>
+    </section>
+  );
+}
+
+function WinRateTable({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: { id: string; name: string; opened: number; won: number; winRate: number }[];
+}) {
+  return (
+    <div className="overflow-hidden rounded-lg border">
+      <p className="border-b bg-muted/40 px-3 py-1.5 text-xs font-semibold">
+        {title}
+      </p>
+      {rows.length === 0 ? (
+        <p className="px-3 py-3 text-xs text-muted-foreground">
+          Nothing opened here.
+        </p>
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[11px] text-muted-foreground">
+              <th className="px-3 py-1 font-medium">&nbsp;</th>
+              <th className="px-3 py-1 text-right font-medium">Opened</th>
+              <th className="px-3 py-1 text-right font-medium">Won</th>
+              <th className="px-3 py-1 text-right font-medium">Win rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-t">
+                <td className="max-w-40 truncate px-3 py-1.5">{r.name}</td>
+                <td className="px-3 py-1.5 text-right font-mono text-xs">
+                  {formatMeanCount(r.opened)}
+                </td>
+                <td className="px-3 py-1.5 text-right font-mono text-xs">
+                  {formatMeanCount(r.won)}
+                </td>
+                <td className="px-3 py-1.5 text-right font-mono text-xs font-semibold">
+                  {formatRate(r.winRate)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
@@ -859,9 +1112,17 @@ function CompareView({
   };
   const setName = (id: string) => assumptionSetNames.get(id) ?? id.slice(0, 8);
 
+  const modeLabel = (m: SimulationRunDto["engineMode"]) =>
+    m === "FirmLevel" ? "Firm-level" : "Aggregate";
+
   const inputRows: { label: string; a: string; b: string }[] =
     runA && runB
       ? [
+          {
+            label: "Engine",
+            a: modeLabel(runA.engineMode),
+            b: modeLabel(runB.engineMode),
+          },
           { label: "Roadmap", a: roadmapName(runA.roadmapId), b: roadmapName(runB.roadmapId) },
           {
             label: "Assumption set",
@@ -955,8 +1216,29 @@ function CompareLoaded({
   const deltas = compareHeadlines(resultA, resultB);
   const differingInputs = inputRows.filter((r) => r.a !== r.b);
 
+  const mixedModes = runA.engineMode !== runB.engineMode;
+
   return (
     <>
+      {mixedModes && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">
+            Mixed engine modes:
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            A <ModeBadge mode={runA.engineMode} />
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            B <ModeBadge mode={runB.engineMode} />
+          </span>
+          <span>
+            — both engines share the trajectory format, so the overlay still
+            compares like for like; funnel diagnostics exist only on the
+            firm-level run.
+          </span>
+        </div>
+      )}
+
       <section className="rounded-xl border bg-card p-4">
         <h3 className="mb-2 text-sm font-semibold">Input references</h3>
         <p className="mb-3 text-xs text-muted-foreground">

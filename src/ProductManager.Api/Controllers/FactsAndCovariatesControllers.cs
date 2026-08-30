@@ -51,8 +51,9 @@ public sealed class FactsController(AppDbContext db) : ApiControllerBase
     }
 
     /// <summary>
-    /// Appends one observation. The recorded date is stamped server-side — a caller cannot backdate
-    /// when we learned something.
+    /// Appends one observation. The recorded date is stamped server-side unless the caller supplies
+    /// <c>recordedAt</c> — the import/backfill path, for history whose "when we learned it" is
+    /// genuinely in the past. A recorded date in the future is refused.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(FactEventDto), StatusCodes.Status201Created)]
@@ -62,14 +63,14 @@ public sealed class FactsController(AppDbContext db) : ApiControllerBase
         if (!await db.Workspaces.AnyAsync(w => w.Id == request.WorkspaceId, ct))
             return NotFoundProblem("Workspace", request.WorkspaceId);
         if (!IsJsonOrEmpty(request.PayloadJson))
-            return Problem(detail: "payloadJson must be a JSON document.",
-                statusCode: StatusCodes.Status400BadRequest, title: "Invalid request");
+            return BadRequestProblem("payloadJson must be a JSON document.");
         if (request.Kind == FactEventKind.CovariateObserved
             && !CovariateHistoryReader.TryReadValue(request.PayloadJson, out _))
-            return Problem(detail: "A CovariateObserved fact needs a payload of {\"value\": <number>}.",
-                statusCode: StatusCodes.Status400BadRequest, title: "Invalid request");
+            return BadRequestProblem("A CovariateObserved fact needs a payload of {\"value\": <number>}.");
+        if (!TryResolveRecordedDate(request.RecordedAt, out var recordedDate, out string? error))
+            return BadRequestProblem(error!);
 
-        var fact = new FactEvent(request.WorkspaceId, request.Kind, request.EffectiveDate, DateTimeOffset.UtcNow,
+        var fact = new FactEvent(request.WorkspaceId, request.Kind, request.EffectiveDate, recordedDate,
             request.SubjectType, request.SubjectId, request.PayloadJson, request.Notes);
 
         db.FactEvents.Add(fact);

@@ -33,8 +33,7 @@ namespace ProductManager.Engine;
 /// </summary>
 public static class SimulationEngine
 {
-    private const int FlowKindCount = 5;
-    private const int MetricCount = 7; // clients, pool, wins, churned, bookings, arr, margin
+    private const int MetricCount = EngineInternals.MetricCount;
 
     /// <summary>
     /// Ceiling on the combined per-tick rate multiplier (covariate x events x attractiveness).
@@ -59,29 +58,7 @@ public static class SimulationEngine
         for (int s = 0; s < segCount; s++) segIndex[input.Segments[s].Id] = s;
 
         // Event multipliers per (segment, flowKind, month), default 1.
-        var eventMult = new double[segCount][];
-        for (int s = 0; s < segCount; s++)
-        {
-            eventMult[s] = new double[FlowKindCount * months];
-            Array.Fill(eventMult[s], 1.0);
-        }
-        foreach (var ev in input.Events)
-        {
-            int from = Math.Max(0, ev.StartMonth);
-            int to = Math.Min(months - 1, ev.EndMonth);
-            foreach (var rm in ev.RateMultipliers)
-            {
-                int f = (int)rm.FlowKind;
-                for (int s = 0; s < segCount; s++)
-                {
-                    if (rm.SegmentId is not null && !segIndex.TryGetValue(rm.SegmentId, out int only))
-                        continue;
-                    if (rm.SegmentId is not null && segIndex[rm.SegmentId] != s) continue;
-                    double[] row = eventMult[s];
-                    for (int t = from; t <= to; t++) row[f * months + t] *= rm.Multiplier;
-                }
-            }
-        }
+        var eventMult = EngineInternals.BuildEventMultipliers(input.Events, segIndex, segCount, months);
 
         // Attractiveness (WinRate multiplier) per (segment, month), default 1.
         var attractiveness = new double[segCount][];
@@ -119,7 +96,6 @@ public static class SimulationEngine
         }
 
         var npvPerPath = new double[paths];
-        double monthlyRate = Math.Pow(1.0 + input.DiscountRateAnnual, 1.0 / 12.0) - 1.0;
 
         // Reusable per-path buffers.
         var covValues = new double[covCount * months];
@@ -134,25 +110,7 @@ public static class SimulationEngine
             for (int s = 0; s < segCount; s++) resolved[s].SampleRates(rng);
 
             // 2) Resolve covariate values for this path, in input order.
-            for (int c = 0; c < covCount; c++)
-            {
-                var cov = input.Covariates[c];
-                if (cov.MonthlyPath is not null)
-                {
-                    for (int t = 0; t < months; t++) covValues[c * months + t] = cov.MonthlyPath[t];
-                }
-                else
-                {
-                    var gbm = cov.Gbm!;
-                    double x = gbm.Start;
-                    double driftTerm = gbm.Drift - 0.5 * gbm.Vol * gbm.Vol;
-                    for (int t = 0; t < months; t++)
-                    {
-                        if (t > 0) x *= Math.Exp(driftTerm + gbm.Vol * rng.NextGaussian());
-                        covValues[c * months + t] = x;
-                    }
-                }
-            }
+            EngineInternals.ResolveCovariatePaths(input.Covariates, months, rng, covValues);
 
             // 3) Monthly ticks per segment.
             Array.Clear(totalMargin, 0, months);
@@ -280,21 +238,8 @@ public static class SimulationEngine
                 }
             }
 
-            double npv = 0.0;
-            double discount = 1.0;
-            for (int t = 0; t < months; t++)
-            {
-                discount /= 1.0 + monthlyRate;
-                npv += totalMargin[t] * discount;
-            }
-            if (input.DiscountRateAnnual > input.TerminalGrowthAnnual && months > 0)
-            {
-                double finalAnnualMargin = totalMargin[months - 1] * 12.0;
-                double terminal = finalAnnualMargin * (1.0 + input.TerminalGrowthAnnual)
-                                  / (input.DiscountRateAnnual - input.TerminalGrowthAnnual);
-                npv += terminal * discount;
-            }
-            npvPerPath[p] = npv;
+            npvPerPath[p] = EngineInternals.NpvForPath(
+                totalMargin, months, input.DiscountRateAnnual, input.TerminalGrowthAnnual);
         }
 
         // ---- Aggregate across paths ----
@@ -304,17 +249,7 @@ public static class SimulationEngine
             segmentResults[s] = Summarize(input.Segments[s].Id, metrics[s], paths, months);
         var total = Summarize("total", metrics[segCount], paths, months);
 
-        var sortedNpv = new double[paths];
-        Array.Copy(npvPerPath, sortedNpv, paths);
-        Array.Sort(sortedNpv);
-        double npvMean = 0.0;
-        for (int p = 0; p < paths; p++) npvMean += npvPerPath[p];
-        npvMean /= paths;
-        var npvSummary = new DistributionSummary(
-            npvMean,
-            QuantileSorted(sortedNpv, 0.10),
-            QuantileSorted(sortedNpv, 0.50),
-            QuantileSorted(sortedNpv, 0.90));
+        var npvSummary = EngineInternals.SummarizeScalar(npvPerPath);
 
         sw.Stop();
         return new EngineResult(
@@ -347,52 +282,9 @@ public static class SimulationEngine
                 throw new ArgumentException($"Duplicate segment id '{seg.Id}'.", nameof(input));
         }
 
-        foreach (var cov in input.Covariates ?? [])
-        {
-            if (cov.MonthlyPath is null == (cov.Gbm is null))
-                throw new ArgumentException(
-                    $"Covariate '{cov.Id}' must specify exactly one of monthlyPath or gbm.", nameof(input));
-            if (cov.MonthlyPath is not null && cov.MonthlyPath.Length < input.HorizonMonths)
-                throw new ArgumentException(
-                    $"Covariate '{cov.Id}' monthlyPath is shorter than horizonMonths.", nameof(input));
-        }
-
-        // Covariates actually driving a rate must be strictly positive: the transfer function is
-        // (x_t / x_0)^beta, and a zero or negative level makes the ratio and the power meaningless
-        // (division by zero, or a fractional power of a negative number). A zero beta is exempt —
-        // the series is carried but never read.
-        var elasticityLinked = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var param in input.Parameters ?? [])
-            if (param.Covariate is not null && param.Covariate.Beta != 0.0)
-                elasticityLinked.Add(param.Covariate.CovariateId);
-
-        foreach (var cov in input.Covariates ?? [])
-        {
-            if (!elasticityLinked.Contains(cov.Id)) continue;
-
-            if (cov.MonthlyPath is not null)
-            {
-                for (int t = 0; t < input.HorizonMonths; t++)
-                {
-                    double x = cov.MonthlyPath[t];
-                    if (x > 0.0 && !double.IsNaN(x)) continue;
-                    throw new ArgumentException(
-                        $"Covariate '{cov.Id}' is linked with a nonzero beta but its monthlyPath is " +
-                        $"non-positive at month {t} (value {x:G6}). Beta is an elasticity — the engine " +
-                        "applies (x_t / x_0)^beta — so the whole path must be strictly positive. " +
-                        "Rebase or shift the series onto a positive scale, or drop the link.",
-                        nameof(input));
-                }
-            }
-            else if (!(cov.Gbm!.Start > 0.0))
-            {
-                throw new ArgumentException(
-                    $"Covariate '{cov.Id}' is linked with a nonzero beta but its gbm start is " +
-                    $"{cov.Gbm.Start:G6}. Beta is an elasticity — the engine applies (x_t / x_0)^beta — " +
-                    "so the series must start strictly positive.",
-                    nameof(input));
-            }
-        }
+        // Covariate spec shape and strict positivity for elasticity-linked series (shared with v1).
+        EngineInternals.ValidateCovariates(
+            input.Covariates ?? [], input.Parameters ?? [], input.HorizonMonths, nameof(input));
 
         foreach (var param in input.Parameters ?? [])
         {
@@ -407,48 +299,14 @@ public static class SimulationEngine
         }
     }
 
-    private static double Clamp01(double v) => v < 0.0 ? 0.0 : v > 1.0 ? 1.0 : v;
+    private static double Clamp01(double v) => EngineInternals.Clamp01(v);
 
-    /// <summary>
-    /// Covariate multiplier for month t: (x_t / x_0)^beta — a constant-elasticity transfer function.
-    /// Beta is an elasticity, so a +1% move in the covariate moves the rate by about +beta%, and the
-    /// result depends only on the covariate's *ratio* to its month-0 level. That scale-freedom is the
-    /// point: an index quoted at 108.6 and the same index normalised to 1.0 give identical answers.
-    /// Positivity of the path is guaranteed by <see cref="Validate"/> for every nonzero-beta link.
-    /// </summary>
     private static double CovariateMultiplier(CovLink cov, double[] covValues, int months, int t)
-    {
-        if (cov.CovIdx < 0 || cov.Beta == 0.0) return 1.0;
-        double x0 = covValues[cov.CovIdx * months];
-        double xt = covValues[cov.CovIdx * months + t];
-        return Math.Pow(xt / x0, cov.Beta);
-    }
+        => EngineInternals.CovariateMultiplier(cov, covValues, months, t);
 
-    /// <summary>
-    /// Guards the combined per-tick rate multiplier (covariate x events x attractiveness). A runaway
-    /// multiplier means the inputs are mis-specified — a mis-scaled covariate, an absurd event
-    /// multiplier, or a stacked combination of both — and silently returning astronomical
-    /// trajectories is far worse than failing here. Throws with the offending segment/flow/month.
-    /// </summary>
     private static double CheckedMultiplier(
         double multiplier, string segmentId, FlowKind flow, int month, string? moduleId)
-    {
-        if (multiplier <= MaxFlowMultiplier && !double.IsNaN(multiplier)) return multiplier;
-
-        string module = moduleId is null ? "" : $", module '{moduleId}'";
-        throw new ArgumentException(
-            $"Flow-rate multiplier for segment '{segmentId}', flow {flow}{module}, month {month} is " +
-            $"{multiplier:G6}x, above the {MaxFlowMultiplier:G0}x limit. That multiplier is " +
-            "covariate x events x attractiveness combined: check the parameter's covariate beta " +
-            "(an elasticity — +1% covariate gives +beta% rate), the event rate multipliers active " +
-            "in that month, and the attractiveness schedule.",
-            "input");
-    }
-
-    private readonly record struct CovLink(int CovIdx, double Beta)
-    {
-        internal static readonly CovLink None = new(-1, 0.0);
-    }
+        => EngineInternals.CheckedMultiplier(multiplier, segmentId, flow, month, moduleId);
 
     /// <summary>Per-segment resolved parameter specs plus per-path sampled values and mutable stocks.</summary>
     private sealed class ResolvedSegment
@@ -544,55 +402,5 @@ public static class SimulationEngine
     }
 
     private static SegmentTrajectories Summarize(string id, double[][] segMetrics, int paths, int months)
-    {
-        var trajectories = new MetricTrajectory[MetricCount];
-        var column = new double[paths];
-        for (int m = 0; m < MetricCount; m++)
-        {
-            var mean = new double[months];
-            var p10 = new double[months];
-            var p50 = new double[months];
-            var p90 = new double[months];
-            double[] data = segMetrics[m];
-            for (int t = 0; t < months; t++)
-            {
-                double sum = 0.0;
-                for (int p = 0; p < paths; p++)
-                {
-                    double v = data[p * months + t];
-                    column[p] = v;
-                    sum += v;
-                }
-                Array.Sort(column);
-                mean[t] = sum / paths;
-                p10[t] = QuantileSorted(column, 0.10);
-                p50[t] = QuantileSorted(column, 0.50);
-                p90[t] = QuantileSorted(column, 0.90);
-            }
-            trajectories[m] = new MetricTrajectory(mean, p10, p50, p90);
-        }
-
-        return new SegmentTrajectories(
-            id,
-            Clients: trajectories[0],
-            ProspectPool: trajectories[1],
-            NewWins: trajectories[2],
-            Churned: trajectories[3],
-            Bookings: trajectories[4],
-            RecognizedArr: trajectories[5],
-            ContributionMargin: trajectories[6]);
-    }
-
-    /// <summary>Linear-interpolation quantile of a sorted array.</summary>
-    private static double QuantileSorted(double[] sorted, double q)
-    {
-        int n = sorted.Length;
-        if (n == 1) return sorted[0];
-        double pos = q * (n - 1);
-        int lo = (int)Math.Floor(pos);
-        int hi = lo + 1;
-        if (hi >= n) return sorted[n - 1];
-        double frac = pos - lo;
-        return sorted[lo] + frac * (sorted[hi] - sorted[lo]);
-    }
+        => EngineInternals.Summarize(id, segMetrics, paths, months);
 }

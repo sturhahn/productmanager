@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ProductManager.Api.Contracts;
 using ProductManager.Api.Infrastructure;
 using ProductManager.Api.Persistence;
+using ProductManager.Api.Simulation;
 using ProductManager.Domain.Common;
 using ProductManager.Domain.Market;
 
@@ -88,6 +89,184 @@ public sealed class FirmsController(AppDbContext db) : ApiControllerBase
         db.Firms.Remove(firm);
         await db.SaveChangesAsync(ct);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Imports a whole roster into one market in a single call, relationships included. Matching is
+    /// by natural key (market, name), so re-importing the same roster corrects it rather than
+    /// duplicating it — the same idempotence the seed loader relies on.
+    /// </summary>
+    [HttpPost("bulk")]
+    [ProducesResponseType(typeof(BulkImportFirmsResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<BulkImportFirmsResponse>> BulkImport([FromBody] BulkImportFirmsRequest request,
+        CancellationToken ct)
+    {
+        if (!await db.Markets.AnyAsync(m => m.Id == request.MarketId, ct))
+            return NotFoundProblem("Market", request.MarketId);
+
+        var segmentIds = await db.ClientSegments.AsNoTracking()
+            .Where(s => s.MarketId == request.MarketId)
+            .Select(s => s.Id)
+            .ToListAsync(ct);
+        var productIds = await db.Products.AsNoTracking()
+            .Where(p => p.MarketId == request.MarketId)
+            .Select(p => p.Id)
+            .ToListAsync(ct);
+
+        foreach (var item in request.Firms)
+        {
+            if (item.ClientSegmentId is not null && !segmentIds.Contains(item.ClientSegmentId.Value))
+                return NotFoundProblem("ClientSegment", item.ClientSegmentId.Value);
+            foreach (var relationship in item.Relationships ?? [])
+                if (!productIds.Contains(relationship.ProductId))
+                    return NotFoundProblem("Product", relationship.ProductId);
+        }
+
+        var existing = await db.Firms.Where(f => f.MarketId == request.MarketId).ToListAsync(ct);
+        var byName = existing
+            .GroupBy(f => f.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        int created = 0, updated = 0, relationshipsWritten = 0;
+        var touched = new List<Firm>();
+
+        foreach (var item in request.Firms)
+        {
+            string name = item.Name.Trim();
+            if (!byName.TryGetValue(name, out var firm))
+            {
+                firm = new Firm(request.MarketId, name, item.EpistemicStatus, item.ClientSegmentId);
+                db.Firms.Add(firm);
+                byName[name] = firm;
+                created++;
+            }
+            else
+            {
+                firm.Rename(name);
+                firm.SetEpistemicStatus(item.EpistemicStatus);
+                firm.ClientSegmentId = item.ClientSegmentId;
+                updated++;
+            }
+
+            firm.AttributesJson = item.AttributesJson;
+            firm.Notes = item.Notes;
+            touched.Add(firm);
+
+            foreach (var incoming in item.Relationships ?? [])
+            {
+                var relationship = await db.FirmProductRelationships
+                    .FirstOrDefaultAsync(r => r.FirmId == firm.Id && r.ProductId == incoming.ProductId, ct);
+                if (relationship is null)
+                {
+                    relationship = new FirmProductRelationship(firm.Id, incoming.ProductId, incoming.AcquisitionDate,
+                        incoming.PricePaidPerPeriod?.ToDomain());
+                    db.FirmProductRelationships.Add(relationship);
+                }
+                else
+                {
+                    relationship.SetAcquisitionDate(incoming.AcquisitionDate);
+                    relationship.SetPricePaid(incoming.PricePaidPerPeriod?.ToDomain());
+                }
+
+                relationship.SetServedProcesses(incoming.ServedProcessIds ?? []);
+                relationship.SetPriceLevel(incoming.PriceLevel);
+                relationshipsWritten++;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new BulkImportFirmsResponse(request.MarketId, created, updated, relationshipsWritten,
+            touched.Select(MarketDynamicsMapping.ToDto).ToList()));
+    }
+
+    /// <summary>
+    /// Fills every segment's measured stocks with deterministically generated synthetic firms, so a
+    /// firm-level simulation runs over the whole market and not only the part we happen to have
+    /// names for. Regeneration <em>replaces</em> the previous synthetic population: identities are
+    /// hashes of (market, segment, role, index), so running this twice is a no-op rather than a
+    /// doubling.
+    /// </summary>
+    [HttpPost("generate-synthetic")]
+    [ProducesResponseType(typeof(GenerateSyntheticFirmsResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<GenerateSyntheticFirmsResponse>> GenerateSynthetic(
+        [FromBody] GenerateSyntheticFirmsRequest request, CancellationToken ct)
+    {
+        if (!await db.Markets.AnyAsync(m => m.Id == request.MarketId, ct))
+            return NotFoundProblem("Market", request.MarketId);
+
+        var segments = await db.ClientSegments
+            .Where(s => s.MarketId == request.MarketId)
+            .OrderBy(s => s.Id)
+            .ToListAsync(ct);
+
+        var products = await db.Products
+            .Where(p => p.MarketId == request.MarketId)
+            .OrderBy(p => p.Id)
+            .ToListAsync(ct);
+
+        // Clear the previous generation first: a synthetic population is a derived artifact of the
+        // stocks, not an accumulating roster.
+        var previous = await db.Firms
+            .Where(f => f.MarketId == request.MarketId && f.EpistemicStatus == EpistemicStatus.Synthetic)
+            .ToListAsync(ct);
+        var previousIds = previous.Select(f => f.Id).ToList();
+        var previousRelationships = await db.FirmProductRelationships
+            .Where(r => previousIds.Contains(r.FirmId))
+            .ToListAsync(ct);
+        db.FirmProductRelationships.RemoveRange(previousRelationships);
+        db.Firms.RemoveRange(previous);
+        await db.SaveChangesAsync(ct);
+
+        var observed = await db.Firms.AsNoTracking()
+            .Where(f => f.MarketId == request.MarketId && f.EpistemicStatus != EpistemicStatus.Synthetic)
+            .ToListAsync(ct);
+        var observedIds = observed.Select(f => f.Id).ToList();
+
+        var ourProductIds = products.Where(p => p.IsOurs).Select(p => p.Id).ToList();
+        var clientFirmIds = await db.FirmProductRelationships.AsNoTracking()
+            .Where(r => r.EndDate == null && observedIds.Contains(r.FirmId) && ourProductIds.Contains(r.ProductId))
+            .Select(r => r.FirmId)
+            .ToListAsync(ct);
+        var clientFirmIdSet = clientFirmIds.ToHashSet();
+
+        var fills = new List<SyntheticSegmentFill>();
+        foreach (var segment in segments)
+        {
+            var flagship = products.FirstOrDefault(p =>
+                p.IsOurs && !p.IsModule
+                && p.Prices.Any(price => price.ClientSegmentId == segment.Id || price.ClientSegmentId is null));
+
+            var modules = segment.ModulePenetrations
+                .OrderBy(m => m.ModuleProductId)
+                .Select(m => (Module: products.FirstOrDefault(p => p.Id == m.ModuleProductId), m.Penetration))
+                .Where(m => m.Module is not null && m.Module.IsOurs)
+                .Select(m => (Module: m.Module!, m.Penetration))
+                .ToList();
+
+            fills.Add(SyntheticFirmGenerator.Generate(request.MarketId, new SyntheticFirmGenerator.SegmentInputs(
+                segment,
+                observed.Where(f => f.ClientSegmentId == segment.Id).ToList(),
+                clientFirmIdSet,
+                flagship,
+                modules)));
+        }
+
+        foreach (var fill in fills)
+        {
+            db.Firms.AddRange(fill.Firms);
+            db.FirmProductRelationships.AddRange(fill.Relationships);
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        return Ok(new GenerateSyntheticFirmsResponse(
+            request.MarketId,
+            previous.Count,
+            fills.Sum(f => f.Firms.Count),
+            fills.Sum(f => f.Relationships.Count),
+            fills.Select(f => new SyntheticSegmentFillDto(
+                f.ClientSegmentId, f.ProspectTarget, f.ObservedProspects, f.SyntheticProspects,
+                f.ClientTarget, f.ObservedClients, f.SyntheticClients)).ToList()));
     }
 }
 

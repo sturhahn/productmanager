@@ -79,7 +79,33 @@ public enum FactEventKind
     PricingChanged,
     IncidentOccurred,
     CovariateObserved,
-    Other
+    Other,
+
+    /// <summary>
+    /// An opportunity reached a decision (won / lost / no-decision). The payload is a complete,
+    /// self-contained record of the deal — segment, channel, dates, scope, winner — so calibration
+    /// can reconstruct history from the ledger alone without re-reading mutable opportunity rows.
+    /// </summary>
+    OpportunityDecided,
+
+    /// <summary>
+    /// A monthly arrival count observed for a segment (new firms formed, or prospects coming to
+    /// market). The payload carries the segment, the flow, the count and the exposure.
+    /// </summary>
+    SegmentArrivalObserved
+}
+
+/// <summary>
+/// Which engine a simulation run was executed by. Both modes emit the same trajectory format, so
+/// comparison and charting never have to care which one produced a run.
+/// </summary>
+public enum SimulationEngineMode
+{
+    /// <summary>Engine v0: aggregate stock-and-flow per segment. The fast preview mode.</summary>
+    Aggregate,
+
+    /// <summary>Engine v1: firm-level choice model over opportunities. Emits diagnostics as well.</summary>
+    FirmLevel
 }
 
 /// <summary>

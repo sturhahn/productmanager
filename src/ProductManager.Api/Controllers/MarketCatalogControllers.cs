@@ -193,6 +193,40 @@ public sealed class ClientSegmentsController(AppDbContext db) : ApiControllerBas
         await db.SaveChangesAsync(ct);
         return Ok(segment.ToDto());
     }
+
+    /// <summary>
+    /// Sets (upserting by approach) the share of this segment's firms on one approach to a process
+    /// — e.g. 99% settling via the incumbent utility, 1% on chain. Effective coverage is weighted by
+    /// this mix, which is what stops "gold on the 1% approach" from reading as gold.
+    /// </summary>
+    [HttpPut("{id:guid}/approach-mix")]
+    [ProducesResponseType(typeof(ClientSegmentDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ClientSegmentDto>> SetApproachAdoption(Guid id,
+        [FromBody] SetSegmentApproachAdoptionRequest request, CancellationToken ct)
+    {
+        var segment = await db.ClientSegments.FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (segment is null) return NotFoundProblem("ClientSegment", id);
+        if (!await db.Approaches.AnyAsync(a => a.Id == request.ApproachId, ct))
+            return NotFoundProblem("Approach", request.ApproachId);
+
+        segment.SetApproachAdoption(request.ApproachId, request.Share);
+        await db.SaveChangesAsync(ct);
+        return Ok(segment.ToDto());
+    }
+
+    [HttpDelete("{id:guid}/approach-mix/{approachId:guid}")]
+    [ProducesResponseType(typeof(ClientSegmentDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ClientSegmentDto>> RemoveApproachAdoption(Guid id, Guid approachId,
+        CancellationToken ct)
+    {
+        var segment = await db.ClientSegments.FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (segment is null) return NotFoundProblem("ClientSegment", id);
+        if (!segment.RemoveApproachAdoption(approachId))
+            return NotFoundProblem("Approach adoption for approach", approachId);
+
+        await db.SaveChangesAsync(ct);
+        return Ok(segment.ToDto());
+    }
 }
 
 /// <summary>The catalog of what firms must accomplish — the vocabulary demand and supply both point at.</summary>

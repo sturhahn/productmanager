@@ -103,6 +103,21 @@ public sealed class FirmProductRelationship : Entity
     public DateOnly? EndDate { get; private set; }
     public string? Notes { get; set; }
 
+    /// <summary>
+    /// The modules held: which business processes this product actually serves at this firm. An
+    /// empty list means "whatever the product covers" — the honest reading of a relationship nobody
+    /// has decomposed yet. This is what the choice engine measures switching cost and scope overlap
+    /// against, so it is a list of processes rather than a count.
+    /// </summary>
+    public List<Guid> ServedProcessIds { get; private set; } = [];
+
+    /// <summary>
+    /// Price actually paid as a multiplier on list price (1.0 = list, 0.8 = a 20% discount).
+    /// Revenue uses it; utilities compare candidates at list price, because a prospect does not
+    /// know what the incumbent negotiated.
+    /// </summary>
+    public double PriceLevel { get; private set; } = 1.0;
+
     public bool IsActive => EndDate is null;
 
     private FirmProductRelationship() { } // EF
@@ -118,7 +133,42 @@ public sealed class FirmProductRelationship : Entity
         PricePaidPerPeriod = pricePaidPerPeriod;
     }
 
+    /// <summary>
+    /// A relationship with a caller-supplied identity, so a deterministically generated synthetic
+    /// population reproduces exactly rather than duplicating itself on regeneration.
+    /// </summary>
+    public static FirmProductRelationship WithIdentity(Guid id, Guid firmId, Guid productId,
+        DateOnly? acquisitionDate = null, Money? pricePaidPerPeriod = null)
+    {
+        if (id == Guid.Empty) throw new ArgumentException("An identity is required.", nameof(id));
+        return new FirmProductRelationship(firmId, productId, acquisitionDate, pricePaidPerPeriod) { Id = id };
+    }
+
     public void SetPricePaid(Money? pricePaidPerPeriod) => PricePaidPerPeriod = pricePaidPerPeriod;
+
+    /// <summary>Replaces the set of processes this product serves at the firm (deduplicated, ordered).</summary>
+    public void SetServedProcesses(IEnumerable<Guid> processIds)
+    {
+        ArgumentNullException.ThrowIfNull(processIds);
+        ServedProcessIds = processIds.Where(p => p != Guid.Empty).Distinct().OrderBy(p => p).ToList();
+    }
+
+    public void SetPriceLevel(double priceLevel)
+    {
+        if (priceLevel <= 0 || double.IsNaN(priceLevel))
+            throw new ArgumentOutOfRangeException(nameof(priceLevel), "Price level must be a positive multiplier of list price.");
+        PriceLevel = priceLevel;
+    }
+
+    public void SetAcquisitionDate(DateOnly? acquisitionDate)
+    {
+        if (acquisitionDate.HasValue && EndDate.HasValue && EndDate.Value < acquisitionDate.Value)
+            throw new ArgumentException("Relationship cannot end before it was acquired.");
+        AcquisitionDate = acquisitionDate;
+    }
+
+    /// <summary>Clears the end date — the relationship is active again (a correction, not a renewal).</summary>
+    public void Reopen() => EndDate = null;
 
     public void End(DateOnly endDate)
     {

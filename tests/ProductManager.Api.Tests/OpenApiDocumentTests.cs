@@ -82,7 +82,28 @@ public sealed class OpenApiDocumentTests : IAsyncLifetime
                      "/api/simulation-runs",
                      "/api/simulation-runs/{id}",
                      "/api/simulation-runs/{id}/result",
-                     "/api/simulation-runs/{id}/input"
+                     "/api/simulation-runs/{id}/input",
+                     "/api/simulation-runs/{id}/diagnostics",
+                     "/api/client-segments/{id}/approach-mix",
+                     "/api/channels",
+                     "/api/channels/{id}",
+                     "/api/channels/{id}/segment-reaches",
+                     "/api/channels/{id}/product-affinities",
+                     "/api/integrations",
+                     "/api/integrations/{id}",
+                     "/api/firm-relationships",
+                     "/api/firm-relationships/{id}",
+                     "/api/firms/bulk",
+                     "/api/firms/generate-synthetic",
+                     "/api/opportunities",
+                     "/api/opportunities/{id}",
+                     "/api/opportunities/{id}/scope",
+                     "/api/opportunities/{id}/qualify",
+                     "/api/opportunities/{id}/decide",
+                     "/api/calibration-runs",
+                     "/api/calibration-runs/{id}",
+                     "/api/calibration-runs/{id}/diff",
+                     "/api/calibration-runs/{id}/input"
                  })
         {
             Assert.True(paths.TryGetProperty(expected, out _), $"OpenAPI document is missing {expected}");

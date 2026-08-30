@@ -85,6 +85,8 @@ public class ApiContractDriftTests
         ["SetSegmentStockStateRequest"] = "SetSegmentStockStateRequest",
         ["SegmentModulePenetrationDto"] = "SegmentModulePenetrationDto",
         ["SetSegmentModulePenetrationRequest"] = "SetSegmentModulePenetrationRequest",
+        ["SegmentApproachAdoptionDto"] = "SegmentApproachAdoptionDto",
+        ["SetSegmentApproachAdoptionRequest"] = "SetSegmentApproachAdoptionRequest",
         ["BusinessProcessDto"] = "BusinessProcessDto",
         ["CreateBusinessProcessRequest"] = "CreateBusinessProcessRequest",
         ["ApproachDto"] = "ApproachDto",
@@ -133,6 +135,51 @@ public class ApiContractDriftTests
         ["SimulationRunDto"] = "SimulationRunDto",
         ["CreateSimulationRunRequest"] = "CreateSimulationRunRequest",
 
+        // ---------- Phase 3: channels, integrations, firm relationships, opportunities, calibration ----------
+
+        ["ChannelSegmentReachDto"] = "ChannelSegmentReachDto",
+        ["ChannelProductAffinityDto"] = "ChannelProductAffinityDto",
+        ["ChannelDto"] = "ChannelDto",
+        ["CreateChannelRequest"] = "CreateChannelRequest",
+        ["UpdateChannelRequest"] = "UpdateChannelRequest",
+        ["SetChannelSegmentReachRequest"] = "SetChannelSegmentReachRequest",
+        ["SetChannelProductAffinityRequest"] = "SetChannelProductAffinityRequest",
+
+        ["IntegrationDto"] = "IntegrationDto",
+        ["CreateIntegrationRequest"] = "CreateIntegrationRequest",
+        ["UpdateIntegrationRequest"] = "UpdateIntegrationRequest",
+
+        ["FirmProductRelationshipDto"] = "FirmProductRelationshipDto",
+        ["CreateFirmProductRelationshipRequest"] = "CreateFirmProductRelationshipRequest",
+        ["UpdateFirmProductRelationshipRequest"] = "UpdateFirmProductRelationshipRequest",
+
+        ["FirmImportItem"] = "FirmImportItem",
+        ["FirmImportRelationship"] = "FirmImportRelationship",
+        ["BulkImportFirmsRequest"] = "BulkImportFirmsRequest",
+        ["BulkImportFirmsResponse"] = "BulkImportFirmsResponse",
+        ["GenerateSyntheticFirmsRequest"] = "GenerateSyntheticFirmsRequest",
+        ["GenerateSyntheticFirmsResponse"] = "GenerateSyntheticFirmsResponse",
+        ["SyntheticSegmentFillDto"] = "SyntheticSegmentFillDto",
+
+        ["OpportunityScopeItemDto"] = "OpportunityScopeItemDto",
+        ["OpportunityDto"] = "OpportunityDto",
+        ["CreateOpportunityRequest"] = "CreateOpportunityRequest",
+        ["UpdateOpportunityRequest"] = "UpdateOpportunityRequest",
+        ["AddOpportunityScopeRequest"] = "AddOpportunityScopeRequest",
+        ["QualifyOpportunityRequest"] = "QualifyOpportunityRequest",
+        ["DecideOpportunityRequest"] = "DecideOpportunityRequest",
+
+        ["CalibrationRunDto"] = "CalibrationRunDto",
+        ["CreateCalibrationRunRequest"] = "CreateCalibrationRunRequest",
+        ["CalibrationParameterDiffDto"] = "CalibrationParameterDiffDto",
+        ["CalibrationUnfittedDto"] = "CalibrationUnfittedDto",
+        ["CalibrationDiffDto"] = "CalibrationDiffDto",
+        ["CalibrationRunResultDto"] = "CalibrationRunResultDto",
+
+        ["EngineSegmentFunnel"] = "EngineSegmentFunnel",
+        ["EngineChannelFunnel"] = "EngineChannelFunnel",
+        ["EngineFirmLevelDiagnostics"] = "EngineFirmLevelDiagnostics",
+
         ["EngineCostRates"] = "EngineCostRates",
         ["EngineModulePenetration"] = "EngineModulePenetration",
         ["EngineSegmentInput"] = "EngineSegmentInput",
@@ -167,6 +214,9 @@ public class ApiContractDriftTests
         ["FactEventKind"] = "FactEventKind",
         ["EpistemicStatus"] = "EpistemicStatus",
         ["MarketEventType"] = "MarketEventType",
+
+        ["OpportunityStage"] = "OpportunityStage",
+        ["SimulationEngineMode"] = "SimulationEngineMode",
     };
 
     private static readonly Assembly ClientAssembly = typeof(ProductManagerApiClient).Assembly;

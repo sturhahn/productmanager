@@ -1,3 +1,4 @@
+using System.Globalization;
 using ProductManager.Cli.Client;
 using ProductManager.Cli.Commands;
 
@@ -270,6 +271,7 @@ public static class SeedLoader
         var competitors = await LoadCompetitorsAsync(client, marketId, seed.Competitors, tally, ct);
         var products = await LoadProductsAsync(client, marketId, seed.Products, competitors, segments, tally, ct);
         await LoadCoveragesAsync(client, seed.Coverages, products, businessProcesses, approaches, segments, tally, ct);
+        await LoadNeedsAsync(client, seed.Needs, businessProcesses, segments, tally, ct);
 
         return new MarketIndexes(marketId, segments, businessProcesses, approaches, competitors, products);
     }
@@ -408,6 +410,54 @@ public static class SeedLoader
         }
     }
 
+    /// <summary>
+    /// Loads segment-level demand edges. Like coverage there is no upsert endpoint, so an existing
+    /// need for the same (segment, process) is matched rather than duplicated — importance weights
+    /// would otherwise double up silently on a re-run.
+    /// </summary>
+    private static async Task LoadNeedsAsync(
+        ProductManagerApiClient client, List<SeedNeed> needs,
+        NameIndex businessProcesses, NameIndex segments, SeedTally tally, CancellationToken ct)
+    {
+        foreach (var need in needs)
+        {
+            var segmentId = segments.GetOrThrow(need.SegmentName);
+            var businessProcessId = businessProcesses.GetOrThrow(need.BusinessProcessName);
+
+            var existing = await client.ListNeedsAsync(null, segmentId, businessProcessId, 1, ListPageSize, ct);
+            if (existing.Items.Count > 0)
+            {
+                tally.RecordMatched("need");
+                continue;
+            }
+
+            if (need.RequiredCoverage is < 0 or > 1)
+                throw new ArgumentException(
+                    $"need '{need.SegmentName}' / '{need.BusinessProcessName}' has requiredCoverage " +
+                    $"{need.RequiredCoverage} — it must be between 0 and 1.");
+
+            // The coverage floor rides in the need's requiredDepthJson side-channel, which is where
+            // FirmLevelInputBuilder reads it from (industry specifics as data, not schema).
+            string? requiredDepthJson = need.RequiredCoverage is null
+                ? null
+                : $"{{\"requiredCoverage\":{need.RequiredCoverage.Value.ToString(CultureInfo.InvariantCulture)}}}";
+
+            await client.CreateNeedAsync(new CreateNeedRequest(
+                businessProcessId,
+                need.ImportanceWeight,
+                FirmId: null,
+                ClientSegmentId: segmentId,
+                IsHard: need.IsHard,
+                WorkaroundCostPerPeriod: need.WorkaroundCostPerPeriod is null
+                    ? null
+                    : new MoneyDto((decimal)need.WorkaroundCostPerPeriod.Value, "USD"),
+                RequiredDepthJson: requiredDepthJson,
+                Conditionality: need.Conditionality,
+                Notes: need.Notes), ct);
+            tally.RecordCreated("need");
+        }
+    }
+
     // ---------- Market dynamics (Phase 2) ----------
 
     private static async Task LoadMarketDynamicsAsync(
@@ -426,16 +476,28 @@ public static class SeedLoader
         var existingCompetitors = await client.ListCompetitorsAsync(marketId, 1, ListPageSize, ct);
         var competitorIndex = new NameIndex(existingCompetitors.Items.Select(c => (c.Name, c.Id)));
 
+        var existingProcesses = await client.ListBusinessProcessesAsync(marketId, null, 1, ListPageSize, ct);
+        var processIndex = new NameIndex(existingProcesses.Items.Select(p => (p.Name, p.Id)));
+
         foreach (var stockState in dynamics.SegmentStockStates)
             await ApplySegmentStockStateAsync(client, segmentIndex, productIndex, stockState, tally, ct);
 
         var covariateIndex = await LoadCovariatesAsync(client, workspaceId, dynamics.Covariates, tally, ct);
 
         foreach (var assumptionSet in dynamics.AssumptionSets)
-            await LoadAssumptionSetAsync(client, workspaceId, assumptionSet, segmentIndex, productIndex, covariateIndex, tally, ct);
+            await LoadAssumptionSetAsync(client, workspaceId, assumptionSet, segmentIndex, productIndex, processIndex, covariateIndex, tally, ct);
 
         foreach (var marketEvent in dynamics.MarketEvents)
             await LoadMarketEventAsync(client, marketId, marketEvent, segmentIndex, competitorIndex, tally, ct);
+
+        // ---------- Phase 3 ----------
+
+        var channelIndex = await LoadChannelsAsync(client, marketId, dynamics.Channels, segmentIndex, productIndex, tally, ct);
+        await LoadIntegrationsAsync(client, dynamics.Integrations, productIndex, tally, ct);
+        var firmIndex = await LoadFirmsAsync(client, marketId, dynamics.Firms, segmentIndex, productIndex, processIndex, tally, ct);
+        await LoadOpportunitiesAsync(client, dynamics.Opportunities, firmIndex, channelIndex, productIndex, processIndex, tally, ct);
+        await LoadChurnEventsAsync(client, workspaceId, dynamics.ChurnEvents, segmentIndex, tally, ct);
+        await LoadArrivalCountsAsync(client, workspaceId, dynamics.ArrivalCounts, segmentIndex, tally, ct);
     }
 
     private static async Task ApplySegmentStockStateAsync(
@@ -497,15 +559,17 @@ public static class SeedLoader
         }
 
         var payload = $"{{\"value\":{observation.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}";
+        var recordedAt = ToUtcMidnight(ParseHelpers.ParseOptionalDate(observation.RecordedDate, "covariate observation recordedDate"));
         await client.CreateFactAsync(new CreateFactEventRequest(
             workspaceId, FactEventKind.CovariateObserved, effectiveDate,
-            SubjectType: "Covariate", SubjectId: covariateId, PayloadJson: payload, Notes: observation.Notes), ct);
+            SubjectType: "Covariate", SubjectId: covariateId, PayloadJson: payload, Notes: observation.Notes,
+            RecordedAt: recordedAt), ct);
         tally.RecordCreated("covariateObservation");
     }
 
     private static async Task LoadAssumptionSetAsync(
         ProductManagerApiClient client, Guid workspaceId, SeedAssumptionSet assumptionSet,
-        NameIndex segments, NameIndex products, NameIndex covariates, SeedTally tally, CancellationToken ct)
+        NameIndex segments, NameIndex products, NameIndex processes, NameIndex covariates, SeedTally tally, CancellationToken ct)
     {
         var existing = await client.ListAssumptionSetsAsync(workspaceId, null, 1, ListPageSize, ct);
         var index = new NameIndex(existing.Items.Select(a => (a.Name, a.Id)));
@@ -520,13 +584,26 @@ public static class SeedLoader
             Guid? segmentId = parameter.SegmentName is null ? null : segments.GetOrThrow(parameter.SegmentName);
             Guid? moduleProductId = parameter.ModuleProductName is null ? null : products.GetOrThrow(parameter.ModuleProductName);
             Guid? covariateId = parameter.CovariateName is null ? null : covariates.GetOrThrow(parameter.CovariateName);
-            SimulationFlowKind? flowKind = parameter.FlowKind is null
-                ? null
-                : ParseHelpers.ParseEnum<SimulationFlowKind>(parameter.FlowKind, "parameter flowKind");
 
             var distribution = new DistributionSpecDto(
                 ParseHelpers.ParseEnum<DistributionType>(parameter.DistType, "parameter distType"), parameter.P1, parameter.P2);
             var provenance = ParseHelpers.ParseEnum<ParameterProvenance>(parameter.Provenance, "parameter provenance");
+
+            if (parameter.ChoiceKind is not null)
+            {
+                // A choice-model parameter: keyed via ChoiceParameterKeys, always free-form on the
+                // wire (segmentId/flowKind stay null so the API treats it as a Key parameter, not an
+                // engine one — see ParameterKeyHelper.Validate).
+                Guid? processId = parameter.BusinessProcessName is null ? null : processes.GetOrThrow(parameter.BusinessProcessName);
+                var key = ChoiceParameterKeys.Build(parameter.ChoiceKind, segmentId, processId, moduleProductId);
+                await client.UpsertParameterAsync(id, new UpsertParameterRequest(
+                    distribution, provenance, parameter.Rationale, null, null, null, covariateId, parameter.CovariateBeta, key), ct);
+                continue;
+            }
+
+            SimulationFlowKind? flowKind = parameter.FlowKind is null
+                ? null
+                : ParseHelpers.ParseEnum<SimulationFlowKind>(parameter.FlowKind, "parameter flowKind");
 
             await client.UpsertParameterAsync(id, new UpsertParameterRequest(
                 distribution, provenance, parameter.Rationale, segmentId, flowKind, moduleProductId,
@@ -566,6 +643,253 @@ public static class SeedLoader
             rateMultipliers), ct);
         tally.RecordCreated("marketEvent");
     }
+
+    // ---------- Phase 3: channels, integrations, firms, opportunities (historical facts) ----------
+
+    private static async Task<NameIndex> LoadChannelsAsync(
+        ProductManagerApiClient client, Guid marketId, List<SeedChannel> channels,
+        NameIndex segments, NameIndex products, SeedTally tally, CancellationToken ct)
+    {
+        var existing = await client.ListChannelsAsync(marketId, null, 1, ListPageSize, ct);
+        var index = new NameIndex(existing.Items.Select(c => (c.Name, c.Id)));
+
+        foreach (var channel in channels)
+        {
+            var id = await GetOrCreateAsync(index, channel.Name, "channel", tally, async () =>
+                (await client.CreateChannelAsync(new CreateChannelRequest(
+                    marketId, channel.Name, channel.Description, channel.OriginatesOpportunities, channel.CarriesOnlyListedProducts), ct)).Id);
+
+            foreach (var reach in channel.SegmentReaches)
+            {
+                var segmentId = segments.GetOrThrow(reach.SegmentName);
+                await client.SetChannelSegmentReachAsync(id,
+                    new SetChannelSegmentReachRequest(segmentId, reach.Reach, reach.OriginationShare), ct);
+                tally.RecordApplied("channelSegmentReach");
+            }
+
+            foreach (var affinity in channel.ProductAffinities)
+            {
+                var productId = products.GetOrThrow(affinity.ProductName);
+                await client.SetChannelProductAffinityAsync(id, new SetChannelProductAffinityRequest(productId, affinity.Bias), ct);
+                tally.RecordApplied("channelProductAffinity");
+            }
+        }
+
+        return index;
+    }
+
+    private static async Task LoadIntegrationsAsync(
+        ProductManagerApiClient client, List<SeedIntegration> integrations, NameIndex products, SeedTally tally, CancellationToken ct)
+    {
+        foreach (var integration in integrations)
+        {
+            var productAId = products.GetOrThrow(integration.ProductAName);
+            var productBId = products.GetOrThrow(integration.ProductBName);
+
+            // No natural-key upsert for integrations — the edge is symmetric, so match either
+            // ordering against what a product already carries before creating a duplicate.
+            var existing = await client.ListIntegrationsAsync(productAId, 1, ListPageSize, ct);
+            var already = existing.Items.Any(i =>
+                (i.ProductAId == productAId && i.ProductBId == productBId) ||
+                (i.ProductAId == productBId && i.ProductBId == productAId));
+
+            if (already)
+            {
+                tally.RecordMatched("integration");
+                continue;
+            }
+
+            await client.CreateIntegrationAsync(
+                new CreateIntegrationRequest(productAId, productBId, integration.QualityScore, integration.Notes), ct);
+            tally.RecordCreated("integration");
+        }
+    }
+
+    /// <summary>Delegates to POST /api/firms/bulk — the whole roster in one idempotent call, upserted
+    /// by (market, name), relationships included.</summary>
+    private static async Task<NameIndex> LoadFirmsAsync(
+        ProductManagerApiClient client, Guid marketId, List<SeedFirm> firms,
+        NameIndex segments, NameIndex products, NameIndex processes, SeedTally tally, CancellationToken ct)
+    {
+        if (firms.Count == 0) return new NameIndex();
+
+        var items = firms.Select(f => ToFirmImportItem(f, segments, products, processes)).ToList();
+        var response = await client.BulkImportFirmsAsync(new BulkImportFirmsRequest(marketId, items), ct);
+
+        for (var i = 0; i < response.Created; i++) tally.RecordCreated("firm");
+        for (var i = 0; i < response.Updated; i++) tally.RecordMatched("firm");
+        for (var i = 0; i < response.RelationshipsWritten; i++) tally.RecordApplied("firmRelationship");
+
+        return new NameIndex(response.Firms.Select(f => (f.Name, f.Id)));
+    }
+
+    private static FirmImportItem ToFirmImportItem(SeedFirm firm, NameIndex segments, NameIndex products, NameIndex processes)
+    {
+        Guid? segmentId = firm.SegmentName is null ? null : segments.GetOrThrow(firm.SegmentName);
+        var status = ParseHelpers.ParseEnum<EpistemicStatus>(firm.EpistemicStatus, "firm epistemicStatus");
+        var relationships = firm.Relationships.Count == 0
+            ? null
+            : firm.Relationships.Select(r => ToFirmImportRelationship(r, products, processes)).ToList();
+
+        return new FirmImportItem(firm.Name, segmentId, status, firm.AttributesJson, firm.Notes, relationships);
+    }
+
+    private static FirmImportRelationship ToFirmImportRelationship(SeedFirmRelationship relationship, NameIndex products, NameIndex processes)
+    {
+        var productId = products.GetOrThrow(relationship.ProductName);
+        var servedProcessIds = relationship.ServedProcessNames.Count == 0
+            ? null
+            : relationship.ServedProcessNames.Select(processes.GetOrThrow).ToList();
+
+        return new FirmImportRelationship(
+            productId, servedProcessIds, relationship.PriceLevel, PricePaidPerPeriod: null,
+            ParseHelpers.ParseOptionalDate(relationship.AcquisitionDate, "firm relationship acquisitionDate"));
+    }
+
+    /// <summary>
+    /// Loads historical, already-decided opportunities through the real open -&gt; qualify -&gt;
+    /// decide lifecycle, so the API appends the same OpportunityDecided fact a live decision would —
+    /// this is what makes the seed data real calibration input rather than a hand-crafted shortcut.
+    /// Idempotency has no natural key to upsert on, so a firm's existing opportunities are matched by
+    /// (opened date, scope) before creating — matched ones are left alone rather than re-decided
+    /// (a decided opportunity refuses a second decide).
+    /// </summary>
+    private static async Task LoadOpportunitiesAsync(
+        ProductManagerApiClient client, List<SeedOpportunity> opportunities,
+        NameIndex firms, NameIndex channels, NameIndex products, NameIndex processes, SeedTally tally, CancellationToken ct)
+    {
+        var byFirm = new Dictionary<Guid, List<OpportunityDto>>();
+
+        foreach (var seedOpportunity in opportunities)
+        {
+            var firmId = firms.GetOrThrow(seedOpportunity.FirmName);
+            var openedAt = ToUtcMidnight(ParseHelpers.ParseDate(seedOpportunity.OpenedDate, "opportunity openedDate"));
+            var scopeIds = seedOpportunity.ScopeProcessNames.Select(processes.GetOrThrow).ToHashSet();
+
+            if (!byFirm.TryGetValue(firmId, out var existingForFirm))
+            {
+                var existing = await client.ListOpportunitiesAsync(firmId, null, null, null, 1, ListPageSize, ct);
+                existingForFirm = existing.Items.ToList();
+                byFirm[firmId] = existingForFirm;
+            }
+
+            var match = existingForFirm.FirstOrDefault(o =>
+                o.OpenedAt.UtcDateTime.Date == openedAt.UtcDateTime.Date &&
+                o.Scope.Select(s => s.BusinessProcessId).ToHashSet().SetEquals(scopeIds));
+
+            if (match is not null)
+            {
+                tally.RecordMatched("opportunity");
+                continue;
+            }
+
+            Guid? channelId = seedOpportunity.ChannelName is null ? null : channels.GetOrThrow(seedOpportunity.ChannelName);
+            Guid? crossSellModuleProductId = seedOpportunity.CrossSellModuleProductName is null
+                ? null
+                : products.GetOrThrow(seedOpportunity.CrossSellModuleProductName);
+
+            var created = await client.CreateOpportunityAsync(new CreateOpportunityRequest(
+                firmId, openedAt, channelId, crossSellModuleProductId, scopeIds.ToList(), CompetitorIds: null, seedOpportunity.Notes), ct);
+            tally.RecordCreated("opportunity");
+            existingForFirm.Add(created); // keeps duplicate detection correct within this same run
+
+            if (seedOpportunity.QualifiedDate is not null)
+            {
+                var qualifiedAt = ToUtcMidnight(ParseHelpers.ParseDate(seedOpportunity.QualifiedDate, "opportunity qualifiedDate"));
+                await client.QualifyOpportunityAsync(created.Id, new QualifyOpportunityRequest(qualifiedAt), ct);
+            }
+
+            var outcome = ParseHelpers.ParseEnum<OpportunityStage>(seedOpportunity.Outcome, "opportunity outcome");
+            var decidedAt = ToUtcMidnight(ParseHelpers.ParseDate(seedOpportunity.DecidedDate, "opportunity decidedDate"));
+            Guid? winningProductId = seedOpportunity.WinningProductName is null ? null : products.GetOrThrow(seedOpportunity.WinningProductName);
+            var recordedAt = ToUtcMidnight(ParseHelpers.ParseOptionalDate(seedOpportunity.RecordedDate, "opportunity recordedDate"));
+
+            await client.DecideOpportunityAsync(created.Id, new DecideOpportunityRequest(outcome, winningProductId, decidedAt, recordedAt), ct);
+        }
+    }
+
+    private static async Task LoadChurnEventsAsync(
+        ProductManagerApiClient client, Guid workspaceId, List<SeedChurnEvent> churnEvents,
+        NameIndex segments, SeedTally tally, CancellationToken ct)
+    {
+        foreach (var churn in churnEvents)
+        {
+            var segmentId = segments.GetOrThrow(churn.SegmentName);
+            var effectiveDate = ParseHelpers.ParseDate(churn.EffectiveDate, "churn event effectiveDate");
+
+            // The ledger is append-only, so idempotency is the loader's job: skip a (segment, date)
+            // pair that already has a churn fact before appending another.
+            var existing = await client.ListFactsAsync(
+                workspaceId, FactEventKind.Churn, "ClientSegment", segmentId, effectiveDate, effectiveDate, null, 1, ListPageSize, ct);
+            if (existing.Items.Count > 0)
+            {
+                tally.RecordMatched("churnEvent");
+                continue;
+            }
+
+            var payload = $"{{\"clientSegmentId\":\"{segmentId}\"}}";
+            var recordedAt = ToUtcMidnight(ParseHelpers.ParseOptionalDate(churn.RecordedDate, "churn event recordedDate"));
+            await client.CreateFactAsync(new CreateFactEventRequest(
+                workspaceId, FactEventKind.Churn, effectiveDate, "ClientSegment", segmentId, payload, churn.Notes, recordedAt), ct);
+            tally.RecordCreated("churnEvent");
+        }
+    }
+
+    private static async Task LoadArrivalCountsAsync(
+        ProductManagerApiClient client, Guid workspaceId, List<SeedArrivalCount> arrivals,
+        NameIndex segments, SeedTally tally, CancellationToken ct)
+    {
+        foreach (var arrival in arrivals)
+        {
+            var segmentId = segments.GetOrThrow(arrival.SegmentName);
+            var flowKind = ParseHelpers.ParseEnum<SimulationFlowKind>(arrival.FlowKind, "arrival count flowKind");
+            var month = ParseHelpers.ParseDate(arrival.Month, "arrival count month");
+            var monthStart = new DateOnly(month.Year, month.Month, 1);
+            var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+            var existing = await client.ListFactsAsync(workspaceId, FactEventKind.SegmentArrivalObserved,
+                "ClientSegment", segmentId, monthStart, monthEnd, null, 1, ListPageSize, ct);
+            if (existing.Items.Any(f => PayloadFlowKindEquals(f.PayloadJson, flowKind)))
+            {
+                tally.RecordMatched("arrivalCount");
+                continue;
+            }
+
+            var payload = $"{{\"clientSegmentId\":\"{segmentId}\",\"flowKind\":\"{flowKind}\",\"count\":{arrival.Count}," +
+                          $"\"exposure\":{arrival.Exposure.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}";
+            var recordedAt = ToUtcMidnight(ParseHelpers.ParseOptionalDate(arrival.RecordedDate, "arrival count recordedDate"));
+            await client.CreateFactAsync(new CreateFactEventRequest(
+                workspaceId, FactEventKind.SegmentArrivalObserved, monthStart, "ClientSegment", segmentId, payload, null, recordedAt), ct);
+            tally.RecordCreated("arrivalCount");
+        }
+    }
+
+    /// <summary>
+    /// Reads <c>flowKind</c> out of a stored arrival fact's payload. This must parse rather than
+    /// substring-match: the payload column is jsonb, and Postgres re-serializes it with a space after
+    /// each colon (<c>{"flowKind": "NewFirmArrival"}</c>), so a match against the compact text the
+    /// loader writes never fires and every re-run appends a duplicate fact.
+    /// </summary>
+    private static bool PayloadFlowKindEquals(string? payloadJson, SimulationFlowKind flowKind)
+    {
+        if (string.IsNullOrWhiteSpace(payloadJson)) return false;
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(payloadJson);
+            if (document.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return false;
+            if (!document.RootElement.TryGetProperty("flowKind", out var element)) return false;
+            if (element.ValueKind != System.Text.Json.JsonValueKind.String) return false;
+            return string.Equals(element.GetString(), flowKind.ToString(), StringComparison.Ordinal);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static DateTimeOffset ToUtcMidnight(DateOnly date) => new(date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+
+    private static DateTimeOffset? ToUtcMidnight(DateOnly? date) => date is null ? null : ToUtcMidnight(date.Value);
 
     private static MarketIndexes RequireMarket(MarketIndexes? market) =>
         market ?? throw new SeedReferenceException("a market entity (no market defined in the seed file)");

@@ -3,12 +3,14 @@
 import * as React from "react";
 import {
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   type UseMutationOptions,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { activeWorkspaceStore, api, ApiError } from "@/lib/api/client";
+import type { FirmDto, FirmProductRelationshipDto } from "@/lib/api/types";
 import { activeMarketStore } from "@/lib/market-store";
 import { useAuth } from "@/lib/auth";
 
@@ -40,6 +42,21 @@ export const queryKeys = {
   simulationRuns: (ws: string) => ["simulation-runs", ws] as const,
   simulationResult: (id: string) => ["simulation-result", id] as const,
   simulationInput: (id: string) => ["simulation-input", id] as const,
+  simulationDiagnostics: (id: string) =>
+    ["simulation-diagnostics", id] as const,
+  channels: (marketId: string) => ["channels", marketId] as const,
+  integrations: (productId: string) => ["integrations", productId] as const,
+  firmsPage: (
+    marketId: string,
+    segment: string,
+    status: string,
+    page: number,
+  ) => ["firms-page", marketId, segment, status, page] as const,
+  firm: (id: string) => ["firm", id] as const,
+  firmRelationships: (scope: string) => ["firm-relationships", scope] as const,
+  opportunities: (ws: string) => ["opportunities", ws] as const,
+  calibrationRuns: (ws: string) => ["calibration-runs", ws] as const,
+  calibrationDiff: (id: string) => ["calibration-diff", id] as const,
 };
 
 export function errorMessage(error: unknown): string {
@@ -386,5 +403,141 @@ export function useSimulationResult(runId: string | undefined) {
     queryFn: () => api.simulationRuns.result(runId!),
     enabled: !!runId,
     staleTime: Infinity, // runs are immutable
+  });
+}
+
+// =====================================================================
+// Phase 3 — firm-level choice engine hooks
+// =====================================================================
+
+export function useSimulationDiagnostics(
+  runId: string | undefined,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: queryKeys.simulationDiagnostics(runId ?? ""),
+    queryFn: () => api.simulationRuns.diagnostics(runId!),
+    enabled: !!runId && enabled,
+    staleTime: Infinity, // runs are immutable
+  });
+}
+
+/** Every channel across every market — simulation results span markets. */
+export function useAllChannels(workspaceId: string | undefined) {
+  return useQuery({
+    queryKey: ["all-channels", workspaceId ?? ""],
+    queryFn: async () => {
+      const markets = await api.markets.list(workspaceId!);
+      const pages = await Promise.all(
+        markets.items.map((m) => api.channels.list(m.id)),
+      );
+      return pages.flatMap((p) => p.items);
+    },
+    enabled: !!workspaceId,
+  });
+}
+
+export function useChannels(marketId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.channels(marketId ?? ""),
+    queryFn: () => api.channels.list(marketId!),
+    enabled: !!marketId,
+    select: (page) => page.items,
+  });
+}
+
+export function useIntegrations(productId?: string) {
+  const { authenticated } = useAuth();
+  return useQuery({
+    queryKey: queryKeys.integrations(productId ?? "all"),
+    queryFn: () => api.integrations.list(productId),
+    enabled: authenticated,
+    select: (page) => page.items,
+  });
+}
+
+/** One server-side page of the firm roster with optional filters. */
+export function useFirmsPage(
+  marketId: string | undefined,
+  filters: { clientSegmentId?: string; epistemicStatus?: string },
+  page: number,
+  pageSize: number,
+) {
+  return useQuery({
+    queryKey: queryKeys.firmsPage(
+      marketId ?? "",
+      filters.clientSegmentId ?? "all",
+      filters.epistemicStatus ?? "all",
+      page,
+    ),
+    queryFn: () =>
+      api.firms.page({ marketId: marketId!, ...filters }, page, pageSize),
+    enabled: !!marketId,
+    placeholderData: (previous) => previous,
+  });
+}
+
+/** Resolve a set of firms by id (for opportunity rows). Cached per firm. */
+export function useFirmsById(firmIds: string[]): Map<string, FirmDto> {
+  return useQueries({
+    queries: firmIds.map((id) => ({
+      queryKey: queryKeys.firm(id),
+      queryFn: () => api.firms.get(id),
+      staleTime: 60_000,
+    })),
+    combine: (results) => {
+      const map = new Map<string, FirmDto>();
+      for (const r of results) {
+        if (r.data) map.set(r.data.id, r.data);
+      }
+      return map;
+    },
+  });
+}
+
+/** Active relationships for one page of firms — one small query per firm. */
+export function useRelationshipsForFirms(
+  firmIds: string[],
+): Map<string, FirmProductRelationshipDto[]> {
+  return useQueries({
+    queries: firmIds.map((id) => ({
+      queryKey: queryKeys.firmRelationships(`firm:${id}`),
+      queryFn: () => api.firmRelationships.list({ firmId: id }),
+      staleTime: 30_000,
+    })),
+    combine: (results) => {
+      const map = new Map<string, FirmProductRelationshipDto[]>();
+      results.forEach((r, i) => {
+        if (r.data) map.set(firmIds[i], r.data.items);
+      });
+      return map;
+    },
+  });
+}
+
+export function useOpportunities(workspaceId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.opportunities(workspaceId ?? ""),
+    queryFn: () => api.opportunities.list({}),
+    enabled: !!workspaceId,
+    select: (page) => page.items,
+  });
+}
+
+export function useCalibrationRuns(workspaceId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.calibrationRuns(workspaceId ?? ""),
+    queryFn: () => api.calibrationRuns.list(workspaceId!),
+    enabled: !!workspaceId,
+    select: (page) => page.items,
+  });
+}
+
+export function useCalibrationDiff(runId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.calibrationDiff(runId ?? ""),
+    queryFn: () => api.calibrationRuns.diff(runId!),
+    enabled: !!runId,
+    staleTime: Infinity, // calibration runs are immutable
   });
 }

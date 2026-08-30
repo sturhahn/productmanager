@@ -348,6 +348,9 @@ namespace ProductManager.Api.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("CarriesOnlyListedProducts")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -574,8 +577,15 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("text");
 
+                    b.Property<double>("PriceLevel")
+                        .HasColumnType("double precision");
+
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<List<Guid>>("ServedProcessIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]");
 
                     b.HasKey("Id");
 
@@ -745,6 +755,9 @@ namespace ProductManager.Api.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("uuid[]");
 
+                    b.Property<Guid?>("CrossSellModuleProductId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset?>("DecidedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -771,6 +784,8 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChannelId");
+
+                    b.HasIndex("CrossSellModuleProductId");
 
                     b.HasIndex("FirmId");
 
@@ -900,8 +915,18 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.Property<Guid?>("FittedAssumptionSetId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("InputSnapshotJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("Notes")
                         .HasColumnType("text");
+
+                    b.Property<string>("OutputJson")
+                        .HasColumnType("jsonb");
 
                     b.Property<Guid>("PriorAssumptionSetId")
                         .HasColumnType("uuid");
@@ -910,6 +935,8 @@ namespace ProductManager.Api.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
 
                     b.HasIndex("FittedAssumptionSetId");
 
@@ -984,11 +1011,19 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("DiagnosticsJson")
+                        .HasColumnType("jsonb");
+
                     b.Property<double>("DiscountRateAnnual")
                         .HasColumnType("double precision");
 
                     b.Property<long?>("ElapsedMs")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("EngineMode")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
 
                     b.Property<string>("EventOverlayJson")
                         .HasColumnType("jsonb");
@@ -1315,6 +1350,9 @@ namespace ProductManager.Api.Persistence.Migrations
                             b1.Property<Guid>("ClientSegmentId")
                                 .HasColumnType("uuid");
 
+                            b1.Property<double>("OriginationShare")
+                                .HasColumnType("double precision");
+
                             b1.Property<double>("Reach")
                                 .HasColumnType("double precision");
 
@@ -1340,6 +1378,35 @@ namespace ProductManager.Api.Persistence.Migrations
                         .HasForeignKey("MarketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsMany("ProductManager.Domain.Market.SegmentApproachAdoption", "ApproachAdoptions", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<Guid>("ApproachId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<Guid>("ClientSegmentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<double>("Share")
+                                .HasColumnType("double precision");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ApproachId");
+
+                            b1.HasIndex("ClientSegmentId");
+
+                            b1.ToTable("ClientSegmentApproachAdoptions", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ClientSegmentId");
+                        });
 
                     b.OwnsMany("ProductManager.Domain.Market.SegmentModulePenetration", "ModulePenetrations", b1 =>
                         {
@@ -1417,6 +1484,8 @@ namespace ProductManager.Api.Persistence.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("ClientSegmentId");
                         });
+
+                    b.Navigation("ApproachAdoptions");
 
                     b.Navigation("ModulePenetrations");
 
@@ -1646,6 +1715,11 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.HasOne("ProductManager.Domain.Market.Channel", null)
                         .WithMany()
                         .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ProductManager.Domain.Market.Product", null)
+                        .WithMany()
+                        .HasForeignKey("CrossSellModuleProductId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("ProductManager.Domain.Market.Firm", null)
