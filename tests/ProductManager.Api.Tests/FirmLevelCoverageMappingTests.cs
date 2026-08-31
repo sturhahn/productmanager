@@ -166,8 +166,13 @@ public sealed class FirmLevelCoverageMappingTests : ApiTestBase
 
         // Behavior: with the delta, the two otherwise-identical segments track each other — Alpha
         // gets the same month-3 gold lift Beta does, scoped assessment or not.
+        // Paths: 300 (not the usual 8) — the engine is deterministic per (seed, paths), and at 8
+        // paths the win-rate gap below is thin enough for Monte Carlo sampling noise to cross the
+        // threshold. 300 paths at seed 17 converges the win rates (verified stable from 50 through
+        // 1000 paths: gap1 stays ~0.001-0.03 against a 0.04 bound, gap2 stays ~0.07 against a 0.05
+        // bound) while still running in well under a second.
         var run = await PostAsync<SimulationRunDto>("/api/simulation-runs", new CreateSimulationRunRequest(
-            world.RoadmapId, world.AssumptionSetId, HorizonMonths: 12, Paths: 8, Seed: 17,
+            world.RoadmapId, world.AssumptionSetId, HorizonMonths: 12, Paths: 300, Seed: 17,
             StartDate: RunStart, MarketId: world.MarketId, EngineMode: SimulationEngineMode.FirmLevel));
         var diagnostics = await GetAsync<FirmLevelDiagnostics>($"/api/simulation-runs/{run.Id}/diagnostics");
         var alpha = diagnostics.FunnelBySegment.Single(f => f.SegmentId == world.AlphaSegmentId.ToString());
@@ -181,7 +186,7 @@ public sealed class FirmLevelCoverageMappingTests : ApiTestBase
         var control = await CreateWorldAsync(
             scopedGoldForAlpha: false, withRoadmapDelta: false, scopedReportingBronzeForAlpha: true);
         var controlRun = await PostAsync<SimulationRunDto>("/api/simulation-runs", new CreateSimulationRunRequest(
-            control.RoadmapId, control.AssumptionSetId, HorizonMonths: 12, Paths: 8, Seed: 17,
+            control.RoadmapId, control.AssumptionSetId, HorizonMonths: 12, Paths: 300, Seed: 17,
             StartDate: RunStart, MarketId: control.MarketId, EngineMode: SimulationEngineMode.FirmLevel));
         var controlDiagnostics =
             await GetAsync<FirmLevelDiagnostics>($"/api/simulation-runs/{controlRun.Id}/diagnostics");

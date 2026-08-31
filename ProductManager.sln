@@ -12,6 +12,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductManager.Cli", "src\ProductManager.Cli\ProductManager.Cli.csproj", "{B267F681-642C-4FEB-B985-AB94991B76A6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+	ProjectSection(SolutionItems) = preProject
+		tests\ABSTRACT.md = tests\ABSTRACT.md
+		tests\INDEX.md = tests\INDEX.md
+		tests\CLAUDE.md = tests\CLAUDE.md
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductManager.Domain.Tests", "tests\ProductManager.Domain.Tests\ProductManager.Domain.Tests.csproj", "{8C9140A3-ABBB-46C3-88F3-12534AB9265D}"
 EndProject
@@ -22,6 +27,166 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductManager.Engine", "src\ProductManager.Engine\ProductManager.Engine.csproj", "{D2F4498B-8AF4-4281-90BD-2F377F7457FF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductManager.Engine.Tests", "tests\ProductManager.Engine.Tests\ProductManager.Engine.Tests.csproj", "{2987F78B-2A48-4970-BB72-2AF9038BF711}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B99B91A7-FB42-4901-85F3-E249F3299696}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose.yml = docker-compose.yml
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{120B4091-3065-497E-8842-5B67AD24C416}"
+	ProjectSection(SolutionItems) = preProject
+		docs\PRDs\product_requirements.md = docs\PRDs\product_requirements.md
+		ABSTRACT.md = ABSTRACT.md
+		CLAUDE.md = CLAUDE.md
+		INDEX.md = INDEX.md
+		docs\ABSTRACT.md = docs\ABSTRACT.md
+		docs\INDEX.md = docs\INDEX.md
+		docs\CLAUDE.md = docs\CLAUDE.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "seed", "seed", "{615E39E8-525B-4E90-B535-E5FAA601856B}"
+	ProjectSection(SolutionItems) = preProject
+		seed\phase1-seed.json = seed\phase1-seed.json
+		seed\phase2-seed.json = seed\phase2-seed.json
+		seed\phase3-seed.json = seed\phase3-seed.json
+		seed\ABSTRACT.md = seed\ABSTRACT.md
+		seed\INDEX.md = seed\INDEX.md
+		seed\CLAUDE.md = seed\CLAUDE.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "openapi", "openapi", "{2D309B97-F0B6-46F0-9468-EB4D7647B0ED}"
+	ProjectSection(SolutionItems) = preProject
+		openapi\productmanager.json = openapi\productmanager.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{2788225A-B3F2-4D04-B289-6C6491442B39}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\generate-openapi.sh = scripts\generate-openapi.sh
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "frontend", "frontend", "{7F43E10F-3009-4EDA-8391-261CEDF3AD3C}"
+	ProjectSection(SolutionItems) = preProject
+		frontend\.env.example = frontend\.env.example
+		frontend\.gitignore = frontend\.gitignore
+		frontend\AGENTS.md = frontend\AGENTS.md
+		frontend\CLAUDE.md = frontend\CLAUDE.md
+		frontend\README.md = frontend\README.md
+		frontend\components.json = frontend\components.json
+		frontend\eslint.config.mjs = frontend\eslint.config.mjs
+		frontend\next.config.ts = frontend\next.config.ts
+		frontend\package.json = frontend\package.json
+		frontend\postcss.config.mjs = frontend\postcss.config.mjs
+		frontend\tsconfig.json = frontend\tsconfig.json
+		frontend\ABSTRACT.md = frontend\ABSTRACT.md
+		frontend\INDEX.md = frontend\INDEX.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B4EAC22D-76CA-4D47-9535-026C875BEBDF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "app", "app", "{4C87030B-5FE1-456C-9EA2-A59A5A0E34BC}"
+	ProjectSection(SolutionItems) = preProject
+		frontend\src\app\globals.css = frontend\src\app\globals.css
+		frontend\src\app\layout.tsx = frontend\src\app\layout.tsx
+		frontend\src\app\page.tsx = frontend\src\app\page.tsx
+		frontend\src\app\login\page.tsx = frontend\src\app\login\page.tsx
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "(app)", "(app)", "{06CB5EF1-0C3D-4041-91CB-4E844F108F4F}"
+	ProjectSection(SolutionItems) = preProject
+		frontend\src\app\(app)\assumptions\page.tsx = frontend\src\app\(app)\assumptions\page.tsx
+		frontend\src\app\(app)\calibration\page.tsx = frontend\src\app\(app)\calibration\page.tsx
+		frontend\src\app\(app)\channels\page.tsx = frontend\src\app\(app)\channels\page.tsx
+		frontend\src\app\(app)\competitors\page.tsx = frontend\src\app\(app)\competitors\page.tsx
+		frontend\src\app\(app)\coverage\page.tsx = frontend\src\app\(app)\coverage\page.tsx
+		frontend\src\app\(app)\features\page.tsx = frontend\src\app\(app)\features\page.tsx
+		frontend\src\app\(app)\firms\page.tsx = frontend\src\app\(app)\firms\page.tsx
+		frontend\src\app\(app)\initiatives\page.tsx = frontend\src\app\(app)\initiatives\page.tsx
+		frontend\src\app\(app)\layout.tsx = frontend\src\app\(app)\layout.tsx
+		frontend\src\app\(app)\markets\page.tsx = frontend\src\app\(app)\markets\page.tsx
+		frontend\src\app\(app)\opportunities\page.tsx = frontend\src\app\(app)\opportunities\page.tsx
+		frontend\src\app\(app)\processes\page.tsx = frontend\src\app\(app)\processes\page.tsx
+		frontend\src\app\(app)\products\page.tsx = frontend\src\app\(app)\products\page.tsx
+		frontend\src\app\(app)\projects\page.tsx = frontend\src\app\(app)\projects\page.tsx
+		frontend\src\app\(app)\roadmap\page.tsx = frontend\src\app\(app)\roadmap\page.tsx
+		frontend\src\app\(app)\segments\page.tsx = frontend\src\app\(app)\segments\page.tsx
+		frontend\src\app\(app)\simulate\page.tsx = frontend\src\app\(app)\simulate\page.tsx
+		frontend\src\app\(app)\teams\page.tsx = frontend\src\app\(app)\teams\page.tsx
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "components", "components", "{4DA09D87-4A70-48DE-9162-35FBB82B1E3D}"
+	ProjectSection(SolutionItems) = preProject
+		frontend\src\components\app-sidebar.tsx = frontend\src\components\app-sidebar.tsx
+		frontend\src\components\confirm-dialog.tsx = frontend\src\components\confirm-dialog.tsx
+		frontend\src\components\market-picker.tsx = frontend\src\components\market-picker.tsx
+		frontend\src\components\page-header.tsx = frontend\src\components\page-header.tsx
+		frontend\src\components\providers.tsx = frontend\src\components\providers.tsx
+		frontend\src\components\theme-provider.tsx = frontend\src\components\theme-provider.tsx
+		frontend\src\components\theme-toggle.tsx = frontend\src\components\theme-toggle.tsx
+		frontend\src\components\tier-chip.tsx = frontend\src\components\tier-chip.tsx
+		frontend\src\components\workspace-switcher.tsx = frontend\src\components\workspace-switcher.tsx
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "charts", "charts", "{AFF41A2F-C714-427C-9E52-FBEDE2D81F42}"
+	ProjectSection(SolutionItems) = preProject
+		frontend\src\components\charts\echart.tsx = frontend\src\components\charts\echart.tsx
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "roadmap", "roadmap", "{C24AE4BF-F45B-440D-B48B-27CDBD909F29}"
+	ProjectSection(SolutionItems) = preProject
+		frontend\src\components\roadmap\timeline.tsx = frontend\src\components\roadmap\timeline.tsx
+		frontend\src\components\roadmap\unplanned-tray.tsx = frontend\src\components\roadmap\unplanned-tray.tsx
+		frontend\src\components\roadmap\warnings-panel.tsx = frontend\src\components\roadmap\warnings-panel.tsx
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ui", "ui", "{1B89D86B-BB09-45CA-B02A-70A8E1B49E7F}"
+	ProjectSection(SolutionItems) = preProject
+		frontend\src\components\ui\badge.tsx = frontend\src\components\ui\badge.tsx
+		frontend\src\components\ui\button.tsx = frontend\src\components\ui\button.tsx
+		frontend\src\components\ui\card.tsx = frontend\src\components\ui\card.tsx
+		frontend\src\components\ui\checkbox.tsx = frontend\src\components\ui\checkbox.tsx
+		frontend\src\components\ui\dialog.tsx = frontend\src\components\ui\dialog.tsx
+		frontend\src\components\ui\dropdown-menu.tsx = frontend\src\components\ui\dropdown-menu.tsx
+		frontend\src\components\ui\input.tsx = frontend\src\components\ui\input.tsx
+		frontend\src\components\ui\label.tsx = frontend\src\components\ui\label.tsx
+		frontend\src\components\ui\scroll-area.tsx = frontend\src\components\ui\scroll-area.tsx
+		frontend\src\components\ui\select.tsx = frontend\src\components\ui\select.tsx
+		frontend\src\components\ui\separator.tsx = frontend\src\components\ui\separator.tsx
+		frontend\src\components\ui\sonner.tsx = frontend\src\components\ui\sonner.tsx
+		frontend\src\components\ui\table.tsx = frontend\src\components\ui\table.tsx
+		frontend\src\components\ui\textarea.tsx = frontend\src\components\ui\textarea.tsx
+		frontend\src\components\ui\tooltip.tsx = frontend\src\components\ui\tooltip.tsx
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{968ACDBA-ABC0-4995-BCBC-3BFD6D156212}"
+	ProjectSection(SolutionItems) = preProject
+		frontend\src\lib\auth.tsx = frontend\src\lib\auth.tsx
+		frontend\src\lib\calibration.test.ts = frontend\src\lib\calibration.test.ts
+		frontend\src\lib\calibration.ts = frontend\src\lib\calibration.ts
+		frontend\src\lib\colors.ts = frontend\src\lib\colors.ts
+		frontend\src\lib\coverage.test.ts = frontend\src\lib\coverage.test.ts
+		frontend\src\lib\coverage.ts = frontend\src\lib\coverage.ts
+		frontend\src\lib\fanchart.test.ts = frontend\src\lib\fanchart.test.ts
+		frontend\src\lib\fanchart.ts = frontend\src\lib\fanchart.ts
+		frontend\src\lib\funnel.test.ts = frontend\src\lib\funnel.test.ts
+		frontend\src\lib\funnel.ts = frontend\src\lib\funnel.ts
+		frontend\src\lib\market-store.ts = frontend\src\lib\market-store.ts
+		frontend\src\lib\masking.test.ts = frontend\src\lib\masking.test.ts
+		frontend\src\lib\masking.ts = frontend\src\lib\masking.ts
+		frontend\src\lib\pipeline.test.ts = frontend\src\lib\pipeline.test.ts
+		frontend\src\lib\pipeline.ts = frontend\src\lib\pipeline.ts
+		frontend\src\lib\process-tree.ts = frontend\src\lib\process-tree.ts
+		frontend\src\lib\queries.ts = frontend\src\lib\queries.ts
+		frontend\src\lib\timeline.test.ts = frontend\src\lib\timeline.test.ts
+		frontend\src\lib\timeline.ts = frontend\src\lib\timeline.ts
+		frontend\src\lib\utils.ts = frontend\src\lib\utils.ts
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{CA1358A5-642B-448F-A489-370C9E2EB5EE}"
+	ProjectSection(SolutionItems) = preProject
+		frontend\src\lib\api\client.ts = frontend\src\lib\api\client.ts
+		frontend\src\lib\api\types.ts = frontend\src\lib\api\types.ts
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -134,6 +299,15 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{B4EAC22D-76CA-4D47-9535-026C875BEBDF} = {7F43E10F-3009-4EDA-8391-261CEDF3AD3C}
+		{4C87030B-5FE1-456C-9EA2-A59A5A0E34BC} = {B4EAC22D-76CA-4D47-9535-026C875BEBDF}
+		{06CB5EF1-0C3D-4041-91CB-4E844F108F4F} = {4C87030B-5FE1-456C-9EA2-A59A5A0E34BC}
+		{4DA09D87-4A70-48DE-9162-35FBB82B1E3D} = {B4EAC22D-76CA-4D47-9535-026C875BEBDF}
+		{AFF41A2F-C714-427C-9E52-FBEDE2D81F42} = {4DA09D87-4A70-48DE-9162-35FBB82B1E3D}
+		{C24AE4BF-F45B-440D-B48B-27CDBD909F29} = {4DA09D87-4A70-48DE-9162-35FBB82B1E3D}
+		{1B89D86B-BB09-45CA-B02A-70A8E1B49E7F} = {4DA09D87-4A70-48DE-9162-35FBB82B1E3D}
+		{968ACDBA-ABC0-4995-BCBC-3BFD6D156212} = {B4EAC22D-76CA-4D47-9535-026C875BEBDF}
+		{CA1358A5-642B-448F-A489-370C9E2EB5EE} = {968ACDBA-ABC0-4995-BCBC-3BFD6D156212}
 		{8EACB1EE-650F-4D48-B1CC-9BAFB857DD98} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{114286BF-2EFC-4800-B7BC-55B7DC302830} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{B267F681-642C-4FEB-B985-AB94991B76A6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}

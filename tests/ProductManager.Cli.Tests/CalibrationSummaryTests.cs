@@ -69,6 +69,64 @@ public class CalibrationSummaryTests
     }
 
     [Fact]
+    public void FormatTable_translates_a_parameter_key_when_a_resolver_is_given()
+    {
+        var segmentId = Guid.Parse("cec3eedf-c83a-487f-9c3a-42d71775d02c");
+        var diff = MakeDiff([Fitted($"ChurnHazard:{segmentId}", 0.1, 0.2, 10)], []);
+        var rows = CalibrationSummary.BuildRows(diff);
+        var names = new NameResolver(segments: new Dictionary<Guid, string> { [segmentId] = "Boutique Family Offices" });
+
+        var text = CalibrationSummary.FormatTable(rows, names);
+
+        Assert.Contains("Churn hazard — Boutique Family Offices", text);
+        Assert.DoesNotContain(segmentId.ToString(), text);
+    }
+
+    [Fact]
+    public void FormatUnfitted_translates_a_parameter_key_when_a_resolver_is_given()
+    {
+        var segmentId = Guid.Parse("cec3eedf-c83a-487f-9c3a-42d71775d02c");
+        var diff = MakeDiff([], [Unfitted($"WinRate:{segmentId}", "no evidence")]);
+        var names = new NameResolver(segments: new Dictionary<Guid, string> { [segmentId] = "Boutique Family Offices" });
+
+        var text = CalibrationSummary.FormatUnfitted(diff, names);
+
+        Assert.Contains("Win rate — Boutique Family Offices", text);
+        Assert.Contains("no evidence", text);
+    }
+
+    [Fact]
+    public void FormatUnfitted_translates_ids_embedded_in_the_reason_text()
+    {
+        var segmentId = Guid.Parse("cec3eedf-c83a-487f-9c3a-42d71775d02c");
+        var moduleId = Guid.Parse("449ca8bb-9cef-4325-8bfe-2e6cc05776dc");
+        var reason = $"No observed cross-sell wins for module '{moduleId}' in segment '{segmentId}' as of 2026-08-30.";
+        var diff = MakeDiff([], [Unfitted($"CrossSellRate:{segmentId}:{moduleId}", reason)]);
+        var names = new NameResolver(
+            segments: new Dictionary<Guid, string> { [segmentId] = "Boutique Family Offices" },
+            products: new Dictionary<Guid, string> { [moduleId] = "Meridian Trading Module" });
+
+        var text = CalibrationSummary.FormatUnfitted(diff, names);
+
+        Assert.Contains("module 'Meridian Trading Module' in segment 'Boutique Family Offices'", text);
+        Assert.DoesNotContain(segmentId.ToString(), text);
+        Assert.DoesNotContain(moduleId.ToString(), text);
+    }
+
+    [Fact]
+    public void FormatUnfitted_falls_back_to_a_short_id_for_an_unresolved_embedded_guid()
+    {
+        var unknownId = Guid.Parse("00000000-1111-2222-3333-444444444444");
+        var diff = MakeDiff([], [Unfitted("z-param", $"No data for '{unknownId}'.")]);
+        var names = new NameResolver();
+
+        var text = CalibrationSummary.FormatUnfitted(diff, names);
+
+        Assert.DoesNotContain(unknownId.ToString(), text);
+        Assert.Contains("00000000", text);
+    }
+
+    [Fact]
     public void FormatUnfitted_is_empty_when_nothing_was_unfitted()
     {
         var diff = MakeDiff([], []);

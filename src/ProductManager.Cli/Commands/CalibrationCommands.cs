@@ -43,8 +43,13 @@ internal static class CalibrationCommands
         diff.SetAction((parseResult, ct) => CliInfrastructure.RunAsync(async ct2 =>
         {
             var client = CliInfrastructure.BuildAuthenticatedClient(parseResult);
-            var result = await client.GetCalibrationRunDiffAsync(parseResult.GetValue(idArg), ct2);
-            PrintDiff(result);
+            var id = parseResult.GetValue(idArg);
+            // GetCalibrationRunDiffAsync's DTO doesn't carry the workspace id, so fetch the run's
+            // metadata too — just to resolve the diff table's parameter keys to names.
+            var run = await client.GetCalibrationRunAsync(id, ct2);
+            var result = await client.GetCalibrationRunDiffAsync(id, ct2);
+            var names = await NameResolver.BuildAsync(client, run.WorkspaceId, ct2);
+            PrintDiff(result, names);
         }, ct));
 
         var delete = new Command("delete", "Deletes a calibration run (a stored fit is never edited, only deleted).");
@@ -88,16 +93,17 @@ internal static class CalibrationCommands
             var result = await client.CreateCalibrationRunAsync(request, ct2);
             Console.WriteLine($"Calibration run {result.Run.Id} (as of {result.Run.FactsAsOfDate:yyyy-MM-dd}), " +
                                $"fitted assumption set {result.Run.FittedAssumptionSetId}:");
-            PrintDiff(result.Diff);
+            var names = await NameResolver.BuildAsync(client, result.Run.WorkspaceId, ct2);
+            PrintDiff(result.Diff, names);
         }, ct));
         return cmd;
     }
 
-    private static void PrintDiff(CalibrationDiffDto diff)
+    private static void PrintDiff(CalibrationDiffDto diff, NameResolver names)
     {
         var rows = CalibrationSummary.BuildRows(diff);
-        Console.WriteLine(CalibrationSummary.FormatTable(rows));
-        var unfitted = CalibrationSummary.FormatUnfitted(diff);
+        Console.WriteLine(CalibrationSummary.FormatTable(rows, names));
+        var unfitted = CalibrationSummary.FormatUnfitted(diff, names);
         if (unfitted.Length > 0)
             Console.WriteLine(unfitted);
     }

@@ -152,6 +152,40 @@ public class SimulationSummaryTests
         Assert.Contains("direct", text);
     }
 
+    [Fact]
+    public void FormatFunnel_resolves_segment_and_channel_ids_to_names_when_a_resolver_is_given()
+    {
+        var segmentId = Guid.Parse("34e4d3bf-0475-462d-afc1-9fe96168296e");
+        var channelId = Guid.Parse("6befced3-94dd-4c33-8990-10073b0c97f9");
+        var diagnostics = MakeDiagnostics(
+            [new EngineSegmentFunnel(segmentId.ToString(), 10, 8, 3, 4, 1, 2, 0.3)],
+            [new EngineChannelFunnel(channelId.ToString(), Opened: 10, Won: 3, WinRate: 0.3), new EngineChannelFunnel("direct", 5, 2, 0.4)]);
+
+        var names = new NameResolver(
+            segments: new Dictionary<Guid, string> { [segmentId] = "Boutique Family Offices" },
+            channels: new Dictionary<Guid, string> { [channelId] = "Partner Network" });
+
+        var text = SimulationSummary.FormatFunnel(diagnostics, names);
+
+        Assert.Contains("Boutique Family Offices", text);
+        Assert.DoesNotContain(segmentId.ToString(), text);
+        Assert.Contains("Partner Network", text);
+        Assert.DoesNotContain(channelId.ToString(), text);
+        Assert.Contains("direct", text); // already-readable sentinel channel id passes through
+    }
+
+    [Fact]
+    public void FormatFunnel_falls_back_to_a_short_guid_when_the_resolver_has_no_name_for_an_id()
+    {
+        var segmentId = Guid.Parse("34e4d3bf-0475-462d-afc1-9fe96168296e");
+        var diagnostics = MakeDiagnostics([new EngineSegmentFunnel(segmentId.ToString(), 10, 8, 3, 4, 1, 2, 0.3)], []);
+
+        var text = SimulationSummary.FormatFunnel(diagnostics, NameResolver.Empty);
+
+        Assert.DoesNotContain(segmentId.ToString(), text);
+        Assert.Contains("34e4d3bf", text);
+    }
+
     // ---------- FormatCompareTable ----------
 
     [Fact]

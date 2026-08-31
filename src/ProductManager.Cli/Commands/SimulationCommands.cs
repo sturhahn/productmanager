@@ -153,8 +153,9 @@ internal static class SimulationCommands
             if (run.HasDiagnostics)
             {
                 var diagnostics = await client.GetSimulationRunDiagnosticsAsync(run.Id, ct2);
+                var names = await NameResolver.BuildAsync(client, run.WorkspaceId, ct2);
                 Console.WriteLine();
-                Console.WriteLine(SimulationSummary.FormatFunnel(diagnostics));
+                Console.WriteLine(SimulationSummary.FormatFunnel(diagnostics, names));
             }
         }, ct));
         return cmd;

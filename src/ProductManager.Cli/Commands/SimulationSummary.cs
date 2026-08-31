@@ -82,20 +82,25 @@ public static class SimulationSummary
     }
 
     /// <summary>Renders a firm-level run's opportunity funnels (by segment, then by channel) plus the
-    /// scalar diagnostics — what 'sim run --mode firm-level' prints instead of raw JSON.</summary>
-    public static string FormatFunnel(EngineFirmLevelDiagnostics diagnostics)
+    /// scalar diagnostics — what 'sim run --mode firm-level' prints instead of raw JSON. Segment and
+    /// channel ids are translated to names via <paramref name="names"/> when given (falling back to
+    /// a short-guid form on a lookup miss); omit it (or pass <see cref="NameResolver.Empty"/>) to
+    /// print the raw ids, as the existing tests do.</summary>
+    public static string FormatFunnel(EngineFirmLevelDiagnostics diagnostics, NameResolver? names = null)
     {
+        names ??= NameResolver.Empty;
+
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"{"Segment",-38} {"Opened",8} {"Qualified",10} {"Won",8} {"Lost",8} {"NoDec",8} {"Open",8} {"WinRate",8}");
         foreach (var f in diagnostics.FunnelBySegment)
-            sb.AppendLine($"{Truncate(f.SegmentId),-38} {f.Opened,8:F1} {f.Qualified,10:F1} {f.Won,8:F1} {f.Lost,8:F1} {f.NoDecision,8:F1} {f.StillOpen,8:F1} {f.WinRate,8:P1}");
+            sb.AppendLine($"{Truncate(names.Segment(f.SegmentId)),-38} {f.Opened,8:F1} {f.Qualified,10:F1} {f.Won,8:F1} {f.Lost,8:F1} {f.NoDecision,8:F1} {f.StillOpen,8:F1} {f.WinRate,8:P1}");
 
         if (diagnostics.FunnelByChannel.Count > 0)
         {
             sb.AppendLine();
             sb.AppendLine($"{"Channel",-38} {"Opened",8} {"Won",8} {"WinRate",8}");
             foreach (var c in diagnostics.FunnelByChannel)
-                sb.AppendLine($"{Truncate(c.ChannelId),-38} {c.Opened,8:F1} {c.Won,8:F1} {c.WinRate,8:P1}");
+                sb.AppendLine($"{Truncate(names.Channel(c.ChannelId)),-38} {c.Opened,8:F1} {c.Won,8:F1} {c.WinRate,8:P1}");
         }
 
         sb.AppendLine();
