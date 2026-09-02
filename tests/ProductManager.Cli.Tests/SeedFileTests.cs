@@ -302,10 +302,13 @@ public class SeedFileTests
     {
         var phase3 = LoadPhase3SeedFile().MarketDynamics!;
 
-        Assert.Equal(2, phase3.Channels.Count);
+        // SD1 added three standing direct-sales channels (reverse inquiry, outbound, campaigns)
+        // alongside the original two (prime broker referrals, consultant network).
+        Assert.Equal(5, phase3.Channels.Count);
         Assert.Equal(3, phase3.Integrations.Count);
         Assert.True(phase3.Firms.Count >= 28, $"Expected ~30 firms, found {phase3.Firms.Count}.");
-        Assert.True(phase3.Opportunities.Count >= 30, $"Expected ~32 opportunities, found {phase3.Opportunities.Count}.");
+        // PL2 added ~9 undecided (Open/Qualified) opportunities on top of the original 32 decided ones.
+        Assert.True(phase3.Opportunities.Count >= 40, $"Expected ~41 opportunities, found {phase3.Opportunities.Count}.");
         Assert.True(phase3.ChurnEvents.Count >= 6, $"Expected ~8 churn events, found {phase3.ChurnEvents.Count}.");
         Assert.NotEmpty(phase3.ArrivalCounts);
     }
@@ -498,6 +501,23 @@ public class SeedFileTests
     }
 
     [Fact]
+    public void At_least_two_firms_have_a_mixed_technology_landscape_of_our_and_competitor_products()
+    {
+        // FM1: the firms UI's ours/competitor badges need at least a couple of firms running
+        // both — a partner/unreplaced system alongside ours, not just a single-vendor landscape.
+        var phase1 = LoadSeedFile();
+        var phase3 = LoadPhase3SeedFile().MarketDynamics!;
+        var ourProductNames = phase1.Market!.Products.Where(p => p.CompetitorName is null).Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var mixedLandscapeFirms = phase3.Firms.Where(f =>
+            f.Relationships.Any(r => ourProductNames.Contains(r.ProductName)) &&
+            f.Relationships.Any(r => !ourProductNames.Contains(r.ProductName))).ToList();
+
+        Assert.True(mixedLandscapeFirms.Count >= 2,
+            $"Expected at least 2 firms with both our and a competitor's products; found {mixedLandscapeFirms.Count}.");
+    }
+
+    [Fact]
     public void Firm_names_are_unique_within_the_phase3_seed_file()
     {
         var phase3 = LoadPhase3SeedFile().MarketDynamics!;
@@ -586,8 +606,20 @@ public class SeedFileTests
         {
             Assert.NotEmpty(opp.ScopeProcessNames);
             Assert.All(opp.ScopeProcessNames, name => Assert.Contains(name, processNames));
-            Assert.Contains(opp.Outcome, validOutcomes);
             Assert.True(DateOnly.TryParse(opp.OpenedDate, out var opened), $"'{opp.OpenedDate}' is not a valid date.");
+
+            // PL2: an undecided (Open/Qualified) opportunity carries DecidedDate/Outcome as null —
+            // the pair must travel together, and the rest of the decided-opportunity checks below
+            // only apply once a decision exists.
+            Assert.True((opp.DecidedDate is null) == (opp.Outcome is null),
+                $"Opportunity for '{opp.FirmName}' must have DecidedDate and Outcome either both null or both set.");
+            if (opp.DecidedDate is null)
+            {
+                Assert.Null(opp.WinningProductName);
+                continue;
+            }
+
+            Assert.Contains(opp.Outcome, validOutcomes);
             Assert.True(DateOnly.TryParse(opp.DecidedDate, out var decided), $"'{opp.DecidedDate}' is not a valid date.");
             Assert.True(decided >= opened, $"Opportunity for '{opp.FirmName}' decided before it opened.");
 
@@ -637,10 +669,10 @@ public class SeedFileTests
         // The task asks for "3 facts recorded LATE — after their effective month" so as-of tests bite.
         Assert.Equal(3, lateOnes.Count);
 
-        foreach (var opp in phase3.Opportunities)
+        foreach (var opp in phase3.Opportunities.Where(o => o.DecidedDate is not null))
         {
             Assert.NotNull(opp.RecordedDate);
-            var decided = DateOnly.Parse(opp.DecidedDate);
+            var decided = DateOnly.Parse(opp.DecidedDate!);
             var recorded = DateOnly.Parse(opp.RecordedDate!);
 
             if (opp.LateRecorded)

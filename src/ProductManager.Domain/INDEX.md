@@ -12,14 +12,16 @@
 - `Enums.cs` — every domain enum: `CoverageTier`, `EpistemicStatus`, `ProjectStatus`,
   `FeatureStatus`, `OpportunityStage`, `MarketEventType`, `DistributionType`,
   `ParameterProvenance`, `FactEventKind`, `SimulationEngineMode`, `SimulationFlowKind`
-  (member names mirror `ProductManager.Engine.FlowKind` deliberately), `FeatureDeltaKind`.
+  (member names mirror `ProductManager.Engine.FlowKind` deliberately), `FeatureDeltaKind`,
+  `StrategicIntent` (Initiative-only queryable label; no Engine/calibration pathway).
 
 ## Execution/ — the roadmap & delivery side
 - `Workspace.cs` — `Workspace`: root aggregate, future tenant boundary.
 - `Roadmap.cs` — `Roadmap`, `RoadmapItem`: branchable/versioned plan; branch = deep copy,
   adopt = merge back to live.
 - `Initiative.cs` — `Initiative`: strategic bet, targets segments/needs by id (cross-aggregate
-  reference, no navigation property).
+  reference, no navigation property); optional `StrategicIntent` label
+  (Differentiation/Parity/Retention), set via `SetStrategicIntent`.
 - `Project.cs` — `Project`, `ProjectFeature`, `ProjectDependency`, `EffortDemand`: unit of
   execution; delivers Features (the seam); per-team per-period effort demand.
 - `Team.cs` — `Team`, `TeamCapacity`: capacity budget unit, no per-person allocation.

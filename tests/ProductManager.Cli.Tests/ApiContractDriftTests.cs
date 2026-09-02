@@ -206,6 +206,7 @@ public class ApiContractDriftTests
         ["CoverageTier"] = "CoverageTier",
         ["FeatureDeltaKind"] = "FeatureDeltaKind",
         ["SequencingViolationKind"] = "SequencingViolationKind",
+        ["StrategicIntent"] = "StrategicIntent",
 
         ["SimulationFlowKind"] = "SimulationFlowKind",
         ["DistributionType"] = "DistributionType",

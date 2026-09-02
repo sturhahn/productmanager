@@ -37,6 +37,7 @@ public sealed class InitiativesController(AppDbContext db) : ApiControllerBase
             return NotFoundProblem("Workspace", request.WorkspaceId);
 
         var initiative = new Initiative(request.WorkspaceId, request.Name, request.Outcome, request.HypothesizedValue);
+        initiative.SetStrategicIntent(request.StrategicIntent);
         ApplyTargets(initiative, request.TargetSegmentIds, request.TargetNeedIds);
 
         db.Initiatives.Add(initiative);
@@ -55,6 +56,7 @@ public sealed class InitiativesController(AppDbContext db) : ApiControllerBase
         initiative.Rename(request.Name);
         initiative.Outcome = request.Outcome;
         initiative.HypothesizedValue = request.HypothesizedValue;
+        initiative.SetStrategicIntent(request.StrategicIntent);
         ApplyTargets(initiative, request.TargetSegmentIds, request.TargetNeedIds);
 
         await db.SaveChangesAsync(ct);

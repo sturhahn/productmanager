@@ -51,7 +51,8 @@ public sealed record InitiativeDto(
     string? Outcome,
     string? HypothesizedValue,
     IReadOnlyList<Guid> TargetSegmentIds,
-    IReadOnlyList<Guid> TargetNeedIds);
+    IReadOnlyList<Guid> TargetNeedIds,
+    StrategicIntent? StrategicIntent);
 
 public sealed record CreateInitiativeRequest(
     Guid WorkspaceId,
@@ -59,14 +60,16 @@ public sealed record CreateInitiativeRequest(
     string? Outcome,
     string? HypothesizedValue,
     IReadOnlyList<Guid>? TargetSegmentIds,
-    IReadOnlyList<Guid>? TargetNeedIds);
+    IReadOnlyList<Guid>? TargetNeedIds,
+    StrategicIntent? StrategicIntent = null);
 
 public sealed record UpdateInitiativeRequest(
     string Name,
     string? Outcome,
     string? HypothesizedValue,
     IReadOnlyList<Guid>? TargetSegmentIds,
-    IReadOnlyList<Guid>? TargetNeedIds);
+    IReadOnlyList<Guid>? TargetNeedIds,
+    StrategicIntent? StrategicIntent = null);
 
 // ---------- Project ----------
 

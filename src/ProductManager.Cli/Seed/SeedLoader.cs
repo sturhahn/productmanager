@@ -103,10 +103,12 @@ public static class SeedLoader
                 ? null
                 : initiative.TargetSegmentNames.Select(n => ResolveSegment(segmentIndex, n)).ToList();
 
+            var strategicIntent = ParseHelpers.ParseOptionalEnum<StrategicIntent>(initiative.StrategicIntent, "initiative strategicIntent");
+
             await GetOrCreateAsync(index, initiative.Name, "initiative", tally, async () =>
                 (await client.CreateInitiativeAsync(
                     new CreateInitiativeRequest(workspaceId, initiative.Name, initiative.Outcome, initiative.HypothesizedValue,
-                        segmentIds, TargetNeedIds: null), ct)).Id);
+                        segmentIds, TargetNeedIds: null, strategicIntent), ct)).Id);
         }
 
         return index;
@@ -799,14 +801,28 @@ public static class SeedLoader
                 await client.QualifyOpportunityAsync(created.Id, new QualifyOpportunityRequest(qualifiedAt), ct);
             }
 
-            var outcome = ParseHelpers.ParseEnum<OpportunityStage>(seedOpportunity.Outcome, "opportunity outcome");
-            var decidedAt = ToUtcMidnight(ParseHelpers.ParseDate(seedOpportunity.DecidedDate, "opportunity decidedDate"));
+            // An opportunity with no DecidedDate is a live pipeline entry (Open, or Qualified if
+            // QualifiedDate was set above) rather than a historical fact — it must not be forced
+            // through the API's decide call, and Outcome/WinningProductName are meaningless for it.
+            if (!HasDecision(seedOpportunity)) continue;
+
+            var outcome = ParseHelpers.ParseEnum<OpportunityStage>(seedOpportunity.Outcome!, "opportunity outcome");
+            var decidedAt = ToUtcMidnight(ParseHelpers.ParseDate(seedOpportunity.DecidedDate!, "opportunity decidedDate"));
             Guid? winningProductId = seedOpportunity.WinningProductName is null ? null : products.GetOrThrow(seedOpportunity.WinningProductName);
             var recordedAt = ToUtcMidnight(ParseHelpers.ParseOptionalDate(seedOpportunity.RecordedDate, "opportunity recordedDate"));
 
             await client.DecideOpportunityAsync(created.Id, new DecideOpportunityRequest(outcome, winningProductId, decidedAt, recordedAt), ct);
         }
     }
+
+    /// <summary>
+    /// Whether a seed opportunity carries a decision that should be pushed through the API's decide
+    /// call. False for a still-open/qualified pipeline entry (DecidedDate/Outcome null) — pushing
+    /// those through ParseHelpers.ParseDate(null, ...) is exactly the bug this guards against.
+    /// Public (rather than internal) so it can be unit-tested directly, matching ParseHelpers'
+    /// convention in this project.
+    /// </summary>
+    public static bool HasDecision(SeedOpportunity opportunity) => opportunity.DecidedDate is not null;
 
     private static async Task LoadChurnEventsAsync(
         ProductManagerApiClient client, Guid workspaceId, List<SeedChurnEvent> churnEvents,

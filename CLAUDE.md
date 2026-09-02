@@ -90,3 +90,8 @@ If the frontend tree drifts significantly, it's fine to regenerate the `frontend
 wholesale rather than hand-patch them; just keep `node_modules`, `.next`, and other generated
 output out of the solution file. After editing, sanity-check with `dotnet sln ProductManager.sln
 list` (should still show only the 8 real projects) and `dotnet build`.
+
+## Rules
+- For any bug first create a test showing the failure, then fix it and verify with the test.
+- For any feature first create a test showing the desired behavior, then implement it and verify
+  with the test.

@@ -42,6 +42,7 @@ public class InitiativeConfiguration : IEntityTypeConfiguration<Initiative>
     public void Configure(EntityTypeBuilder<Initiative> b)
     {
         b.Property(x => x.Name).HasMaxLength(200);
+        b.Property(x => x.StrategicIntent).AsString();
         b.HasOne<Workspace>().WithMany().HasForeignKey(x => x.WorkspaceId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(x => new { x.WorkspaceId, x.Name }).IsUnique();
         // TargetSegmentIds / TargetNeedIds map to uuid[] columns via Npgsql array support.

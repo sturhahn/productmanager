@@ -6,3 +6,6 @@
   posture, phasing, and explicitly deferred/cut scope. This is the single source of truth for
   product decisions — every directory's `CLAUDE.md` in this repo points back here rather than
   restating it.
+- `PRD1-InitialFeedback-triage.md` — triage of `PRD1-InitialFeedback.md` against the codebase:
+  per-item current-state citations, proposals, effort, and suggested sequencing. Every open fork
+  was resolved with Chris on 2026-08-31; the doc now carries the authoritative decision register.

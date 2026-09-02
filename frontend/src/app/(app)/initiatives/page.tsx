@@ -3,7 +3,8 @@
 import * as React from "react";
 import { PlusIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import { api } from "@/lib/api/client";
-import type { InitiativeDto } from "@/lib/api/types";
+import type { InitiativeDto, StrategicIntent } from "@/lib/api/types";
+import { STRATEGIC_INTENTS } from "@/lib/api/types";
 import {
   queryKeys,
   useInitiatives,
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogClose,
@@ -28,6 +30,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -35,6 +44,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+const STRATEGIC_INTENT_BADGE: Record<
+  StrategicIntent,
+  "default" | "secondary" | "outline"
+> = {
+  Differentiation: "default",
+  Parity: "secondary",
+  Retention: "outline",
+};
 
 export default function InitiativesPage() {
   const workspace = useWorkspace();
@@ -92,6 +110,7 @@ export default function InitiativesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead className="w-32">Strategic intent</TableHead>
                   <TableHead>Outcome</TableHead>
                   <TableHead>Hypothesized value</TableHead>
                   <TableHead className="w-24">Projects</TableHead>
@@ -110,6 +129,15 @@ export default function InitiativesPage() {
                         />
                         {initiative.name}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      {initiative.strategicIntent ? (
+                        <Badge variant={STRATEGIC_INTENT_BADGE[initiative.strategicIntent]}>
+                          {initiative.strategicIntent}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="max-w-72 truncate text-muted-foreground">
                       {initiative.outcome ?? "—"}
@@ -187,6 +215,9 @@ function InitiativeEditorDialog({
   const [name, setName] = React.useState(initiative?.name ?? "");
   const [outcome, setOutcome] = React.useState(initiative?.outcome ?? "");
   const [value, setValue] = React.useState(initiative?.hypothesizedValue ?? "");
+  const [strategicIntent, setStrategicIntent] = React.useState<StrategicIntent | "none">(
+    initiative?.strategicIntent ?? "none",
+  );
 
   const save = useInvalidatingMutation(
     () =>
@@ -197,12 +228,14 @@ function InitiativeEditorDialog({
             hypothesizedValue: value || null,
             targetSegmentIds: initiative.targetSegmentIds,
             targetNeedIds: initiative.targetNeedIds,
+            strategicIntent: strategicIntent === "none" ? null : strategicIntent,
           })
         : api.initiatives.create({
             workspaceId,
             name,
             outcome: outcome || null,
             hypothesizedValue: value || null,
+            strategicIntent: strategicIntent === "none" ? null : strategicIntent,
           }),
     () => [queryKeys.initiatives(workspaceId)],
     {
@@ -238,6 +271,29 @@ function InitiativeEditorDialog({
               required
               maxLength={200}
             />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="init-strategic-intent">Strategic intent</Label>
+            <Select
+              items={[
+                { label: "None", value: "none" },
+                ...STRATEGIC_INTENTS.map((intent) => ({ label: intent, value: intent })),
+              ]}
+              value={strategicIntent}
+              onValueChange={(v) => v && setStrategicIntent(v as StrategicIntent | "none")}
+            >
+              <SelectTrigger id="init-strategic-intent" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {STRATEGIC_INTENTS.map((intent) => (
+                  <SelectItem key={intent} value={intent}>
+                    {intent}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="init-outcome">Outcome</Label>

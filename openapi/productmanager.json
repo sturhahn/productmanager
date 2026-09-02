@@ -19524,6 +19524,9 @@
               "format": "uuid"
             },
             "nullable": true
+          },
+          "strategicIntent": {
+            "$ref": "#/components/schemas/StrategicIntent"
           }
         },
         "additionalProperties": false
@@ -20904,6 +20907,9 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "strategicIntent": {
+            "$ref": "#/components/schemas/StrategicIntent"
           }
         },
         "additionalProperties": false
@@ -22759,6 +22765,14 @@
         },
         "additionalProperties": false
       },
+      "StrategicIntent": {
+        "enum": [
+          "Differentiation",
+          "Parity",
+          "Retention"
+        ],
+        "type": "string"
+      },
       "SyntheticSegmentFillDto": {
         "type": "object",
         "properties": {
@@ -23140,6 +23154,9 @@
               "format": "uuid"
             },
             "nullable": true
+          },
+          "strategicIntent": {
+            "$ref": "#/components/schemas/StrategicIntent"
           }
         },
         "additionalProperties": false

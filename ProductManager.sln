@@ -32,6 +32,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		docker-compose.yml = docker-compose.yml
 		.gitignore = .gitignore
+		.run\frontend_dev.run.xml = .run\frontend_dev.run.xml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{120B4091-3065-497E-8842-5B67AD24C416}"
@@ -43,6 +44,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{120B4091-3
 		docs\ABSTRACT.md = docs\ABSTRACT.md
 		docs\INDEX.md = docs\INDEX.md
 		docs\CLAUDE.md = docs\CLAUDE.md
+		docs\PRD1-InitialFeedback.md = docs\PRD1-InitialFeedback.md
+		docs\PRD2-Onboarding.md = docs\PRD2-Onboarding.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "seed", "seed", "{615E39E8-525B-4E90-B535-E5FAA601856B}"
@@ -177,6 +180,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{968ACDBA-ABC
 		frontend\src\lib\pipeline.ts = frontend\src\lib\pipeline.ts
 		frontend\src\lib\process-tree.ts = frontend\src\lib\process-tree.ts
 		frontend\src\lib\queries.ts = frontend\src\lib\queries.ts
+		frontend\src\lib\runs.test.ts = frontend\src\lib\runs.test.ts
+		frontend\src\lib\runs.ts = frontend\src\lib\runs.ts
 		frontend\src\lib\timeline.test.ts = frontend\src\lib\timeline.test.ts
 		frontend\src\lib\timeline.ts = frontend\src\lib\timeline.ts
 		frontend\src\lib\utils.ts = frontend\src\lib\utils.ts

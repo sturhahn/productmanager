@@ -37,6 +37,7 @@ import {
   ageMonths,
   cycleStatus,
   expectedCycleMonths,
+  filterByDecidedRange,
   formatMonths,
   groupOpportunities,
   type CycleStatus,
@@ -149,6 +150,19 @@ export default function OpportunitiesPage() {
   const groups = React.useMemo(
     () => groupOpportunities(marketOpportunities),
     [marketOpportunities],
+  );
+
+  const [decidedFrom, setDecidedFrom] = React.useState<string>("");
+  const [decidedTo, setDecidedTo] = React.useState<string>("");
+  const decidedRangeActive = decidedFrom !== "" || decidedTo !== "";
+  const filteredDecided = React.useMemo(
+    () =>
+      filterByDecidedRange(
+        groups.decided,
+        decidedFrom || null,
+        decidedTo || null,
+      ),
+    [groups.decided, decidedFrom, decidedTo],
   );
 
   const [createOpen, setCreateOpen] = React.useState(false);
@@ -306,7 +320,13 @@ export default function OpportunitiesPage() {
     );
   };
 
-  const columns: { title: string; hint: string; items: OpportunityDto[] }[] = [
+  const columns: {
+    title: string;
+    hint: string;
+    items: OpportunityDto[];
+    totalCount?: number;
+    extra?: React.ReactNode;
+  }[] = [
     {
       title: "Open",
       hint: "Scope can still expand — land-and-expand happens here",
@@ -320,7 +340,48 @@ export default function OpportunitiesPage() {
     {
       title: "Decided",
       hint: "Won, lost, or no decision — calibration reads these from the ledger",
-      items: groups.decided,
+      items: filteredDecided,
+      totalCount: groups.decided.length,
+      extra: (
+        <div className="flex flex-col gap-1.5 rounded-lg border bg-muted/30 p-2">
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="date"
+              aria-label="Decided from"
+              value={decidedFrom}
+              onChange={(e) => setDecidedFrom(e.target.value)}
+              className="h-7 flex-1 text-xs"
+            />
+            <span className="text-xs text-muted-foreground">–</span>
+            <Input
+              type="date"
+              aria-label="Decided to"
+              value={decidedTo}
+              onChange={(e) => setDecidedTo(e.target.value)}
+              className="h-7 flex-1 text-xs"
+            />
+            {decidedRangeActive && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="h-7 shrink-0"
+                aria-label="Clear decided-date filter"
+                onClick={() => {
+                  setDecidedFrom("");
+                  setDecidedTo("");
+                }}
+              >
+                <XIcon />
+              </Button>
+            )}
+          </div>
+          {decidedRangeActive && (
+            <p className="text-[11px] text-muted-foreground">
+              {filteredDecided.length} of {groups.decided.length} shown
+            </p>
+          )}
+        </div>
+      ),
     },
   ];
 
@@ -366,13 +427,16 @@ export default function OpportunitiesPage() {
                     {col.title}
                   </h2>
                   <span className="font-mono text-xs text-muted-foreground">
-                    {col.items.length}
+                    {col.totalCount !== undefined
+                      ? `${col.items.length} / ${col.totalCount}`
+                      : col.items.length}
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">{col.hint}</p>
+                {col.extra}
                 {col.items.length === 0 ? (
                   <div className="rounded-xl border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
-                    Nothing here
+                    {col.totalCount ? "No opportunities in this range" : "Nothing here"}
                   </div>
                 ) : (
                   <ul className="flex flex-col gap-2">

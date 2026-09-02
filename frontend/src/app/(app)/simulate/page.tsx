@@ -59,6 +59,7 @@ import {
   useChartTokens,
   type ChartTokens,
 } from "@/components/charts/echart";
+import { runLabel } from "@/lib/runs";
 import { cn } from "@/lib/utils";
 import { PageHeader, EmptyState } from "@/components/page-header";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -89,10 +90,6 @@ const CHART_METRICS: TrajectoryMetricKey[] = [
   "clients",
   "contributionMargin",
 ];
-
-function runLabel(run: SimulationRunDto): string {
-  return run.name || `Run ${run.id.slice(0, 8)}`;
-}
 
 function ModeBadge({ mode }: { mode: SimulationEngineMode }) {
   return mode === "FirmLevel" ? (
@@ -940,10 +937,10 @@ function WinRateTable({
             {rows.map((r) => (
               <tr key={r.id} className="border-t">
                 <td className="max-w-40 truncate px-3 py-1.5">{r.name}</td>
-                <td className="px-3 py-1.5 text-right font-mono text-xs">
+                <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
                   {formatMeanCount(r.opened)}
                 </td>
-                <td className="px-3 py-1.5 text-right font-mono text-xs">
+                <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
                   {formatMeanCount(r.won)}
                 </td>
                 <td className="px-3 py-1.5 text-right font-mono text-xs font-semibold">

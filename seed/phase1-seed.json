@@ -49,9 +49,10 @@
   "initiatives": [
     {
       "name": "Modernize Trade Execution",
-      "outcome": "Cut trade fails and improve fill quality across our top two client segments.",
+      "outcome": "Cut trade fails and improve fill quality across our top two client segments. The FIX 5.0 upgrade specifically is table stakes in this market — every serious competitor already speaks it, so this closes a gap rather than opening one; it protects renewal conversations, it doesn't win them.",
       "hypothesizedValue": "Reduces trade breaks and manual intervention, lowering client servicing cost and churn risk.",
-      "targetSegmentNames": [ "Enterprise Asset Managers", "Mid-Market RIAs" ]
+      "targetSegmentNames": [ "Enterprise Asset Managers", "Mid-Market RIAs" ],
+      "strategicIntent": "Parity"
     },
     {
       "name": "Compliance Automation",
@@ -198,7 +199,7 @@
       "productName": "Meridian Trading Module",
       "deltas": [
         { "kind": "Coverage", "businessProcessName": "Order Management", "fromTier": "Bronze", "toTier": "Silver",
-          "rationale": "Closes a protocol gap that was blocking two enterprise venue connections." }
+          "rationale": "Table stakes, not a differentiator: FIX 5.0 is the connectivity baseline every competitor in this market already clears. Closes a protocol gap that was blocking two enterprise venue connections and was starting to show up as a disqualifier in RFPs, not just a nice-to-have." }
       ]
     },
     {

@@ -155,8 +155,14 @@ export function formatRate(rate: number): string {
   return `${(rate * 100).toFixed(1)}%`;
 }
 
-/** Mean counts across MC paths — one decimal, no false precision. */
+/**
+ * Mean counts across MC paths — one decimal, no false precision. Non-integer
+ * values (the common case — these are path averages, not literal counts)
+ * carry a "~" prefix so a skimmed "~0.1" doesn't read as a nonsensical
+ * literal count of opportunities.
+ */
 export function formatMeanCount(value: number): string {
   if (!Number.isFinite(value)) return "—";
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+  if (Number.isInteger(value)) return String(value);
+  return `~${value.toFixed(1)}`;
 }

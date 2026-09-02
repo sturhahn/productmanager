@@ -61,7 +61,8 @@ public sealed record InitiativeDto(
     string? Outcome,
     string? HypothesizedValue,
     IReadOnlyList<Guid> TargetSegmentIds,
-    IReadOnlyList<Guid> TargetNeedIds);
+    IReadOnlyList<Guid> TargetNeedIds,
+    StrategicIntent? StrategicIntent);
 
 public sealed record CreateInitiativeRequest(
     [Required] Guid WorkspaceId,
@@ -69,14 +70,16 @@ public sealed record CreateInitiativeRequest(
     string? Outcome,
     string? HypothesizedValue,
     IReadOnlyList<Guid>? TargetSegmentIds,
-    IReadOnlyList<Guid>? TargetNeedIds);
+    IReadOnlyList<Guid>? TargetNeedIds,
+    StrategicIntent? StrategicIntent = null);
 
 public sealed record UpdateInitiativeRequest(
     [Required, MaxLength(200)] string Name,
     string? Outcome,
     string? HypothesizedValue,
     IReadOnlyList<Guid>? TargetSegmentIds,
-    IReadOnlyList<Guid>? TargetNeedIds);
+    IReadOnlyList<Guid>? TargetNeedIds,
+    StrategicIntent? StrategicIntent = null);
 
 // ---------- Project ----------
 
@@ -135,7 +138,7 @@ public static class ExecutionMapping
 
     public static InitiativeDto ToDto(this Initiative i) => new(
         i.Id, i.WorkspaceId, i.Name, i.Outcome, i.HypothesizedValue,
-        i.TargetSegmentIds.ToList(), i.TargetNeedIds.ToList());
+        i.TargetSegmentIds.ToList(), i.TargetNeedIds.ToList(), i.StrategicIntent);
 
     public static ProjectDto ToDto(this Project p) => new(
         p.Id, p.InitiativeId, p.Name, p.Description, p.Status, p.StartDate, p.EndDate,

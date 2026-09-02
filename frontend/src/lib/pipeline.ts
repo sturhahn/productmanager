@@ -52,6 +52,32 @@ export function groupOpportunities(
   return groups;
 }
 
+/**
+ * Filters (decided) opportunities to those whose `decidedAt` falls within
+ * `[from, to]` inclusive. `from`/`to` are `YYYY-MM-DD` date-input strings, or
+ * null for an open-ended bound. When both are null every item passes
+ * through unfiltered. Once at least one bound is set, items with no
+ * `decidedAt` (or an unparseable one) are excluded — there's nothing to
+ * compare against.
+ */
+export function filterByDecidedRange<T extends { decidedAt: string | null }>(
+  items: T[],
+  from: string | null,
+  to: string | null,
+): T[] {
+  if (from === null && to === null) return items;
+  const fromMs = from !== null ? Date.parse(`${from}T00:00:00Z`) : null;
+  const toMs = to !== null ? Date.parse(`${to}T23:59:59.999Z`) : null;
+  return items.filter((item) => {
+    if (!item.decidedAt) return false;
+    const decided = Date.parse(item.decidedAt);
+    if (!Number.isFinite(decided)) return false;
+    if (fromMs !== null && decided < fromMs) return false;
+    if (toMs !== null && decided > toMs) return false;
+    return true;
+  });
+}
+
 // ---------------------------------------------------------------------
 // Age vs expected sales cycle
 // ---------------------------------------------------------------------

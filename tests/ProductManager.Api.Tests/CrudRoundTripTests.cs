@@ -43,6 +43,30 @@ public sealed class CrudRoundTripTests : ApiTestBase
     }
 
     [Fact]
+    public async Task Initiative_round_trips_strategic_intent()
+    {
+        var workspace = await DefaultWorkspaceAsync();
+
+        var created = await PostAsync<InitiativeDto>("/api/initiatives", new CreateInitiativeRequest(
+            workspace.Id, "FIX table stakes", "Close the protocol gap", "Blocking two venues",
+            null, null, StrategicIntent.Parity));
+
+        Assert.Equal(StrategicIntent.Parity, created.StrategicIntent);
+
+        var fetched = await GetAsync<InitiativeDto>($"/api/initiatives/{created.Id}");
+        Assert.Equal(StrategicIntent.Parity, fetched.StrategicIntent);
+
+        var cleared = await PutAsync<InitiativeDto>($"/api/initiatives/{created.Id}",
+            new UpdateInitiativeRequest("FIX table stakes", "Close the protocol gap", "Blocking two venues", null, null, null));
+        Assert.Null(cleared.StrategicIntent);
+
+        var retagged = await PutAsync<InitiativeDto>($"/api/initiatives/{created.Id}",
+            new UpdateInitiativeRequest("FIX table stakes", "Close the protocol gap", "Blocking two venues", null, null,
+                StrategicIntent.Differentiation));
+        Assert.Equal(StrategicIntent.Differentiation, retagged.StrategicIntent);
+    }
+
+    [Fact]
     public async Task Initiative_requires_a_name()
     {
         var workspace = await DefaultWorkspaceAsync();

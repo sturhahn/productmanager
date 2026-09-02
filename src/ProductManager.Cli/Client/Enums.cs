@@ -36,6 +36,15 @@ public enum FeatureDeltaKind
     Other
 }
 
+/// <summary>Competitive purpose tag on an Initiative — a queryable label only, never read by the
+/// engine or calibration.</summary>
+public enum StrategicIntent
+{
+    Differentiation,
+    Parity,
+    Retention
+}
+
 public enum SequencingViolationKind
 {
     StartsBeforeDependencyEnds,

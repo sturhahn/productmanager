@@ -64,6 +64,9 @@
 - `funnel.ts` + `funnel.test.ts` — firm-level engine opportunity-funnel diagnostics math.
 - `pipeline.ts` + `pipeline.test.ts` — groups opportunities into funnel stages vs. sales-cycle
   age.
+- `runs.ts` + `runs.test.ts` — shared `runLabel()` for simulation runs (named run's name, or a
+  formatted local-time fallback from `createdAt`); used across the simulate page's run table,
+  delete dialog, results header, and Compare pickers/table.
 - `timeline.ts` + `timeline.test.ts` — pure date/geometry math for the roadmap Gantt.
 - `process-tree.ts` — depth-first ordering of business processes for indentation.
 - `colors.ts` — stable categorical hue assignment for initiatives.

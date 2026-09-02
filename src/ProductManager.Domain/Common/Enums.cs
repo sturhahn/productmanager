@@ -138,3 +138,22 @@ public enum FeatureDeltaKind
     SwitchingCost,
     Other
 }
+
+/// <summary>
+/// Competitive purpose of an Initiative — a queryable label, not a simulation input. A
+/// "Parity"-tagged initiative (e.g. closing a table-stakes gap) has no different treatment in
+/// the engine than any other initiative; its market impact runs entirely through the
+/// <c>FeatureDelta</c>s its Projects deliver. See PRD SD2 decision: this exists to enable
+/// portfolio parity-vs-differentiation views, nothing more.
+/// </summary>
+public enum StrategicIntent
+{
+    /// <summary>Meant to win on a capability competitors don't have.</summary>
+    Differentiation,
+
+    /// <summary>Meant to close a gap competitors already cover — table stakes.</summary>
+    Parity,
+
+    /// <summary>Meant to protect an existing client base from churn.</summary>
+    Retention
+}

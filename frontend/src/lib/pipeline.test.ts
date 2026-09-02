@@ -4,6 +4,7 @@ import {
   cycleStatus,
   distributionMean,
   expectedCycleMonths,
+  filterByDecidedRange,
   formatMonths,
   groupOpportunities,
   pipelineGroup,
@@ -169,6 +170,51 @@ describe("cycleStatus", () => {
   it("returns null with nothing to compare against", () => {
     expect(cycleStatus(3, null)).toBeNull();
     expect(cycleStatus(3, 0)).toBeNull();
+  });
+});
+
+describe("filterByDecidedRange", () => {
+  const won = (id: string, decidedAt: string | null) =>
+    opp({ id, stage: "Won", isDecided: !!decidedAt, decidedAt });
+
+  const items = [
+    won("a", "2026-01-10T00:00:00Z"),
+    won("b", "2026-02-15T00:00:00Z"),
+    won("c", "2026-03-20T00:00:00Z"),
+    won("d", null),
+  ];
+
+  it("passes everything through when both bounds are null", () => {
+    expect(filterByDecidedRange(items, null, null).map((o) => o.id)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("applies an inclusive lower bound, excluding items with no decided date", () => {
+    const result = filterByDecidedRange(items, "2026-02-15", null);
+    expect(result.map((o) => o.id)).toEqual(["b", "c"]);
+  });
+
+  it("applies an inclusive upper bound, excluding items with no decided date", () => {
+    const result = filterByDecidedRange(items, null, "2026-02-15");
+    expect(result.map((o) => o.id)).toEqual(["a", "b"]);
+  });
+
+  it("applies both bounds together", () => {
+    const result = filterByDecidedRange(items, "2026-01-15", "2026-03-01");
+    expect(result.map((o) => o.id)).toEqual(["b"]);
+  });
+
+  it("excludes items with an unparseable decided date once a bound is set", () => {
+    const withBad = [...items, opp({ id: "e", stage: "Lost", isDecided: true, decidedAt: "not-a-date" })];
+    expect(filterByDecidedRange(withBad, "2026-01-01", null).map((o) => o.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
   });
 });
 

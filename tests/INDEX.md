@@ -33,8 +33,11 @@
 - `ParameterKeyHelperTests.cs` — engine-vs-free-form parameter key validation logic.
 - `ParseHelpersTests.cs` — date/enum/id-list CLI option parsing.
 - `Phase3ParseHelpersTests.cs` — Phase 3 CLI-friendly enum spelling parsers.
-- `SeedFileTests.cs` — parses the real `seed/phase1-seed.json` and checks natural-key references
-  resolve.
+- `SeedFileTests.cs` — parses the real `seed/phase1-seed.json` and `seed/phase3-seed.json` and
+  checks natural-key references resolve, plus seed-shape invariants (decided/undecided
+  opportunity fields, scale counts, mixed-technology firms).
+- `SeedLoaderOpportunityDecisionTests.cs` — `SeedLoader.HasDecision` guard: an opportunity with a
+  null `decidedDate` is left Open/Qualified rather than passed to `DecideOpportunityAsync`.
 - `SeedTallyTests.cs` — created/matched/applied counting logic.
 - `SimulationSummaryTests.cs` — headline-metric math over an `EngineResult`.
 - `WireFormatTests.cs` — pins camelCase properties and by-name enum serialization against real
@@ -42,6 +45,7 @@
 
 ## ProductManager.Domain.Tests — invariant-focused unit tests
 - `CapacityFeasibilityTests.cs` — team capacity vs. project demand feasibility rules.
+- `InitiativeTests.cs` — StrategicIntent tag set/clear behavior.
 - `RoadmapBranchingTests.cs` — roadmap branch/adopt invariants.
 - `RoadmapSequencingTests.cs` — dependency/sequencing violation detection.
 - `ValueObjectAndInvariantTests.cs` — Period, Money, Distribution value-object invariants.

@@ -70,9 +70,10 @@
   entities.
 - `Configurations/SimulationAndFactsConfigurations.cs` — EF configs: AssumptionSet, Parameter,
   CalibrationRun, SimulationRun, FactEvent.
-- `Migrations/` — three EF migrations (`InitialSchema`, `Phase2`, `Phase3`) + current model
-  snapshot. Postgres-only; SQLite tests use `EnsureCreatedAsync` from the live model instead
-  (see `CLAUDE.md` — nothing enforces the two stay in sync).
+- `Migrations/` — four EF migrations (`InitialSchema`, `Phase2`, `Phase3`,
+  `AddInitiativeStrategicIntent`) + current model snapshot. Postgres-only; SQLite tests use
+  `EnsureCreatedAsync` from the live model instead (see `CLAUDE.md` — nothing enforces the two
+  stay in sync).
 
 ## Simulation/ — turns persisted state into Engine input
 - `CalibrationInputBuilder.cs` — assembles everything a calibration run needs "as of" a date.

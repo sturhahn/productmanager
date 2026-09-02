@@ -85,6 +85,17 @@ export interface SetTeamCapacityRequest {
 
 // ---------- Initiative ----------
 
+/**
+ * Competitive purpose tag — a queryable label only, never read by the engine or calibration.
+ */
+export type StrategicIntent = "Differentiation" | "Parity" | "Retention";
+
+export const STRATEGIC_INTENTS: StrategicIntent[] = [
+  "Differentiation",
+  "Parity",
+  "Retention",
+];
+
 export interface InitiativeDto {
   id: string;
   workspaceId: string;
@@ -93,6 +104,7 @@ export interface InitiativeDto {
   hypothesizedValue: string | null;
   targetSegmentIds: string[];
   targetNeedIds: string[];
+  strategicIntent: StrategicIntent | null;
 }
 
 export interface CreateInitiativeRequest {
@@ -102,6 +114,7 @@ export interface CreateInitiativeRequest {
   hypothesizedValue?: string | null;
   targetSegmentIds?: string[] | null;
   targetNeedIds?: string[] | null;
+  strategicIntent?: StrategicIntent | null;
 }
 
 export interface UpdateInitiativeRequest {
@@ -110,6 +123,7 @@ export interface UpdateInitiativeRequest {
   hypothesizedValue?: string | null;
   targetSegmentIds?: string[] | null;
   targetNeedIds?: string[] | null;
+  strategicIntent?: StrategicIntent | null;
 }
 
 // ---------- Project ----------

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api/client";
 import type {
   ClientSegmentDto,
+  CompetitorDto,
   EpistemicStatus,
   FirmDto,
   FirmProductRelationshipDto,
@@ -23,6 +24,7 @@ import {
   queryKeys,
   useActiveMarket,
   useBusinessProcesses,
+  useCompetitors,
   useFirmsPage,
   useInvalidatingMutation,
   useProducts,
@@ -83,12 +85,41 @@ export function EpistemicBadge({ status }: { status: EpistemicStatus }) {
   );
 }
 
+// Small badge distinguishing our own products from competitor products in a
+// firm's relationship list — "Ours" for products with a null competitorId,
+// the competitor's name (joined client-side from already-fetched competitor
+// data) otherwise, falling back to a generic "Competitor" label.
+function ProductOriginBadge({
+  product,
+  competitors,
+}: {
+  product: ProductDto | undefined;
+  competitors: CompetitorDto[];
+}) {
+  if (!product || product.competitorId === null) {
+    return (
+      <Badge variant="secondary" className="font-normal">
+        Ours
+      </Badge>
+    );
+  }
+  const competitorName = competitors.find(
+    (c) => c.id === product.competitorId,
+  )?.name;
+  return (
+    <Badge variant="outline" className="font-normal text-muted-foreground">
+      {competitorName ?? "Competitor"}
+    </Badge>
+  );
+}
+
 export default function FirmsPage() {
   const workspace = useWorkspace();
   const workspaceId = workspace.data?.id;
   const { markets, market } = useActiveMarket(workspaceId);
   const segments = useSegments(market?.id);
   const products = useProducts(market?.id);
+  const competitors = useCompetitors(market?.id);
   const processes = useBusinessProcesses(market?.id);
 
   const [segmentFilter, setSegmentFilter] = React.useState<string>("all");
@@ -295,6 +326,10 @@ export default function FirmsPage() {
                                     key={r.id}
                                     relationship={r}
                                     productName={productName(r.productId)}
+                                    product={products.data?.find(
+                                      (p) => p.id === r.productId,
+                                    )}
+                                    competitors={competitors.data ?? []}
                                     processCount={
                                       processes.data?.length ?? 0
                                     }
@@ -372,6 +407,7 @@ export default function FirmsPage() {
           firm={editing}
           segments={segments.data ?? []}
           products={products.data ?? []}
+          competitors={competitors.data ?? []}
           relationships={
             editing ? (relationships.get(editing.id) ?? []) : []
           }
@@ -403,10 +439,14 @@ export default function FirmsPage() {
 function IncumbentChip({
   relationship,
   productName,
+  product,
+  competitors,
   processCount,
 }: {
   relationship: FirmProductRelationshipDto;
   productName: string;
+  product: ProductDto | undefined;
+  competitors: CompetitorDto[];
   processCount: number;
 }) {
   const served = relationship.servedProcessIds.length;
@@ -417,6 +457,7 @@ function IncumbentChip({
   return (
     <Badge variant="outline" className="gap-1 font-normal">
       <span className="font-medium">{productName}</span>
+      <ProductOriginBadge product={product} competitors={competitors} />
       <span className="text-[10px] text-muted-foreground">{holdings}</span>
     </Badge>
   );
@@ -433,6 +474,7 @@ function FirmEditorDialog({
   firm,
   segments,
   products,
+  competitors,
   relationships,
 }: {
   open: boolean;
@@ -441,6 +483,7 @@ function FirmEditorDialog({
   firm: FirmDto | null;
   segments: ClientSegmentDto[];
   products: ProductDto[];
+  competitors: CompetitorDto[];
   relationships: FirmProductRelationshipDto[];
 }) {
   const [name, setName] = React.useState(firm?.name ?? "");
@@ -564,6 +607,7 @@ function FirmEditorDialog({
             <RelationshipsSection
               firm={firm}
               products={products}
+              competitors={competitors}
               relationships={relationships}
             />
           )}
@@ -589,10 +633,12 @@ function FirmEditorDialog({
 function RelationshipsSection({
   firm,
   products,
+  competitors,
   relationships,
 }: {
   firm: FirmDto;
   products: ProductDto[];
+  competitors: CompetitorDto[];
   relationships: FirmProductRelationshipDto[];
 }) {
   const [productId, setProductId] = React.useState<string>("");
@@ -648,6 +694,10 @@ function RelationshipsSection({
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {productName(r.productId)}
                 </span>
+                <ProductOriginBadge
+                  product={products.find((p) => p.id === r.productId)}
+                  competitors={competitors}
+                />
                 <span className="font-mono text-[11px] text-muted-foreground">
                   {r.servedProcessIds.length === 0
                     ? "full coverage"

@@ -41,6 +41,9 @@ public sealed class SeedInitiative
     public string? Outcome { get; set; }
     public string? HypothesizedValue { get; set; }
     public List<string> TargetSegmentNames { get; set; } = [];
+
+    /// <summary>Competitive purpose tag — "Differentiation" | "Parity" | "Retention"; omit for unset.</summary>
+    public string? StrategicIntent { get; set; }
 }
 
 public sealed class SeedEffortDemand
@@ -391,10 +394,14 @@ public sealed class SeedOpportunity
     public string? ChannelName { get; set; }
     public string OpenedDate { get; set; } = "";
     public string? QualifiedDate { get; set; }
-    public string DecidedDate { get; set; } = "";
 
-    /// <summary>Won | Lost | NoDecision, from our perspective (a competitor winning is "Lost").</summary>
-    public string Outcome { get; set; } = "NoDecision";
+    /// <summary>Null means the opportunity is still live (Open, or Qualified if QualifiedDate is
+    /// set) and must not be pushed through the API's decide call.</summary>
+    public string? DecidedDate { get; set; }
+
+    /// <summary>Won | Lost | NoDecision, from our perspective (a competitor winning is "Lost").
+    /// Null iff DecidedDate is null (undecided/open pipeline entry).</summary>
+    public string? Outcome { get; set; }
     public List<string> ScopeProcessNames { get; set; } = [];
     public string? WinningProductName { get; set; }
     public string? CrossSellModuleProductName { get; set; }

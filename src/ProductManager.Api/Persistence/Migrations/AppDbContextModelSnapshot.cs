@@ -40,6 +40,10 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.Property<string>("Outcome")
                         .HasColumnType("text");
 
+                    b.Property<string>("StrategicIntent")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.PrimitiveCollection<List<Guid>>("TargetNeedIds")
                         .IsRequired()
                         .HasColumnType("uuid[]");

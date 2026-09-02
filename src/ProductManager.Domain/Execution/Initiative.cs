@@ -17,6 +17,13 @@ public sealed class Initiative : Entity
     /// <summary>Hypothesized value narrative (why we think this wins).</summary>
     public string? HypothesizedValue { get; set; }
 
+    /// <summary>
+    /// Competitive purpose tag — Differentiation / Parity / Retention, or unset. A label only:
+    /// queryable for portfolio views, but never read by the Engine or calibration. Market impact
+    /// runs entirely through the FeatureDeltas this initiative's Projects deliver.
+    /// </summary>
+    public StrategicIntent? StrategicIntent { get; private set; }
+
     /// <summary>Market-side ClientSegment ids this initiative targets.</summary>
     public List<Guid> TargetSegmentIds { get; private set; } = [];
 
@@ -40,4 +47,7 @@ public sealed class Initiative : Entity
             throw new ArgumentException("Initiative name is required.", nameof(name));
         Name = name.Trim();
     }
+
+    /// <summary>Sets or clears the strategic-intent tag. Pass null to clear it.</summary>
+    public void SetStrategicIntent(StrategicIntent? intent) => StrategicIntent = intent;
 }

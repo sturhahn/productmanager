@@ -63,6 +63,93 @@
             "bias": -0.1
           }
         ]
+      },
+      {
+        "name": "Inside Sales – Reverse Inquiry",
+        "description": "Prospects who reach out to us directly (referral, web form, existing-client introduction) rather than being sourced by a rep — low volume, but they already want the product.",
+        "originatesOpportunities": true,
+        "carriesOnlyListedProducts": false,
+        "segmentReaches": [
+          {
+            "segmentName": "Enterprise Asset Managers",
+            "reach": 0.2,
+            "originationShare": 0.1
+          },
+          {
+            "segmentName": "Mid-Market RIAs",
+            "reach": 0.15,
+            "originationShare": 0.06
+          },
+          {
+            "segmentName": "Boutique Family Offices",
+            "reach": 0.1,
+            "originationShare": 0.03
+          }
+        ],
+        "productAffinities": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "bias": 0.1
+          }
+        ]
+      },
+      {
+        "name": "Inside Sales – Outbound Prospecting",
+        "description": "Our reps cold-sourcing and cold-calling target accounts — broader reach than reverse inquiry, but a smaller share of the segment converts into a real opportunity.",
+        "originatesOpportunities": true,
+        "carriesOnlyListedProducts": false,
+        "segmentReaches": [
+          {
+            "segmentName": "Enterprise Asset Managers",
+            "reach": 0.5,
+            "originationShare": 0.08
+          },
+          {
+            "segmentName": "Mid-Market RIAs",
+            "reach": 0.6,
+            "originationShare": 0.15
+          },
+          {
+            "segmentName": "Boutique Family Offices",
+            "reach": 0.45,
+            "originationShare": 0.1
+          }
+        ],
+        "productAffinities": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "bias": 0.05
+          }
+        ]
+      },
+      {
+        "name": "Marketing – Campaigns",
+        "description": "Always-on brand and demand-generation campaigns (content, webinars, paid search) — the broadest reach of any channel, but most of what it touches still originates elsewhere or not at all.",
+        "originatesOpportunities": true,
+        "carriesOnlyListedProducts": false,
+        "segmentReaches": [
+          {
+            "segmentName": "Enterprise Asset Managers",
+            "reach": 0.7,
+            "originationShare": 0.05
+          },
+          {
+            "segmentName": "Mid-Market RIAs",
+            "reach": 0.75,
+            "originationShare": 0.08
+          },
+          {
+            "segmentName": "Boutique Family Offices",
+            "reach": 0.6,
+            "originationShare": 0.05
+          }
+        ],
+        "productAffinities": [
+          {
+            "productName": "Meridian Portfolio Suite",
+            "bias": 0.03
+          }
+        ]
       }
     ],
     "integrations": [
@@ -148,13 +235,22 @@
         "name": "Calloway Global Investors",
         "segmentName": "Enterprise Asset Managers",
         "epistemicStatus": "Observed",
-        "notes": "Existing client of Meridian Portfolio Suite.",
+        "notes": "Existing client of Meridian Portfolio Suite; also runs a legacy Apex OMS Platform deployment for trade execution that hasn't been replaced yet.",
         "relationships": [
           {
             "productName": "Meridian Portfolio Suite",
             "servedProcessNames": [],
             "priceLevel": 1.0,
             "acquisitionDate": "2022-03-01"
+          },
+          {
+            "productName": "Apex OMS Platform",
+            "servedProcessNames": [
+              "Order Management",
+              "Trade Execution"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2019-06-01"
           }
         ]
       },
@@ -311,13 +407,22 @@
         "name": "Winslow & Voss RIA",
         "segmentName": "Mid-Market RIAs",
         "epistemicStatus": "Observed",
-        "notes": "Existing client of Apex OMS Platform.",
+        "notes": "Existing client of Apex OMS Platform for order management and trade execution; added Meridian's reporting module partway through a phased migration off Apex's client-facing side.",
         "relationships": [
           {
             "productName": "Apex OMS Platform",
             "servedProcessNames": [],
             "priceLevel": 1.0,
             "acquisitionDate": "2023-01-15"
+          },
+          {
+            "productName": "Meridian Reporting Module",
+            "servedProcessNames": [
+              "Performance Reporting",
+              "Client Reporting"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2024-02-01"
           }
         ]
       },
@@ -474,13 +579,21 @@
         "name": "Kingsford Family Capital",
         "segmentName": "Boutique Family Offices",
         "epistemicStatus": "Observed",
-        "notes": "Existing client of Apex OMS Platform.",
+        "notes": "Existing client of Apex OMS Platform; layered on Meridian's reporting module for client-facing statements rather than switching platforms outright.",
         "relationships": [
           {
             "productName": "Apex OMS Platform",
             "servedProcessNames": [],
             "priceLevel": 1.0,
             "acquisitionDate": "2023-09-01"
+          },
+          {
+            "productName": "Meridian Reporting Module",
+            "servedProcessNames": [
+              "Client Reporting"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2024-06-01"
           }
         ]
       },
@@ -1256,6 +1369,150 @@
         "crossSellModuleProductName": null,
         "notes": "New-logo opportunity at Thistledown Asset Partners.",
         "recordedDate": "2026-08-01",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Highland Peak Capital",
+        "channelName": "Inside Sales – Outbound Prospecting",
+        "openedDate": "2026-07-01",
+        "qualifiedDate": "2026-08-01",
+        "decidedDate": null,
+        "outcome": null,
+        "scopeProcessNames": [
+          "Risk Analytics"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "Open expansion opportunity at Highland Peak Capital, still in the pipeline. Originated via Inside Sales – Outbound Prospecting.",
+        "recordedDate": null,
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Northbridge Asset Management",
+        "channelName": null,
+        "openedDate": "2026-08-10",
+        "qualifiedDate": null,
+        "decidedDate": null,
+        "outcome": null,
+        "scopeProcessNames": [
+          "Reconciliation"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "Newly opened expansion opportunity at Northbridge Asset Management, not yet qualified.",
+        "recordedDate": null,
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Ashford Lane Management",
+        "channelName": "Marketing – Campaigns",
+        "openedDate": "2026-06-15",
+        "qualifiedDate": "2026-07-20",
+        "decidedDate": null,
+        "outcome": null,
+        "scopeProcessNames": [
+          "Compliance Monitoring"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "Open new-logo opportunity at Ashford Lane Management, still in the pipeline. Originated via Marketing – Campaigns.",
+        "recordedDate": null,
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Brightwater Wealth Partners",
+        "channelName": "Inside Sales – Reverse Inquiry",
+        "openedDate": "2026-08-20",
+        "qualifiedDate": null,
+        "decidedDate": null,
+        "outcome": null,
+        "scopeProcessNames": [
+          "Client Onboarding"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "Newly opened expansion opportunity at Brightwater Wealth Partners, not yet qualified. Originated via Inside Sales – Reverse Inquiry.",
+        "recordedDate": null,
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Winslow & Voss RIA",
+        "channelName": "Consultant Network",
+        "openedDate": "2026-05-01",
+        "qualifiedDate": "2026-06-15",
+        "decidedDate": null,
+        "outcome": null,
+        "scopeProcessNames": [
+          "Order Management"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "Open new-logo opportunity at Winslow & Voss RIA, still in the pipeline. Originated via Consultant Network.",
+        "recordedDate": null,
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Millbrook Financial Advisors",
+        "channelName": "Inside Sales – Outbound Prospecting",
+        "openedDate": "2026-07-15",
+        "qualifiedDate": null,
+        "decidedDate": null,
+        "outcome": null,
+        "scopeProcessNames": [
+          "Rebalancing"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "Newly opened expansion opportunity at Millbrook Financial Advisors, not yet qualified. Originated via Inside Sales – Outbound Prospecting.",
+        "recordedDate": null,
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Renwick Family Capital",
+        "channelName": null,
+        "openedDate": "2026-08-01",
+        "qualifiedDate": "2026-08-20",
+        "decidedDate": null,
+        "outcome": null,
+        "scopeProcessNames": [
+          "Performance Reporting"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "Open expansion opportunity at Renwick Family Capital, still in the pipeline.",
+        "recordedDate": null,
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Kingsford Family Capital",
+        "channelName": "Marketing – Campaigns",
+        "openedDate": "2026-06-01",
+        "qualifiedDate": null,
+        "decidedDate": null,
+        "outcome": null,
+        "scopeProcessNames": [
+          "Client Reporting"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "Newly opened new-logo opportunity at Kingsford Family Capital, not yet qualified. Originated via Marketing – Campaigns.",
+        "recordedDate": null,
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Hollowbrook Family Trust",
+        "channelName": "Inside Sales – Reverse Inquiry",
+        "openedDate": "2026-08-25",
+        "qualifiedDate": null,
+        "decidedDate": null,
+        "outcome": null,
+        "scopeProcessNames": [
+          "Regulatory Reporting"
+        ],
+        "winningProductName": null,
+        "crossSellModuleProductName": null,
+        "notes": "Newly opened expansion opportunity at Hollowbrook Family Trust, not yet qualified. Originated via Inside Sales – Reverse Inquiry.",
+        "recordedDate": null,
         "lateRecorded": false
       }
     ],

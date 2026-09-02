@@ -27,11 +27,63 @@ import {
   todayIso,
 } from "@/lib/timeline";
 
-const LABEL_W = 208;
+const DEFAULT_LABEL_W = 256;
+const MIN_LABEL_W = 140;
+const MAX_LABEL_W = 420;
+const LABEL_W_STORAGE_KEY = "roadmap.labelWidth";
 const ROW_H = 36;
 const BAR_H = 26;
 const LANE_PAD = 6;
 const HEADER_H = 52;
+
+function clampLabelWidth(width: number): number {
+  return Math.min(MAX_LABEL_W, Math.max(MIN_LABEL_W, width));
+}
+
+function loadLabelWidth(): number {
+  try {
+    const stored = window.localStorage.getItem(LABEL_W_STORAGE_KEY);
+    if (!stored) return DEFAULT_LABEL_W;
+    const parsed = Number(stored);
+    if (!Number.isFinite(parsed)) return DEFAULT_LABEL_W;
+    return clampLabelWidth(parsed);
+  } catch {
+    return DEFAULT_LABEL_W;
+  }
+}
+
+function saveLabelWidth(width: number): void {
+  try {
+    window.localStorage.setItem(LABEL_W_STORAGE_KEY, String(width));
+  } catch {
+    // ignore — persistence is a nice-to-have
+  }
+}
+
+/**
+ * Per-browser persisted lane label width, read via useSyncExternalStore so
+ * the server-rendered snapshot (always DEFAULT_LABEL_W) can differ from the
+ * client's localStorage-backed value without a hydration mismatch — mirrors
+ * the activeWorkspaceStore pattern in lib/api/client.ts.
+ */
+const labelWidthStore = (() => {
+  let value =
+    typeof window === "undefined" ? DEFAULT_LABEL_W : loadLabelWidth();
+  const listeners = new Set<() => void>();
+  return {
+    get: () => value,
+    getServerSnapshot: () => DEFAULT_LABEL_W,
+    set(width: number) {
+      value = clampLabelWidth(width);
+      saveLabelWidth(value);
+      for (const listener of listeners) listener();
+    },
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+})();
 
 interface PackedBar {
   item: RoadmapItemDto;
@@ -65,6 +117,11 @@ type Drag =
       kind: "lane";
       laneKey: string;
       order: string[];
+    }
+  | {
+      kind: "label";
+      originX: number;
+      origWidth: number;
     };
 
 export function RoadmapTimeline({
@@ -85,8 +142,15 @@ export function RoadmapTimeline({
   onUnplan: (projectId: string) => void;
 }) {
   const [drag, setDrag] = React.useState<Drag | null>(null);
+  const labelWidth = React.useSyncExternalStore(
+    labelWidthStore.subscribe,
+    labelWidthStore.get,
+    labelWidthStore.getServerSnapshot,
+  );
   const lanesRef = React.useRef<HTMLDivElement | null>(null);
   const today = todayIso();
+
+  const LABEL_W = labelWidth;
 
   const projectById = React.useMemo(
     () => new Map(projects.map((p) => [p.id, p])),
@@ -308,6 +372,25 @@ export function RoadmapTimeline({
     });
   }
 
+  // ----- label column resize -----
+  function startLabelDrag(event: React.PointerEvent) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    setDrag({ kind: "label", originX: event.clientX, origWidth: labelWidth });
+  }
+
+  function moveLabelDrag(event: React.PointerEvent) {
+    if (drag?.kind !== "label") return;
+    const next = clampLabelWidth(drag.origWidth + (event.clientX - drag.originX));
+    labelWidthStore.set(next);
+  }
+
+  function endLabelDrag() {
+    if (drag?.kind !== "label") return;
+    setDrag(null);
+  }
+
   if (!roadmap) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
@@ -362,6 +445,23 @@ export function RoadmapTimeline({
               })}
             </div>
           </div>
+        </div>
+
+        {/* label column resize handle — full-height overlay whose inner strip
+            stays pinned to the column edge (sticky left) while scrolling
+            vertically with normal flow (no sticky top) */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-50">
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize lane label column"
+            className="pointer-events-auto sticky h-full w-1.5 -translate-x-1/2 cursor-col-resize touch-none hover:bg-primary/30 active:bg-primary/50"
+            style={{ left: LABEL_W }}
+            onPointerDown={startLabelDrag}
+            onPointerMove={moveLabelDrag}
+            onPointerUp={endLabelDrag}
+            onPointerCancel={endLabelDrag}
+          />
         </div>
 
         {/* ---- lanes ---- */}
@@ -430,6 +530,7 @@ export function RoadmapTimeline({
                     dragging && "bg-accent",
                   )}
                   style={{ width: LABEL_W }}
+                  title={lane.initiative?.name ?? "No initiative"}
                 >
                   <button
                     type="button"

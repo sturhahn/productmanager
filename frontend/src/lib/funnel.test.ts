@@ -143,7 +143,15 @@ describe("formatting", () => {
 
   it("formats mean counts without false precision", () => {
     expect(formatMeanCount(7)).toBe("7");
-    expect(formatMeanCount(7.526)).toBe("7.5");
+    expect(formatMeanCount(7.526)).toBe("~7.5");
     expect(formatMeanCount(Number.NaN)).toBe("—");
+  });
+
+  it("prefixes non-integer means with a tilde to mark them as MC-path averages, not literal counts", () => {
+    expect(formatMeanCount(0.1)).toBe("~0.1");
+    expect(formatMeanCount(2.3)).toBe("~2.3");
+    expect(formatMeanCount(0)).toBe("0");
+    expect(formatMeanCount(3)).toBe("3");
+    expect(formatMeanCount(-1.25)).toBe("~-1.3");
   });
 });
