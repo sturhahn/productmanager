@@ -35,6 +35,19 @@
   like covariate observations/churn/arrivals) use hand-rolled duplicate-matching instead — check
   the relevant loader method in `SeedLoader.cs` before assuming a blanket "match by name" rule
   applies everywhere.
+- **Seed references resolve against the whole API, not just the file being loaded** — every index
+  the loader resolves against is built from the API's listing for the parent (market or
+  workspace), never from the file's own entries, so a single-dataset fragment resolves names an
+  earlier file created. Three cases need more than a listing, all in `SeedLoader.cs`:
+  `MarketResolver` (a file with no `market` section resolves segment/product/process/approach
+  names against the workspace's *single* market — zero markets keeps the old "no market defined in
+  the seed file" errors, two or more throws asking for a `"market": { "name": "..." }` stub, which
+  matches an existing market and creates nothing), `ProjectResolver` (roadmap items and
+  `dependsOnProjectNames` fall back to a paged workspace-wide project listing) and `FirmResolver`
+  (`marketDynamics.opportunities` falls back to a paged market-wide firm listing). All three fetch
+  lazily, so a file that never names one of those pays nothing and still loads where none exist.
+  **When you add a loader method, build its index from the API listing, not from the seed file's
+  list of that entity** — that is the bug class these three resolvers exist to close.
 
 ## Working here
 

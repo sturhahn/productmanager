@@ -31,6 +31,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B99B91A7-FB42-4901-85F3-E249F3299696}"
 	ProjectSection(SolutionItems) = preProject
 		docker-compose.yml = docker-compose.yml
+		README.md = README.md
 		.gitignore = .gitignore
 		.run\frontend_dev.run.xml = .run\frontend_dev.run.xml
 	EndProjectSection
@@ -46,6 +47,20 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{120B4091-3
 		docs\CLAUDE.md = docs\CLAUDE.md
 		docs\PRD1-InitialFeedback.md = docs\PRD1-InitialFeedback.md
 		docs\PRD2-Onboarding.md = docs\PRD2-Onboarding.md
+		docs\onboarding\README.md = docs\onboarding\README.md
+		docs\onboarding\example-seed.json = docs\onboarding\example-seed.json
+		docs\onboarding\datasets\01-workspace-and-teams.md = docs\onboarding\datasets\01-workspace-and-teams.md
+		docs\onboarding\datasets\02-market-structure.md = docs\onboarding\datasets\02-market-structure.md
+		docs\onboarding\datasets\03-initiatives-projects-features.md = docs\onboarding\datasets\03-initiatives-projects-features.md
+		docs\onboarding\datasets\04-roadmap.md = docs\onboarding\datasets\04-roadmap.md
+		docs\onboarding\datasets\05-coverage-and-needs.md = docs\onboarding\datasets\05-coverage-and-needs.md
+		docs\onboarding\datasets\06-segment-economics.md = docs\onboarding\datasets\06-segment-economics.md
+		docs\onboarding\datasets\07-covariates.md = docs\onboarding\datasets\07-covariates.md
+		docs\onboarding\datasets\08-assumption-sets.md = docs\onboarding\datasets\08-assumption-sets.md
+		docs\onboarding\datasets\09-market-events.md = docs\onboarding\datasets\09-market-events.md
+		docs\onboarding\datasets\10-channels-and-integrations.md = docs\onboarding\datasets\10-channels-and-integrations.md
+		docs\onboarding\datasets\11-firms-and-relationships.md = docs\onboarding\datasets\11-firms-and-relationships.md
+		docs\onboarding\datasets\12-historical-facts.md = docs\onboarding\datasets\12-historical-facts.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "seed", "seed", "{615E39E8-525B-4E90-B535-E5FAA601856B}"

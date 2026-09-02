@@ -10,6 +10,11 @@ namespace ProductManager.Cli.Seed;
 /// an already-seeded workspace does not duplicate anything. Sub-resources that the API already
 /// upserts (team/period capacity, project effort demand, dependency edges, delivered-feature
 /// links, roadmap plan links) are simply (re)applied every run — no extra bookkeeping needed.
+///
+/// References resolve against the whole workspace, not just the file being loaded: a file may name
+/// a segment, product, process, approach or project that an earlier file already put in the API
+/// (that is how phase2/phase3 build on phase1's market). See <see cref="MarketResolver"/> and
+/// <see cref="ProjectResolver"/> for the two lazy fallbacks that make that work.
 /// </summary>
 public static class SeedLoader
 {
@@ -28,13 +33,16 @@ public static class SeedLoader
         if (seed.MarketDynamics is not null)
             await LoadMarketDynamicsAsync(client, workspaceId, seed.MarketDynamics, tally, ct);
 
+        var marketResolver = new MarketResolver(client, workspaceId, market);
+        var projectResolver = new ProjectResolver(client, workspaceId);
+
         var teamIndex = await LoadTeamsAsync(client, workspaceId, seed.Teams, tally, ct);
-        var initiativeIndex = await LoadInitiativesAsync(client, workspaceId, seed.Initiatives, market?.Segments, tally, ct);
-        var featureIndex = await LoadFeaturesAsync(client, workspaceId, seed.Features, market, tally, ct);
-        var projectIndex = await LoadProjectsAsync(client, seed.Projects, initiativeIndex, teamIndex, featureIndex, tally, ct);
+        var initiativeIndex = await LoadInitiativesAsync(client, workspaceId, seed.Initiatives, marketResolver, tally, ct);
+        var featureIndex = await LoadFeaturesAsync(client, workspaceId, seed.Features, marketResolver, tally, ct);
+        await LoadProjectsAsync(client, seed.Projects, projectResolver, initiativeIndex, teamIndex, featureIndex, tally, ct);
 
         if (seed.Roadmap is not null)
-            await LoadRoadmapAsync(client, workspaceId, seed.Roadmap, projectIndex, tally, ct);
+            await LoadRoadmapAsync(client, workspaceId, seed.Roadmap, projectResolver, tally, ct);
 
         return tally;
     }
@@ -92,13 +100,18 @@ public static class SeedLoader
 
     private static async Task<NameIndex> LoadInitiativesAsync(
         ProductManagerApiClient client, Guid workspaceId, List<SeedInitiative> initiatives,
-        NameIndex? segmentIndex, SeedTally tally, CancellationToken ct)
+        MarketResolver marketResolver, SeedTally tally, CancellationToken ct)
     {
         var existing = await client.ListInitiativesAsync(workspaceId, 1, ListPageSize, ct);
         var index = new NameIndex(existing.Items.Select(i => (i.Name, i.Id)));
 
         foreach (var initiative in initiatives)
         {
+            // Only a file that actually targets segments needs a market resolved for it.
+            var segmentIndex = initiative.TargetSegmentNames.Count == 0
+                ? null
+                : (await marketResolver.TryResolveAsync(ct))?.Segments;
+
             var segmentIds = initiative.TargetSegmentNames.Count == 0
                 ? null
                 : initiative.TargetSegmentNames.Select(n => ResolveSegment(segmentIndex, n)).ToList();
@@ -122,7 +135,7 @@ public static class SeedLoader
     // ---------- Features ----------
 
     private static async Task<NameIndex> LoadFeaturesAsync(
-        ProductManagerApiClient client, Guid workspaceId, List<SeedFeature> features, MarketIndexes? market,
+        ProductManagerApiClient client, Guid workspaceId, List<SeedFeature> features, MarketResolver marketResolver,
         SeedTally tally, CancellationToken ct)
     {
         var existing = await client.ListFeaturesAsync(workspaceId, null, 1, ListPageSize, ct);
@@ -130,6 +143,12 @@ public static class SeedLoader
 
         foreach (var feature in features)
         {
+            // Resolved once per feature and only when something in it actually names a market
+            // entity — a purely execution-side features file never lists markets at all.
+            var market = feature.ProductName is not null || feature.Deltas.Any(DeltaNeedsMarket)
+                ? await marketResolver.TryResolveAsync(ct)
+                : null;
+
             Guid? productId = feature.ProductName is null
                 ? null
                 : RequireMarket(market).Products.GetOrThrow(feature.ProductName);
@@ -154,6 +173,10 @@ public static class SeedLoader
 
         return index;
     }
+
+    /// <summary>Whether a delta names anything that has to be looked up in a market's indexes.</summary>
+    private static bool DeltaNeedsMarket(SeedFeatureDelta delta) =>
+        delta.BusinessProcessName is not null || delta.ApproachName is not null || delta.SegmentName is not null;
 
     private static AddFeatureDeltaRequest ToDeltaRequest(SeedFeatureDelta delta, MarketIndexes? market)
     {
@@ -184,11 +207,11 @@ public static class SeedLoader
 
     // ---------- Projects ----------
 
-    private static async Task<NameIndex> LoadProjectsAsync(
-        ProductManagerApiClient client, List<SeedProject> projects,
+    private static async Task LoadProjectsAsync(
+        ProductManagerApiClient client, List<SeedProject> projects, ProjectResolver resolver,
         NameIndex initiativeIndex, NameIndex teamIndex, NameIndex featureIndex, SeedTally tally, CancellationToken ct)
     {
-        var index = new NameIndex();
+        var index = resolver.Index;
         // Projects are scoped to an initiative in the API, so list per-initiative once each,
         // rather than a workspace-wide listing keyed only by name.
         var listedInitiatives = new HashSet<Guid>();
@@ -220,7 +243,7 @@ public static class SeedLoader
             var id = index.GetOrThrow(project.Name);
 
             foreach (var dependsOnName in project.DependsOnProjectNames)
-                await client.AddProjectDependencyAsync(id, index.GetOrThrow(dependsOnName), ct);
+                await client.AddProjectDependencyAsync(id, await resolver.ResolveAsync(dependsOnName, ct), ct);
 
             foreach (var demand in project.EffortDemands)
                 await client.SetEffortDemandAsync(id,
@@ -229,14 +252,12 @@ public static class SeedLoader
             foreach (var featureName in project.DeliversFeatureNames)
                 await client.LinkFeatureAsync(id, featureIndex.GetOrThrow(featureName), ct);
         }
-
-        return index;
     }
 
     // ---------- Roadmap ----------
 
     private static async Task LoadRoadmapAsync(
-        ProductManagerApiClient client, Guid workspaceId, SeedRoadmap roadmap, NameIndex projectIndex, SeedTally tally, CancellationToken ct)
+        ProductManagerApiClient client, Guid workspaceId, SeedRoadmap roadmap, ProjectResolver projects, SeedTally tally, CancellationToken ct)
     {
         var existing = await client.ListRoadmapsAsync(workspaceId, null, 1, ListPageSize, ct);
         var index = new NameIndex(existing.Items.Select(r => (r.Name, r.Id)));
@@ -246,7 +267,7 @@ public static class SeedLoader
 
         foreach (var item in roadmap.Items)
         {
-            var projectId = projectIndex.GetOrThrow(item.ProjectName);
+            var projectId = await projects.ResolveAsync(item.ProjectName, ct);
             var start = ParseHelpers.ParseDate(item.Start, "roadmap item start");
             var end = ParseHelpers.ParseDate(item.End, "roadmap item end");
             // PlanProject is upsert (re-plans if already present), so this is safe to repeat.
@@ -331,7 +352,32 @@ public static class SeedLoader
                 (await client.CreateApproachAsync(new CreateApproachRequest(businessProcessId, approach.Name, approach.Description), ct)).Id);
         }
 
+        // A file may reference an approach (in a coverage row or a feature delta) under a process it
+        // does not itself list approaches for — including a file with no `approaches` at all. Cover
+        // every process in the index, not just the ones this file's approaches mention.
+        await ListRemainingApproachesAsync(client, businessProcesses, index, listedProcesses, ct);
+
         return index;
+    }
+
+    /// <summary>Fills <paramref name="index"/> with the API's approaches for every process in
+    /// <paramref name="businessProcesses"/> that has not been listed yet, keyed
+    /// <c>process::approach</c>. Existing entries win — a freshly created approach keeps its id.</summary>
+    private static async Task ListRemainingApproachesAsync(
+        ProductManagerApiClient client, NameIndex businessProcesses, NameIndex index, HashSet<Guid> listedProcesses, CancellationToken ct)
+    {
+        foreach (var (processName, processId) in businessProcesses.Entries)
+        {
+            if (!listedProcesses.Add(processId)) continue;
+
+            var existing = await client.ListApproachesAsync(processId, 1, ListPageSize, ct);
+            foreach (var approach in existing.Items)
+            {
+                var key = ApproachKey(processName, approach.Name);
+                if (!index.TryGet(key, out _))
+                    index.Add(key, approach.Id);
+            }
+        }
     }
 
     private static string ApproachKey(string businessProcessName, string approachName) =>
@@ -494,10 +540,14 @@ public static class SeedLoader
 
         // ---------- Phase 3 ----------
 
+        // Every index above is built from the API's listing for this market, not from the file's own
+        // entries, so a fragment that only carries (say) opportunities still resolves segment,
+        // product, process and channel names an earlier file created. Firms are the one roster big
+        // enough to be worth fetching lazily — see FirmResolver.
         var channelIndex = await LoadChannelsAsync(client, marketId, dynamics.Channels, segmentIndex, productIndex, tally, ct);
         await LoadIntegrationsAsync(client, dynamics.Integrations, productIndex, tally, ct);
-        var firmIndex = await LoadFirmsAsync(client, marketId, dynamics.Firms, segmentIndex, productIndex, processIndex, tally, ct);
-        await LoadOpportunitiesAsync(client, dynamics.Opportunities, firmIndex, channelIndex, productIndex, processIndex, tally, ct);
+        var firmResolver = await LoadFirmsAsync(client, marketId, dynamics.Firms, segmentIndex, productIndex, processIndex, tally, ct);
+        await LoadOpportunitiesAsync(client, dynamics.Opportunities, firmResolver, channelIndex, productIndex, processIndex, tally, ct);
         await LoadChurnEventsAsync(client, workspaceId, dynamics.ChurnEvents, segmentIndex, tally, ct);
         await LoadArrivalCountsAsync(client, workspaceId, dynamics.ArrivalCounts, segmentIndex, tally, ct);
     }
@@ -708,12 +758,15 @@ public static class SeedLoader
     }
 
     /// <summary>Delegates to POST /api/firms/bulk — the whole roster in one idempotent call, upserted
-    /// by (market, name), relationships included.</summary>
-    private static async Task<NameIndex> LoadFirmsAsync(
+    /// by (market, name), relationships included. The returned resolver starts from just this file's
+    /// firms and falls back to the market's roster in the API, so an opportunities-only file resolves
+    /// firms an earlier file created.</summary>
+    private static async Task<FirmResolver> LoadFirmsAsync(
         ProductManagerApiClient client, Guid marketId, List<SeedFirm> firms,
         NameIndex segments, NameIndex products, NameIndex processes, SeedTally tally, CancellationToken ct)
     {
-        if (firms.Count == 0) return new NameIndex();
+        var resolver = new FirmResolver(client, marketId);
+        if (firms.Count == 0) return resolver;
 
         var items = firms.Select(f => ToFirmImportItem(f, segments, products, processes)).ToList();
         var response = await client.BulkImportFirmsAsync(new BulkImportFirmsRequest(marketId, items), ct);
@@ -722,7 +775,10 @@ public static class SeedLoader
         for (var i = 0; i < response.Updated; i++) tally.RecordMatched("firm");
         for (var i = 0; i < response.RelationshipsWritten; i++) tally.RecordApplied("firmRelationship");
 
-        return new NameIndex(response.Firms.Select(f => (f.Name, f.Id)));
+        foreach (var firm in response.Firms)
+            resolver.Index.Add(firm.Name, firm.Id);
+
+        return resolver;
     }
 
     private static FirmImportItem ToFirmImportItem(SeedFirm firm, NameIndex segments, NameIndex products, NameIndex processes)
@@ -758,13 +814,13 @@ public static class SeedLoader
     /// </summary>
     private static async Task LoadOpportunitiesAsync(
         ProductManagerApiClient client, List<SeedOpportunity> opportunities,
-        NameIndex firms, NameIndex channels, NameIndex products, NameIndex processes, SeedTally tally, CancellationToken ct)
+        FirmResolver firms, NameIndex channels, NameIndex products, NameIndex processes, SeedTally tally, CancellationToken ct)
     {
         var byFirm = new Dictionary<Guid, List<OpportunityDto>>();
 
         foreach (var seedOpportunity in opportunities)
         {
-            var firmId = firms.GetOrThrow(seedOpportunity.FirmName);
+            var firmId = await firms.ResolveAsync(seedOpportunity.FirmName, ct);
             var openedAt = ToUtcMidnight(ParseHelpers.ParseDate(seedOpportunity.OpenedDate, "opportunity openedDate"));
             var scopeIds = seedOpportunity.ScopeProcessNames.Select(processes.GetOrThrow).ToHashSet();
 
@@ -925,6 +981,164 @@ public static class SeedLoader
         return newId;
     }
 
+    /// <summary>Builds the same indexes <see cref="LoadMarketAsync"/> returns, purely from what the
+    /// API already holds for one market — creating nothing and touching no tally.</summary>
+    private static async Task<MarketIndexes> BuildMarketIndexesAsync(
+        ProductManagerApiClient client, Guid marketId, CancellationToken ct)
+    {
+        var segments = new NameIndex((await client.ListClientSegmentsAsync(marketId, 1, ListPageSize, ct)).Items.Select(s => (s.Name, s.Id)));
+        var businessProcesses = new NameIndex((await client.ListBusinessProcessesAsync(marketId, null, 1, ListPageSize, ct)).Items.Select(p => (p.Name, p.Id)));
+        var approaches = new NameIndex();
+        await ListRemainingApproachesAsync(client, businessProcesses, approaches, [], ct);
+        var competitors = new NameIndex((await client.ListCompetitorsAsync(marketId, 1, ListPageSize, ct)).Items.Select(c => (c.Name, c.Id)));
+        var products = new NameIndex((await client.ListProductsAsync(marketId, null, null, 1, ListPageSize, ct)).Items.Select(p => (p.Name, p.Id)));
+
+        return new MarketIndexes(marketId, segments, businessProcesses, approaches, competitors, products);
+    }
+
     private sealed record MarketIndexes(
         Guid MarketId, NameIndex Segments, NameIndex BusinessProcesses, NameIndex Approaches, NameIndex Competitors, NameIndex Products);
+
+    /// <summary>
+    /// Supplies the market indexes that initiatives and features resolve their by-name references
+    /// against. A file with its own <c>market</c> section carries them already; a file without one
+    /// (an initiatives-, features- or roadmap-only dataset) resolves against the workspace's single
+    /// market instead, read from the API on first use. Lazy on purpose: a file that never names a
+    /// market entity never lists markets, so a purely execution-side file works in a workspace with
+    /// no market at all — and in one with several.
+    /// </summary>
+    private sealed class MarketResolver(ProductManagerApiClient client, Guid workspaceId, MarketIndexes? fromSeedFile)
+    {
+        private MarketIndexes? _resolved = fromSeedFile;
+        private bool _listed;
+
+        /// <summary>The market to resolve against, or null when the workspace holds no market at all
+        /// (callers then raise the specific "no market defined" message for what they were resolving).
+        /// Throws when the workspace holds several and the file did not say which.</summary>
+        public async Task<MarketIndexes?> TryResolveAsync(CancellationToken ct)
+        {
+            if (_resolved is not null || _listed) return _resolved;
+            _listed = true;
+
+            var markets = await client.ListMarketsAsync(workspaceId, 1, ListPageSize, ct);
+            if (markets.Items.Count == 0) return null;
+
+            if (markets.Items.Count > 1)
+                throw SeedReferenceException.WithMessage(
+                    "the seed file has no \"market\" section, but this workspace holds " +
+                    $"{markets.Items.Count} markets ({string.Join(", ", markets.Items.Select(m => $"'{m.Name}'"))}), " +
+                    "so the loader cannot tell which one its segment/product/process names belong to. " +
+                    "Add a \"market\": { \"name\": \"...\" } stub naming the market to resolve against — " +
+                    "a stub with only a name matches the existing market and creates nothing.");
+
+            _resolved = await BuildMarketIndexesAsync(client, markets.Items[0].Id, ct);
+            return _resolved;
+        }
+    }
+
+    /// <summary>
+    /// Name → id for projects, spanning the file being loaded and, on a miss, the whole workspace.
+    /// A roadmap-only file (or a <c>dependsOnProjectNames</c> edge pointing outside the file's own
+    /// initiatives) must still resolve, and projects are listed per-initiative during loading, so the
+    /// workspace-wide listing is the fallback — fetched once, and only when something actually misses.
+    /// </summary>
+    private sealed class ProjectResolver(ProductManagerApiClient client, Guid workspaceId)
+    {
+        private bool _listedWorkspace;
+
+        /// <summary>The file-scoped index, which <see cref="LoadProjectsAsync"/> fills per initiative
+        /// and creates into. Ids already in it win over the workspace-wide listing.</summary>
+        public NameIndex Index { get; } = new();
+
+        public async Task<Guid> ResolveAsync(string name, CancellationToken ct)
+        {
+            if (Index.TryGet(name, out var id)) return id;
+
+            if (!_listedWorkspace)
+            {
+                _listedWorkspace = true;
+                foreach (var (projectName, projectId) in await ListAllProjectsAsync(client, workspaceId, ct))
+                    if (!Index.TryGet(projectName, out _))
+                        Index.Add(projectName, projectId);
+
+                if (Index.TryGet(name, out id)) return id;
+            }
+
+            throw new SeedReferenceException(name);
+        }
+    }
+
+    /// <summary>
+    /// Name → id for firms, spanning the file's own bulk-imported roster and, on a miss, the whole
+    /// market. An opportunities-only fragment names firms an earlier file created, so the fallback is
+    /// what makes it loadable. Unlike the other market-side indexes this one is fetched lazily and
+    /// paged: a market's roster can run to thousands of firms (synthetic populations included), and a
+    /// file whose firm names all come from its own <c>firms</c> block never pays for the listing.
+    /// </summary>
+    private sealed class FirmResolver(ProductManagerApiClient client, Guid marketId)
+    {
+        private bool _listedMarket;
+
+        /// <summary>The firms this file itself imported; their ids win over the market-wide listing.</summary>
+        public NameIndex Index { get; } = new();
+
+        public async Task<Guid> ResolveAsync(string name, CancellationToken ct)
+        {
+            if (Index.TryGet(name, out var id)) return id;
+
+            if (!_listedMarket)
+            {
+                _listedMarket = true;
+                foreach (var (firmName, firmId) in await ListAllFirmsAsync(client, marketId, ct))
+                    if (!Index.TryGet(firmName, out _))
+                        Index.Add(firmName, firmId);
+
+                if (Index.TryGet(name, out id)) return id;
+            }
+
+            throw new SeedReferenceException(name);
+        }
+    }
+
+    /// <summary>Every firm in the market, paged — see <see cref="FirmResolver"/> for why this one
+    /// cannot assume a single page holds the lot.</summary>
+    private static async Task<List<(string Name, Guid Id)>> ListAllFirmsAsync(
+        ProductManagerApiClient client, Guid marketId, CancellationToken ct)
+    {
+        var all = new List<(string Name, Guid Id)>();
+        var page = 1;
+
+        while (true)
+        {
+            var response = await client.ListFirmsAsync(marketId, null, null, page, ListPageSize, ct);
+            foreach (var firm in response.Items)
+                all.Add((firm.Name, firm.Id));
+
+            if (response.Items.Count == 0 || all.Count >= response.TotalCount) break;
+            page++;
+        }
+
+        return all;
+    }
+
+    /// <summary>Every project in the workspace, paging through the listing rather than trusting one
+    /// page to hold them all (unlike the per-parent listings, this one is workspace-wide).</summary>
+    private static async Task<List<(string Name, Guid Id)>> ListAllProjectsAsync(
+        ProductManagerApiClient client, Guid workspaceId, CancellationToken ct)
+    {
+        var all = new List<(string Name, Guid Id)>();
+        var page = 1;
+
+        while (true)
+        {
+            var response = await client.ListProjectsAsync(workspaceId, null, page, ListPageSize, ct);
+            foreach (var project in response.Items)
+                all.Add((project.Name, project.Id));
+
+            if (response.Items.Count == 0 || all.Count >= response.TotalCount) break;
+            page++;
+        }
+
+        return all;
+    }
 }

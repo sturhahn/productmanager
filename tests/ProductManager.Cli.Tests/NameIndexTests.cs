@@ -102,6 +102,37 @@ public class NameIndexTests
     }
 
     [Fact]
+    public void Entries_enumerates_normalized_names_that_are_valid_lookup_keys()
+    {
+        var pickingId = Guid.NewGuid();
+        var receivingId = Guid.NewGuid();
+        var index = new NameIndex([("  Order Picking ", pickingId), ("Receiving", receivingId)]);
+
+        var entries = index.Entries.OrderBy(e => e.Name).ToList();
+
+        Assert.Equal(["order picking", "receiving"], entries.Select(e => e.Name));
+        // The loader composes composite keys (process::approach) out of enumerated names, so a
+        // name that comes back out must still resolve when fed back in.
+        Assert.All(entries, entry =>
+        {
+            Assert.True(index.TryGet(entry.Name, out var found));
+            Assert.Equal(entry.Id, found);
+        });
+        Assert.Equal(pickingId, entries[0].Id);
+    }
+
+    [Fact]
+    public void Entries_is_materialized_so_the_caller_can_keep_adding_while_iterating()
+    {
+        var index = new NameIndex([("Order Picking", Guid.NewGuid())]);
+
+        foreach (var _ in index.Entries)
+            index.Add("Receiving", Guid.NewGuid());
+
+        Assert.Equal(2, index.Count);
+    }
+
+    [Fact]
     public void Count_reflects_deduplicated_entries()
     {
         var index = new NameIndex([("A", Guid.NewGuid()), ("a", Guid.NewGuid()), ("B", Guid.NewGuid())]);

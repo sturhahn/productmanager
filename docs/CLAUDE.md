@@ -15,6 +15,17 @@
 - New product docs (design notes, ADRs, phase retrospectives) belong under `docs/`, in a
   sensibly named subdirectory (mirroring `PRDs/`) — don't scatter product-level docs into `src/`
   or the repo root.
+- **`onboarding/` is guarded by a test.** `tests/ProductManager.Cli.Tests/OnboardingDocsTests.cs`
+  parses every ```json block in `onboarding/datasets/*.md` strictly against the CLI's
+  `SeedModels` (unknown keys fail), checks enum spellings and ISO dates, checks that the eight
+  H2 headings appear in order, that every relative link resolves, and that
+  `onboarding/example-seed.json` resolves all of its by-name references. When you change the
+  seed schema (`src/ProductManager.Cli/Seed/SeedModels.cs`), update the affected dataset file
+  and the example seed in the same change, then run
+  `dotnet test tests/ProductManager.Cli.Tests --filter FullyQualifiedName~OnboardingDocsTests`.
+- Dataset files are written for an agent reader: state units only when verified in code, cite
+  the file, keep the shared Harborline example world consistent across files, and never invent a
+  `pm` verb or option.
 
 ---
 Update this trio (`ABSTRACT.md` / `INDEX.md` / `CLAUDE.md`) whenever you add, remove, or

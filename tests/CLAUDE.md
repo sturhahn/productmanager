@@ -37,6 +37,10 @@ integration tests on CRUD/API. Light touch on UI.")
 - `SeedFileTests.cs` parses the real `seed/phase1-seed.json` — if you add a field to the seed
   JSON schema, check this test still resolves natural-key references correctly.
 
+- `OnboardingDocsTests.cs` reads markdown under `docs/onboarding/` — a seed-schema change in
+  `SeedModels.cs` can fail it (unknown keys are disallowed when parsing the doc examples). Fix
+  the docs, not the test.
+
 ---
 Update this trio (`ABSTRACT.md` / `INDEX.md` / `CLAUDE.md`) whenever you add, remove, or
 substantially rework a file in this directory.

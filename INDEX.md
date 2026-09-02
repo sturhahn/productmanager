@@ -1,7 +1,11 @@
 # Repo index
 
+- `README.md` — the human entry point: what this is, how to run it, and the pointer to the
+  agentic onboarding guide (`docs/onboarding/README.md`).
 - `docs/PRDs/product_requirements.md` — the authoritative product spec: vision, domain model,
   phasing, testing posture. Read this before any cross-cutting change.
+- `docs/onboarding/` — agent-driven onboarding: orchestrator guide, one requirements file per
+  dataset, and a complete example seed.
 - `src/ProductManager.Domain/` — entities, value objects, domain services. No EF/API refs.
 - `src/ProductManager.Engine/` — pure simulation/calibration library. No project references at all.
 - `src/ProductManager.Api/` — ASP.NET Core Web API: the only write path. EF Core + PostgreSQL.

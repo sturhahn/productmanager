@@ -26,6 +26,15 @@ public sealed class NameIndex
 
     public int Count => _byName.Count;
 
+    /// <summary>
+    /// Every entry, as (normalized name, id). Names come back normalized — trimmed and
+    /// lower-cased — which is exactly what lookups normalize to, so an enumerated name is a valid
+    /// key to look up (or to compose a composite key from, as the loader does for approaches).
+    /// Materialized, so the caller may keep adding to this index while iterating.
+    /// </summary>
+    public IReadOnlyList<(string Name, Guid Id)> Entries =>
+        _byName.Select(entry => (entry.Key, entry.Value)).ToList();
+
     public bool TryGet(string name, out Guid id) => _byName.TryGetValue(Normalize(name), out id);
 
     public Guid GetOrThrow(string name) =>
@@ -38,5 +47,21 @@ public sealed class NameIndex
 }
 
 /// <summary>The seed file referenced a name that does not exist among what has been loaded so far.</summary>
-public sealed class SeedReferenceException(string name)
-    : Exception($"Seed file references '{name}', which was not found among the entities loaded so far. Check ordering and spelling.");
+public sealed class SeedReferenceException : Exception
+{
+    public SeedReferenceException(string name)
+        : base($"Seed file references '{name}', which was not found among the entities loaded so far. Check ordering and spelling.")
+    {
+    }
+
+    private SeedReferenceException(string message, Exception? inner) : base(message, inner)
+    {
+    }
+
+    /// <summary>
+    /// A reference problem that is not a plain "this name is missing" — e.g. the file omits its
+    /// <c>market</c> section while the workspace holds several markets, so the loader cannot tell
+    /// which one the file's segment/product/process names belong to.
+    /// </summary>
+    public static SeedReferenceException WithMessage(string message) => new(message, inner: null);
+}

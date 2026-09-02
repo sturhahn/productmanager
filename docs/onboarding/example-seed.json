@@ -1,0 +1,976 @@
+{
+  "workspace": {
+    "name": "Harborline"
+  },
+  "teams": [
+    {
+      "name": "Core Platform",
+      "specializationTag": "backend",
+      "capacities": [
+        {
+          "year": 2026,
+          "month": 9,
+          "points": 24
+        },
+        {
+          "year": 2026,
+          "month": 10,
+          "points": 24
+        },
+        {
+          "year": 2026,
+          "month": 11,
+          "points": 24
+        },
+        {
+          "year": 2026,
+          "month": 12,
+          "points": 24
+        }
+      ]
+    },
+    {
+      "name": "Integrations",
+      "specializationTag": "integrations",
+      "capacities": [
+        {
+          "year": 2026,
+          "month": 9,
+          "points": 12
+        },
+        {
+          "year": 2026,
+          "month": 10,
+          "points": 12
+        },
+        {
+          "year": 2026,
+          "month": 11,
+          "points": 12
+        },
+        {
+          "year": 2026,
+          "month": 12,
+          "points": 12
+        }
+      ]
+    },
+    {
+      "name": "Web",
+      "specializationTag": "frontend",
+      "capacities": [
+        {
+          "year": 2026,
+          "month": 9,
+          "points": 16
+        },
+        {
+          "year": 2026,
+          "month": 10,
+          "points": 16
+        },
+        {
+          "year": 2026,
+          "month": 11,
+          "points": 16
+        },
+        {
+          "year": 2026,
+          "month": 12,
+          "points": 16
+        }
+      ]
+    }
+  ],
+  "market": {
+    "name": "Mid-market 3PL warehouse software",
+    "description": "Warehouse management software for third-party logistics providers and e-commerce fulfillment operators running 1-20 sites.",
+    "segments": [
+      {
+        "name": "Regional 3PLs",
+        "description": "Multi-client third-party logistics providers with 2-10 warehouses, billing each client per activity.",
+        "suiteAffinity": 0.7,
+        "consolidationPreference": 0.6
+      },
+      {
+        "name": "E-commerce Fulfillment",
+        "description": "High-volume direct-to-consumer fulfillment operators; parcel shipping and pick speed dominate.",
+        "suiteAffinity": 0.4,
+        "consolidationPreference": 0.3
+      }
+    ],
+    "businessProcesses": [
+      {
+        "name": "Inbound Receiving",
+        "description": "Receiving, putaway, and ASN reconciliation."
+      },
+      {
+        "name": "Inventory Control",
+        "description": "Stock accuracy, locations, lot and serial tracking."
+      },
+      {
+        "name": "Cycle Counting",
+        "description": "Scheduled and ad-hoc counts reconciled against book inventory.",
+        "parentProcessName": "Inventory Control"
+      },
+      {
+        "name": "Order Picking",
+        "description": "Releasing, batching, and executing pick work."
+      },
+      {
+        "name": "Shipping & Carrier Integration",
+        "description": "Rate shopping, labels, manifests, and carrier tracking."
+      },
+      {
+        "name": "Billing",
+        "description": "Activity-based client invoicing for 3PL operators."
+      }
+    ],
+    "approaches": [
+      {
+        "name": "Paper Pick Lists",
+        "businessProcessName": "Order Picking",
+        "description": "Printed lists; confirmation keyed in afterwards."
+      },
+      {
+        "name": "RF Scanner Guided",
+        "businessProcessName": "Order Picking",
+        "description": "Handheld-directed picking with scan confirmation at each step."
+      }
+    ],
+    "competitors": [
+      {
+        "name": "Stackline Systems",
+        "strategyNotes": "Incumbent on-premise WMS; strong in regional 3PL billing, slow on parcel carrier updates."
+      },
+      {
+        "name": "Palletto",
+        "strategyNotes": "Cloud-native, e-commerce first; wins on carrier connectivity, thin on multi-client billing."
+      }
+    ],
+    "products": [
+      {
+        "name": "Harborline WMS",
+        "description": "Our core warehouse management platform.",
+        "prices": [
+          {
+            "recurringAmount": 4500,
+            "currency": "USD",
+            "implementationFeeAmount": 25000,
+            "implementationFeeCurrency": "USD"
+          },
+          {
+            "segmentName": "E-commerce Fulfillment",
+            "recurringAmount": 3500,
+            "currency": "USD",
+            "implementationFeeAmount": 15000,
+            "implementationFeeCurrency": "USD"
+          }
+        ]
+      },
+      {
+        "name": "Harborline Carrier Connect",
+        "description": "Multi-carrier shipping module, sold as an add-on to Harborline WMS.",
+        "parentProductName": "Harborline WMS",
+        "prices": [
+          {
+            "recurringAmount": 900,
+            "currency": "USD",
+            "implementationFeeAmount": 5000
+          }
+        ]
+      },
+      {
+        "name": "Stackline WMS",
+        "description": "Stackline's on-premise WMS. Prices are estimates from lost-deal debriefs.",
+        "competitorName": "Stackline Systems",
+        "prices": [
+          {
+            "recurringAmount": 5200,
+            "currency": "USD",
+            "implementationFeeAmount": 40000,
+            "implementationFeeCurrency": "USD"
+          }
+        ]
+      },
+      {
+        "name": "Palletto Cloud",
+        "description": "Palletto's cloud WMS. Prices from their public pricing page, mid tier.",
+        "competitorName": "Palletto",
+        "prices": [
+          {
+            "recurringAmount": 2800,
+            "currency": "USD",
+            "implementationFeeAmount": 8000,
+            "implementationFeeCurrency": "USD"
+          }
+        ]
+      }
+    ],
+    "coverages": [
+      {
+        "productName": "Harborline WMS",
+        "businessProcessName": "Inventory Control",
+        "tier": "Gold",
+        "confidence": 0.9,
+        "rationale": "Lot, serial, and location accuracy referenced in every recent win.",
+        "effectiveDate": "2026-06-30"
+      },
+      {
+        "productName": "Harborline WMS",
+        "businessProcessName": "Order Picking",
+        "approachName": "RF Scanner Guided",
+        "tier": "Silver",
+        "confidence": 0.8,
+        "rationale": "Scanner-directed picking ships today; wave picking is on the roadmap.",
+        "effectiveDate": "2026-06-30"
+      },
+      {
+        "productName": "Harborline WMS",
+        "businessProcessName": "Shipping & Carrier Integration",
+        "tier": "Bronze",
+        "confidence": 0.9,
+        "rationale": "Two carriers hard-wired, no rate shopping until Carrier Connect v1.",
+        "effectiveDate": "2026-06-30"
+      },
+      {
+        "productName": "Palletto Cloud",
+        "businessProcessName": "Shipping & Carrier Integration",
+        "segmentName": "E-commerce Fulfillment",
+        "tier": "Gold",
+        "confidence": 0.6,
+        "rationale": "Lost two e-commerce deals on carrier connectivity in Q2 2026.",
+        "effectiveDate": "2026-05-15"
+      }
+    ],
+    "needs": [
+      {
+        "segmentName": "E-commerce Fulfillment",
+        "businessProcessName": "Shipping & Carrier Integration",
+        "importanceWeight": 1.0,
+        "isHard": true,
+        "requiredCoverage": 0.4,
+        "notes": "No parcel integration, no evaluation. Bronze is enough to be considered."
+      },
+      {
+        "segmentName": "E-commerce Fulfillment",
+        "businessProcessName": "Order Picking",
+        "importanceWeight": 0.8
+      },
+      {
+        "segmentName": "Regional 3PLs",
+        "businessProcessName": "Billing",
+        "importanceWeight": 0.9,
+        "workaroundCostPerPeriod": 2500,
+        "notes": "Monthly USD. Without activity billing a 3PL runs a spreadsheet and a part-time clerk. Pair with choice.workaround-cost-weight = 0.001."
+      },
+      {
+        "segmentName": "Regional 3PLs",
+        "businessProcessName": "Inventory Control",
+        "importanceWeight": 1.0
+      }
+    ]
+  },
+  "initiatives": [
+    {
+      "name": "Win e-commerce fulfillment",
+      "outcome": "Become the default WMS for e-commerce fulfillment operators running 2-10 sites.",
+      "hypothesizedValue": "Wave picking and cycle counting close the two gaps named most often in lost e-commerce deals.",
+      "targetSegmentNames": [
+        "E-commerce Fulfillment"
+      ],
+      "strategicIntent": "Differentiation"
+    },
+    {
+      "name": "Carrier connectivity parity",
+      "outcome": "Stop losing deals on carrier integration checklists.",
+      "hypothesizedValue": "Every serious competitor rate-shops across carriers; matching them protects renewals rather than winning new logos.",
+      "strategicIntent": "Parity"
+    }
+  ],
+  "features": [
+    {
+      "name": "Multi-carrier rate shopping",
+      "description": "Compares live rates across connected carriers at ship-confirm and picks the cheapest service that meets the promised date.",
+      "status": "Planned",
+      "productName": "Harborline Carrier Connect",
+      "deltas": [
+        {
+          "kind": "Coverage",
+          "businessProcessName": "Shipping & Carrier Integration",
+          "fromTier": "Bronze",
+          "toTier": "Gold",
+          "rationale": "Closes the rate-shopping gap versus Stackline WMS and Palletto Cloud."
+        }
+      ]
+    },
+    {
+      "name": "Wave picking",
+      "description": "Groups orders into waves released to RF scanners by zone and carrier cut-off.",
+      "status": "Planned",
+      "productName": "Harborline WMS",
+      "deltas": [
+        {
+          "kind": "Coverage",
+          "businessProcessName": "Order Picking",
+          "approachName": "RF Scanner Guided",
+          "segmentName": "E-commerce Fulfillment",
+          "fromTier": "Silver",
+          "toTier": "Gold",
+          "rationale": "High-volume fulfillment sites pick in waves; single-order RF picking caps us at Silver there."
+        }
+      ]
+    },
+    {
+      "name": "Cycle counting",
+      "description": "Scheduled and ad-hoc cycle counts with variance review, replacing annual wall-to-wall counts.",
+      "status": "Hypothetical",
+      "productName": "Harborline WMS",
+      "deltas": [
+        {
+          "kind": "Coverage",
+          "businessProcessName": "Cycle Counting",
+          "fromTier": "NotPlaying",
+          "toTier": "Silver"
+        }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Carrier Connect v1",
+      "initiativeName": "Carrier connectivity parity",
+      "description": "First release of the Carrier Connect module: three parcel carriers, rate shopping, label printing.",
+      "status": "InProgress",
+      "startDate": "2026-09-01",
+      "endDate": "2026-10-31",
+      "effortDemands": [
+        {
+          "teamName": "Integrations",
+          "year": 2026,
+          "month": 9,
+          "points": 10
+        },
+        {
+          "teamName": "Integrations",
+          "year": 2026,
+          "month": 10,
+          "points": 10
+        },
+        {
+          "teamName": "Core Platform",
+          "year": 2026,
+          "month": 9,
+          "points": 6
+        }
+      ],
+      "deliversFeatureNames": [
+        "Multi-carrier rate shopping"
+      ]
+    },
+    {
+      "name": "Wave picking engine",
+      "initiativeName": "Win e-commerce fulfillment",
+      "description": "Wave planning service plus the RF scanner flows that consume it; needs carrier cut-offs from Carrier Connect.",
+      "status": "Planned",
+      "startDate": "2026-11-01",
+      "endDate": "2026-12-31",
+      "dependsOnProjectNames": [
+        "Carrier Connect v1"
+      ],
+      "effortDemands": [
+        {
+          "teamName": "Core Platform",
+          "year": 2026,
+          "month": 11,
+          "points": 16
+        },
+        {
+          "teamName": "Core Platform",
+          "year": 2026,
+          "month": 12,
+          "points": 16
+        },
+        {
+          "teamName": "Web",
+          "year": 2026,
+          "month": 11,
+          "points": 8
+        },
+        {
+          "teamName": "Web",
+          "year": 2026,
+          "month": 12,
+          "points": 8
+        }
+      ],
+      "deliversFeatureNames": [
+        "Wave picking"
+      ]
+    },
+    {
+      "name": "Cycle count workflows",
+      "initiativeName": "Win e-commerce fulfillment",
+      "description": "Count scheduling, RF count screens, and variance approval.",
+      "status": "Proposed",
+      "startDate": "2026-10-01",
+      "endDate": "2026-11-30",
+      "effortDemands": [
+        {
+          "teamName": "Core Platform",
+          "year": 2026,
+          "month": 10,
+          "points": 8
+        },
+        {
+          "teamName": "Core Platform",
+          "year": 2026,
+          "month": 11,
+          "points": 8
+        },
+        {
+          "teamName": "Web",
+          "year": 2026,
+          "month": 10,
+          "points": 6
+        },
+        {
+          "teamName": "Web",
+          "year": 2026,
+          "month": 11,
+          "points": 6
+        }
+      ],
+      "deliversFeatureNames": [
+        "Cycle counting"
+      ]
+    }
+  ],
+  "roadmap": {
+    "name": "Harborline 2026 roadmap",
+    "versionName": "v1",
+    "isLive": true,
+    "items": [
+      {
+        "projectName": "Carrier Connect v1",
+        "start": "2026-09-01",
+        "end": "2026-10-31",
+        "sortOrder": 0
+      },
+      {
+        "projectName": "Cycle count workflows",
+        "start": "2026-10-01",
+        "end": "2026-11-30",
+        "sortOrder": 1
+      },
+      {
+        "projectName": "Wave picking engine",
+        "start": "2026-11-01",
+        "end": "2026-12-31",
+        "sortOrder": 2
+      }
+    ]
+  },
+  "marketDynamics": {
+    "marketName": "Mid-market 3PL warehouse software",
+    "segmentStockStates": [
+      {
+        "segmentName": "Regional 3PLs",
+        "initialProspectPool": 420,
+        "initialClientCount": 38,
+        "arpuPerMonth": 2400,
+        "implementationFee": 12000,
+        "servicingCostPerClient": 350,
+        "infraFixedCostPerMonth": 6000,
+        "infraCostPerClient": 45,
+        "rdDragPerMonth": 9000,
+        "modulePenetrations": [
+          {
+            "moduleProductName": "Harborline Carrier Connect",
+            "penetration": 0.3,
+            "arpuPerMonth": 600
+          }
+        ]
+      },
+      {
+        "segmentName": "E-commerce Fulfillment",
+        "initialProspectPool": 650,
+        "initialClientCount": 21,
+        "arpuPerMonth": 3900,
+        "implementationFee": 18000,
+        "servicingCostPerClient": 520,
+        "infraFixedCostPerMonth": 4500,
+        "infraCostPerClient": 60,
+        "rdDragPerMonth": 7000,
+        "modulePenetrations": [
+          {
+            "moduleProductName": "Harborline Carrier Connect",
+            "penetration": 0.15,
+            "arpuPerMonth": 750
+          }
+        ]
+      }
+    ],
+    "covariates": [
+      {
+        "name": "US parcel volume index",
+        "description": "Monthly US domestic parcel volume, indexed to the 2024 monthly average = 100. More parcels bring more fulfillment operators to market.",
+        "unit": "index (2024 = 100)",
+        "gbmStart": 108.2,
+        "gbmDrift": 0.003,
+        "gbmVol": 0.02,
+        "observations": [
+          {
+            "effectiveDate": "2025-09-01",
+            "value": 101.4,
+            "recordedDate": "2025-09-08"
+          },
+          {
+            "effectiveDate": "2025-11-01",
+            "value": 112.9,
+            "recordedDate": "2025-11-07",
+            "notes": "Peak season"
+          },
+          {
+            "effectiveDate": "2026-01-01",
+            "value": 98.7,
+            "recordedDate": "2026-01-09"
+          },
+          {
+            "effectiveDate": "2026-03-01",
+            "value": 103.5,
+            "recordedDate": "2026-03-06"
+          },
+          {
+            "effectiveDate": "2026-05-01",
+            "value": 105.1,
+            "recordedDate": "2026-05-08"
+          },
+          {
+            "effectiveDate": "2026-07-01",
+            "value": 106.8,
+            "recordedDate": "2026-07-09"
+          },
+          {
+            "effectiveDate": "2026-08-01",
+            "value": 108.2,
+            "recordedDate": "2026-08-07"
+          }
+        ]
+      },
+      {
+        "name": "US e-commerce share of retail",
+        "description": "Quarterly e-commerce share of total US retail sales. Held flat in simulation (no GBM spec); kept for calibration context.",
+        "unit": "percent of retail sales",
+        "observations": [
+          {
+            "effectiveDate": "2025-12-01",
+            "value": 16.9,
+            "recordedDate": "2026-02-20",
+            "notes": "Q4 2025 release"
+          },
+          {
+            "effectiveDate": "2026-03-01",
+            "value": 16.6,
+            "recordedDate": "2026-05-19",
+            "notes": "Q1 2026 release"
+          },
+          {
+            "effectiveDate": "2026-06-01",
+            "value": 17.1,
+            "recordedDate": "2026-08-19",
+            "notes": "Q2 2026 release"
+          }
+        ]
+      }
+    ],
+    "assumptionSets": [
+      {
+        "name": "Baseline 2026",
+        "notes": "Planning baseline for the 2026 roadmap. Funnel rates from the 2025 CRM export; everything asserted pending the first calibration run.",
+        "parameters": [
+          {
+            "segmentName": "Regional 3PLs",
+            "flowKind": "NewFirmArrival",
+            "distType": "Lognormal",
+            "p1": 1.7918,
+            "p2": 0.3,
+            "provenance": "Asserted",
+            "rationale": "About 6 new regional 3PLs per month appear in the prospect list (72 in 2025); moves with parcel volume.",
+            "covariateName": "US parcel volume index",
+            "covariateBeta": 0.8
+          },
+          {
+            "segmentName": "Regional 3PLs",
+            "flowKind": "ConversionToMarket",
+            "distType": "Beta",
+            "p1": 3,
+            "p2": 97,
+            "provenance": "Asserted",
+            "rationale": "About 3% of the pool opens an opportunity each month (roughly 12 opportunities/month from 420 firms)."
+          },
+          {
+            "segmentName": "Regional 3PLs",
+            "flowKind": "WinRate",
+            "distType": "Beta",
+            "p1": 9,
+            "p2": 21,
+            "provenance": "Asserted",
+            "rationale": "Won 8 of 28 decided deals in 2025 against Stackline and Palletto; Beta(wins + 1, losses + 1)."
+          },
+          {
+            "segmentName": "Regional 3PLs",
+            "flowKind": "ChurnHazard",
+            "distType": "Beta",
+            "p1": 2,
+            "p2": 198,
+            "provenance": "Asserted",
+            "rationale": "11% annual logo churn -> 1 - 0.89^(1/12) = 0.0097 per month."
+          },
+          {
+            "segmentName": "Regional 3PLs",
+            "flowKind": "CrossSellRate",
+            "moduleProductName": "Harborline Carrier Connect",
+            "distType": "Lognormal",
+            "p1": -3.912,
+            "p2": 0.4,
+            "provenance": "Asserted",
+            "rationale": "About 2% of clients without Carrier Connect add it each month (ln 0.02 = -3.912)."
+          },
+          {
+            "segmentName": "E-commerce Fulfillment",
+            "flowKind": "NewFirmArrival",
+            "distType": "Normal",
+            "p1": 9,
+            "p2": 2,
+            "provenance": "Asserted",
+            "rationale": "About 9 new fulfillment operators per month; the most parcel-sensitive segment.",
+            "covariateName": "US parcel volume index",
+            "covariateBeta": 1.2
+          },
+          {
+            "segmentName": "E-commerce Fulfillment",
+            "flowKind": "ConversionToMarket",
+            "distType": "Beta",
+            "p1": 4,
+            "p2": 96,
+            "provenance": "Asserted",
+            "rationale": "About 4% of the pool comes to market each month; fast-moving segment."
+          },
+          {
+            "segmentName": "E-commerce Fulfillment",
+            "flowKind": "WinRate",
+            "distType": "Point",
+            "p1": 0.22,
+            "provenance": "Default",
+            "rationale": "Placeholder until Carrier Connect v1 ships; too few decided deals in 2025 to fit a Beta."
+          },
+          {
+            "segmentName": "E-commerce Fulfillment",
+            "flowKind": "ChurnHazard",
+            "distType": "Beta",
+            "p1": 3,
+            "p2": 197,
+            "provenance": "Asserted",
+            "rationale": "17% annual logo churn -> 0.0154 per month; operators fail or get acquired often."
+          },
+          {
+            "segmentName": "E-commerce Fulfillment",
+            "flowKind": "CrossSellRate",
+            "moduleProductName": "Harborline Carrier Connect",
+            "distType": "Beta",
+            "p1": 3,
+            "p2": 97,
+            "provenance": "Asserted",
+            "rationale": "About 3% monthly attach among clients without the module."
+          },
+          {
+            "choiceKind": "PriceSensitivity",
+            "segmentName": "E-commerce Fulfillment",
+            "distType": "Lognormal",
+            "p1": 0,
+            "p2": 0.35,
+            "provenance": "Asserted",
+            "rationale": "Median sensitivity 1.0 (one utility unit per PriceScale of monthly price), typically within a factor of 2."
+          },
+          {
+            "choiceKind": "SalesCycleMu",
+            "segmentName": "Regional 3PLs",
+            "distType": "Point",
+            "p1": 1.5,
+            "provenance": "Asserted",
+            "rationale": "Median sales cycle about 4.5 months (exp 1.5) for regional 3PLs."
+          },
+          {
+            "choiceKind": "SwitchingCostBase",
+            "distType": "Point",
+            "p1": 0.6,
+            "provenance": "Asserted",
+            "rationale": "Replacing an incumbent WMS is a multi-month migration; moderate switching friction."
+          }
+        ]
+      }
+    ],
+    "marketEvents": [
+      {
+        "name": "Peak-season carrier API outage",
+        "type": "ProductionIncident",
+        "startDate": "2025-11-18",
+        "endDate": "2025-12-09",
+        "isHypothetical": false,
+        "notes": "Harborline Carrier Connect label generation degraded for three weeks of peak season; two clients gave notice. Churn multiplier from the Q4 2025 retention review.",
+        "rateMultipliers": [
+          {
+            "flowKind": "ChurnHazard",
+            "multiplier": 1.6
+          }
+        ]
+      },
+      {
+        "name": "Stackline usage-based pricing",
+        "type": "PricingModelChange",
+        "startDate": "2026-04-01",
+        "isHypothetical": false,
+        "competitorName": "Stackline Systems",
+        "notes": "Stackline moved Stackline WMS to per-order pricing; regional 3PLs with volatile volumes started shortlisting us more often. Open-ended.",
+        "rateMultipliers": [
+          {
+            "segmentName": "Regional 3PLs",
+            "flowKind": "WinRate",
+            "multiplier": 1.1
+          }
+        ]
+      },
+      {
+        "name": "Palletto Cloud v3 forced migration",
+        "type": "ForcedMigration",
+        "startDate": "2027-01-01",
+        "endDate": "2027-06-30",
+        "isHypothetical": true,
+        "magnitude": 0.2,
+        "competitorName": "Palletto",
+        "notes": "Scenario: Palletto forces about 20% of its installed base onto Palletto Cloud v3 in H1 2027, opening a switching window in e-commerce fulfillment.",
+        "rateMultipliers": [
+          {
+            "segmentName": "E-commerce Fulfillment",
+            "flowKind": "WinRate",
+            "multiplier": 1.35
+          },
+          {
+            "flowKind": "NewFirmArrival",
+            "multiplier": 1.1
+          }
+        ]
+      }
+    ],
+    "channels": [
+      {
+        "name": "Direct sales",
+        "description": "Our own account executives, sourcing from outbound, events and inbound web enquiries.",
+        "originatesOpportunities": true,
+        "carriesOnlyListedProducts": false,
+        "segmentReaches": [
+          {
+            "segmentName": "Regional 3PLs",
+            "reach": 1.0,
+            "originationShare": 0.8
+          },
+          {
+            "segmentName": "E-commerce Fulfillment",
+            "reach": 1.0,
+            "originationShare": 0.6
+          }
+        ],
+        "productAffinities": [
+          {
+            "productName": "Harborline WMS",
+            "bias": 0.15
+          }
+        ]
+      },
+      {
+        "name": "Supply chain consultants",
+        "description": "Independent selection advisors running RFPs for 3PLs; historically tilted toward Stackline's brand.",
+        "originatesOpportunities": true,
+        "carriesOnlyListedProducts": false,
+        "segmentReaches": [
+          {
+            "segmentName": "Regional 3PLs",
+            "reach": 0.5,
+            "originationShare": 0.4
+          },
+          {
+            "segmentName": "E-commerce Fulfillment",
+            "reach": 0.8,
+            "originationShare": 0.5
+          }
+        ],
+        "productAffinities": [
+          {
+            "productName": "Stackline WMS",
+            "bias": 0.3
+          },
+          {
+            "productName": "Harborline WMS",
+            "bias": -0.1
+          }
+        ]
+      }
+    ],
+    "integrations": [
+      {
+        "productAName": "Harborline WMS",
+        "productBName": "Harborline Carrier Connect",
+        "qualityScore": 0.95,
+        "notes": "Native: shared shipment and inventory data model, no connector to configure."
+      },
+      {
+        "productAName": "Harborline Carrier Connect",
+        "productBName": "Palletto Cloud",
+        "qualityScore": 0.4,
+        "notes": "Partial-stack reality: two Palletto accounts run our carrier layer over their WMS via the supported connector."
+      }
+    ],
+    "firms": [
+      {
+        "name": "Bluewater Logistics",
+        "segmentName": "Regional 3PLs",
+        "epistemicStatus": "Observed",
+        "attributesJson": "{\"crmAccountId\":\"ACC-3142\",\"warehouses\":6,\"region\":\"US-Midwest\"}",
+        "notes": "Our client. Won as a new logo in 2025, expanded onto Carrier Connect at the end of the year.",
+        "relationships": [
+          {
+            "productName": "Harborline WMS",
+            "servedProcessNames": [
+              "Inbound Receiving",
+              "Inventory Control",
+              "Order Picking"
+            ],
+            "priceLevel": 0.85,
+            "acquisitionDate": "2025-05-01"
+          },
+          {
+            "productName": "Harborline Carrier Connect",
+            "servedProcessNames": [
+              "Shipping & Carrier Integration"
+            ],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2026-01-01"
+          }
+        ]
+      },
+      {
+        "name": "Cargo Nine",
+        "segmentName": "E-commerce Fulfillment",
+        "epistemicStatus": "Inferred",
+        "notes": "Competitor account. Palletto win confirmed by their published case study; module breakdown unknown.",
+        "relationships": [
+          {
+            "productName": "Palletto Cloud",
+            "servedProcessNames": [],
+            "priceLevel": 1.0,
+            "acquisitionDate": "2025-08-01"
+          }
+        ]
+      },
+      {
+        "name": "Meridian Fulfillment",
+        "segmentName": "E-commerce Fulfillment",
+        "epistemicStatus": "Observed",
+        "notes": "Prospect. Running spreadsheets and a carrier portal; open opportunity in the pipeline.",
+        "relationships": []
+      }
+    ],
+    "opportunities": [
+      {
+        "firmName": "Bluewater Logistics",
+        "channelName": "Direct sales",
+        "openedDate": "2025-01-13",
+        "qualifiedDate": "2025-02-10",
+        "decidedDate": "2025-04-28",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Inbound Receiving",
+          "Inventory Control",
+          "Order Picking"
+        ],
+        "winningProductName": "Harborline WMS",
+        "notes": "New logo. Replaced a spreadsheet-and-paper operation across three sites.",
+        "recordedDate": "2025-04-28",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Cargo Nine",
+        "channelName": "Supply chain consultants",
+        "openedDate": "2025-03-04",
+        "qualifiedDate": "2025-04-02",
+        "decidedDate": "2025-07-15",
+        "outcome": "Lost",
+        "scopeProcessNames": [
+          "Order Picking",
+          "Shipping & Carrier Integration"
+        ],
+        "winningProductName": "Palletto Cloud",
+        "notes": "Lost to Palletto Cloud on the consultant's shortlist; carrier breadth cited as the deciding factor.",
+        "recordedDate": "2025-07-15",
+        "lateRecorded": false
+      },
+      {
+        "firmName": "Bluewater Logistics",
+        "channelName": "Direct sales",
+        "openedDate": "2025-09-15",
+        "qualifiedDate": "2025-10-06",
+        "decidedDate": "2025-12-18",
+        "outcome": "Won",
+        "scopeProcessNames": [
+          "Shipping & Carrier Integration"
+        ],
+        "winningProductName": "Harborline Carrier Connect",
+        "crossSellModuleProductName": "Harborline Carrier Connect",
+        "notes": "Cross-sell. Signed in December but only reached the CRM at the February quarter close.",
+        "recordedDate": "2026-02-10",
+        "lateRecorded": true
+      },
+      {
+        "firmName": "Meridian Fulfillment",
+        "channelName": "Direct sales",
+        "openedDate": "2026-07-06",
+        "qualifiedDate": "2026-08-03",
+        "decidedDate": null,
+        "outcome": null,
+        "scopeProcessNames": [
+          "Inventory Control",
+          "Cycle Counting",
+          "Order Picking"
+        ],
+        "notes": "Open pipeline entry: qualified, in evaluation, no decision yet."
+      }
+    ],
+    "churnEvents": [
+      {
+        "segmentName": "Regional 3PLs",
+        "effectiveDate": "2025-06-30",
+        "notes": "Client wound down its third-party warehousing arm; not attributed to a competitor.",
+        "recordedDate": "2025-07-31"
+      }
+    ],
+    "arrivalCounts": [
+      {
+        "segmentName": "Regional 3PLs",
+        "flowKind": "NewFirmArrival",
+        "month": "2025-06-01",
+        "count": 2,
+        "exposure": 1.0,
+        "recordedDate": "2025-07-05"
+      },
+      {
+        "segmentName": "E-commerce Fulfillment",
+        "flowKind": "ConversionToMarket",
+        "month": "2025-06-01",
+        "count": 9,
+        "exposure": 240.0,
+        "recordedDate": "2025-07-05"
+      }
+    ]
+  }
+}

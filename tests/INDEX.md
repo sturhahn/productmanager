@@ -28,6 +28,9 @@
 - `ApiContractDriftTests.cs` — guards CLI DTOs/enums/routes against
   `openapi/productmanager.json` (see `src/ProductManager.Cli/CLAUDE.md`).
 - `CalibrationSummaryTests.cs` — formatting logic for calibration diff summaries.
+- `OnboardingDocsTests.cs` — guards `docs/onboarding/`: every dataset file's JSON example parses
+  strictly into `SeedFile`, enum spellings and ISO dates are exact, headings and links are
+  intact, and `example-seed.json` resolves its by-name references.
 - `ChoiceParameterKeysTests.cs` — CLI's mirror of the API's choice-model parameter key scheme.
 - `NameIndexTests.cs` — name-matching rules for idempotent seed loading.
 - `ParameterKeyHelperTests.cs` — engine-vs-free-form parameter key validation logic.
@@ -36,6 +39,12 @@
 - `SeedFileTests.cs` — parses the real `seed/phase1-seed.json` and `seed/phase3-seed.json` and
   checks natural-key references resolve, plus seed-shape invariants (decided/undecided
   opportunity fields, scale counts, mixed-technology firms).
+- `SeedLoaderCrossFileReferenceTests.cs` — runs `SeedLoader` against a scripted `HttpMessageHandler`
+  to pin cross-file reference resolution: a file with no `market` section resolves against the
+  workspace's single market (and reports zero/several clearly), a name-only `market` stub creates
+  nothing, the approach index spans every process, and project/firm references fall back to
+  workspace- and market-wide listings (roadmap-only, dependency, opportunities-only and
+  churn/arrival-only fragments).
 - `SeedLoaderOpportunityDecisionTests.cs` — `SeedLoader.HasDecision` guard: an opportunity with a
   null `decidedDate` is left Open/Qualified rather than passed to `DecideOpportunityAsync`.
 - `SeedTallyTests.cs` — created/matched/applied counting logic.

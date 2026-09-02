@@ -17,7 +17,14 @@
 - **References in the JSON are by name, not by id** (`SeedModels.cs` POCOs are name-referenced)
   — because ids are self-assigned by the Domain (see Domain's `CLAUDE.md`) and don't exist until
   the API creates the row. Keep new seed entries name-referenced; don't hardcode a Guid into
-  these files.
+  these files. **A name may point at something an earlier file already loaded**: market-side names
+  (segments, products, processes, approaches, channels, competitors, covariates, firms) resolve
+  against what the API already holds for the market, and project names against the whole
+  workspace — so a single-dataset fragment (initiatives-only, features-only, roadmap-only,
+  firms-only, opportunities-only) loads fine on top of the files before it. Market-side names in a
+  file with no `market` section resolve against the workspace's single market; if the workspace
+  holds more than one, give the file a `"market": { "name": "..." }` stub to say which one it
+  means — a name-only stub matches the existing market and creates nothing.
 - **`recordedDate` vs `effectiveDate` is the bi-temporal facts-ledger pattern from the PRD** —
   `effectiveDate` is when something was true in the world, `recordedDate` is when we learned it.
   Most seed entries set both to the same date. **Backdating is supported and intentional**: a

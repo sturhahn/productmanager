@@ -9,3 +9,16 @@
 - `PRD1-InitialFeedback-triage.md` — triage of `PRD1-InitialFeedback.md` against the codebase:
   per-item current-state citations, proposals, effort, and suggested sequencing. Every open fork
   was resolved with Chris on 2026-08-31; the doc now carries the authoritative decision register.
+- `PRD1-InitialFeedback.md` — the raw first-use feedback list that the triage above works
+  from.
+- `PRD2-Onboarding.md` — the short PRD for agent-driven onboarding; implemented by
+  `onboarding/`.
+- `onboarding/README.md` — the orchestrator agent's onboarding guide: environment checks,
+  running the stack, the mandatory/optional dataset task list, interview questions, load order,
+  verification. Hand this file to an agent onboarding a new instance.
+- `onboarding/datasets/NN-*.md` — one file per dataset (12, numbered in load order): data
+  requirements, units and conversions, seed JSON shape, idempotency rule, verification. Each
+  follows the same eight-heading skeleton; a subagent reads exactly one.
+- `onboarding/example-seed.json` — a complete, coherent example seed ("Harborline", a fictional
+  warehouse-software vendor) that every dataset file's snippet is drawn from; loads via
+  `pm seed` as a smoke test.
