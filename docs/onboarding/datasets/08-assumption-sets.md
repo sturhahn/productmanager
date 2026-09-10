@@ -348,7 +348,9 @@ Duplicate rule (`SeedLoader.LoadAssumptionSetAsync`, `src/ProductManager.Cli/See
   `utility.*` keys for choice kinds.
 - Frontend: `/assumptions` (`frontend/src/app/(app)/assumptions/page.tsx`) lists sets and
   their parameters, shows `rate x (<covariate> / start)^beta` on linked parameters, and lets you
-  edit or add parameters.
+  edit or add parameters. Choice-model parameters (`choice.*` keys) are listed under the heading
+  "Free-form assumptions (ignored by the engine)" - that label is about the aggregate engine;
+  `pm sim run --mode firm-level` does read them, so their appearance there is expected.
 - Smoke run: `pm sim run --roadmap-id <roadmapId> --assumption-set-id <setId> --horizon-months
   24 --paths 200` prints a headline digest; `pm sim input <runId>` shows the exact
   `parameters` array the engine received (only engine-keyed parameters appear there).
