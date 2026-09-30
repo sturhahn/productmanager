@@ -103,5 +103,17 @@ internal static class CliInfrastructure
             await Console.Error.WriteLineAsync($"Invalid input: {ex.Message}");
             return 1;
         }
+        catch (ExitCodeException ex)
+        {
+            await Console.Error.WriteLineAsync(ex.Message);
+            return ex.ExitCode;
+        }
     }
+}
+
+/// <summary>A command that finished but must not report success, with its own exit code (e.g. 5:
+/// <c>pm seed</c> completed with per-record exceptions).</summary>
+internal sealed class ExitCodeException(int exitCode, string message) : Exception(message)
+{
+    public int ExitCode { get; } = exitCode;
 }

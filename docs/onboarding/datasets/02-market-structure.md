@@ -296,8 +296,8 @@ Consequences:
   app; the seed loader never updates a matched entity.
 - Renaming an entity in the file and re-running creates a second entity under the new name.
 - A `parentProcessName`, `parentProductName`, `competitorName`, or price `segmentName` that
-  does not resolve aborts the run with "Seed file ... has a broken reference" - order parents
-  before children.
+  does not resolve is a preflight problem ("Seed file references '<name>' ..."), so nothing
+  loads - order parents before children.
 - The tally the CLI prints has one line per kind: `market`, `clientSegment`, `businessProcess`,
   `approach`, `competitor`, `product`, each with `created N, matched M`. Prices are not tallied.
   A clean re-run shows `created 0` on every line.

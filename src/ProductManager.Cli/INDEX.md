@@ -36,7 +36,8 @@
 - `Phase3ParseHelpers.cs` — CLI-friendly spellings for Phase 3 enums (e.g. "no-decision").
 - `ProjectCommands.cs` — Project CRUD, dependencies, effort demand, feature links.
 - `RoadmapCommands.cs` — Roadmap CRUD, planning, branching, feasibility checks.
-- `SeedCommand.cs` — `pm seed --file`, loads a seed JSON file through `SeedLoader`.
+- `SeedCommand.cs` — `pm seed --file [--dry-run] [--report <path>]`: plan, then apply through
+  `SeedLoader`; exit 5 when records are exceptions.
 - `SegmentCommands.cs` — ClientSegment reads + Phase 2 stock-state/module-penetration writes.
 - `SimulationCommands.cs` — runs, inspects, and compares Monte Carlo simulation runs.
 - `SimulationSummary.cs` — pure headline-metric math over an `EngineResult`.
@@ -48,8 +49,16 @@
   `~/.productmanager/config.json`.
 - `ConfigStore.cs` — loads/saves `CliConfig`, tolerating a corrupt file.
 
-## Seed/ — the natural-key idempotent loader (see `seed/CLAUDE.md` for the file format)
-- `NameIndex.cs` — case-insensitive name→id lookup, the core idempotency primitive.
-- `SeedLoader.cs` — drives a full seed file through the API, natural-key matched.
+## Seed/ — the idempotent loader (see `seed/CLAUDE.md` for the file format)
+- `NameIndex.cs` — case-insensitive name→id lookup (remembers ambiguous names), the core
+  natural-key idempotency primitive.
+- `SeedLoader.cs` — entry points (`PlanAsync` dry run, `ApplyAsync`, `RunAsync`), the per-record
+  `Guard`, paging, and every natural-key loader method (workspace through channels/integrations).
+- `SeedLoader.Sources.cs` — firms (bulk import + plan), opportunities (lifecycle advance),
+  churn and arrivals: PRD6 source identity and the correction-required boundary; `FirmResolver`.
+- `SeedPreflight.cs` — whole-file checks that need no API (source ids, `clearFields`, duplicate
+  edges, ambiguous in-file firm names) and `SeedSourceRef` resolution against `sourceDefaults`.
 - `SeedModels.cs` — POCOs mirroring the seed JSON schema (name-referenced, not id-referenced).
-- `SeedTally.cs` — tracks created/matched/applied counts per entity kind for the run summary.
+- `SeedReport.cs` — the printed summary and the `--report` JSON file.
+- `SeedTally.cs` — per-pass ledger: counts per kind, one planned/outcome row per record,
+  blocking problems, dry-run placeholders.

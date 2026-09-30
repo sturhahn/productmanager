@@ -342,9 +342,9 @@ lines only:
 A second run prints `created 0, matched N` for each and re-applies statuses, deltas, edges,
 demands and links with identical results.
 
-Reference failures stop the load with "Seed file '<path>' has a broken reference: Seed file
-references '<name>', which was not found among the entities loaded so far. Check ordering and
-spelling." Entities created before the failure stay created and are matched on the next run.
+Reference failures are preflight problems: the file loads nothing and `pm seed` lists every one as
+"Seed file references '<name>', which was not found among the entities loaded so far. Check
+ordering and spelling." Fix them all and run again.
 
 ## Verification
 

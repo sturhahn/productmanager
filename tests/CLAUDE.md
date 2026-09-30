@@ -34,6 +34,10 @@ integration tests on CRUD/API. Light touch on UI.")
   change an API contract, run the full Api.Tests suite (or at least that filter) and commit the
   resulting diff to the OpenAPI file before running `ApiContractDriftTests` in Cli.Tests — the
   latter reads the checked-in file, not the live route.
+- `SeedLoaderSourceImportTests.cs` runs the real loader against `FakeSourceApi.cs`, a stateful fake
+  whose repeat-safety rules copy the server's (bindings, correction-required 409s, idempotent
+  qualify/decide, bulk-import matching). When the API's import rules change, change the fake in
+  the same change or these tests keep passing against behaviour the server no longer has.
 - `SeedFileTests.cs` parses the real `seed/phase1-seed.json` — if you add a field to the seed
   JSON schema, check this test still resolves natural-key references correctly.
 

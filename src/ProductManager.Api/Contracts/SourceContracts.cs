@@ -49,7 +49,9 @@ public enum ImportOutcome
 /// <summary>
 /// A source-owned field the import did <em>not</em> apply because it was edited locally since the
 /// last import: the stored value differs from <c>lastImportedValue</c>, and the incoming value
-/// differs from the stored one. The stored (local) value is kept. Values are canonical strings
+/// differs from both (the source moved too). The stored (local) value is kept and
+/// <c>lastImportedValue</c> is not advanced, so the conflict recurs on every import until the local
+/// value is made equal to the source's. Values are canonical strings
 /// (ids as GUIDs, dates as yyyy-MM-dd, money as "1000.00 USD", lists comma-joined), null when empty.
 /// </summary>
 public sealed record FieldConflictDto(string Field, string? StoredValue, string? IncomingValue, string? LastImportedValue);

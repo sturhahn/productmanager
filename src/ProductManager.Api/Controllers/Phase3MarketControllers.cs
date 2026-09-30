@@ -260,7 +260,8 @@ public sealed class FirmRelationshipsController(AppDbContext db) : ApiController
 
     /// <summary>
     /// Creates an edge. With <c>sources</c>, an already-bound source record returns its edge (200)
-    /// instead, binding any listed records not bound yet.
+    /// instead, binding any listed records not bound yet; with none bound, an existing edge for the
+    /// same firm/product is a 409 (consolidate through the bulk import instead).
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(FirmProductRelationshipDto), StatusCodes.Status201Created)]
@@ -293,6 +294,12 @@ public sealed class FirmRelationshipsController(AppDbContext db) : ApiController
                 return CorrectionRequiredProblem(
                     $"The listed source records are already relationship {bound.Id} of firm {bound.FirmId} " +
                     $"and product {bound.ProductId}.");
+            if (bound is null && await db.FirmProductRelationships.AnyAsync(
+                    r => r.FirmId == request.FirmId && r.ProductId == request.ProductId, ct))
+                return ConflictProblem(
+                    "This firm already has a relationship with this product that no listed source record is bound " +
+                    "to. Bind source records to an existing edge deliberately through POST /api/firms/bulk " +
+                    "(relationship sources), which checks the episode; the model keeps one edge per firm/product.");
         }
 
         var relationship = bound;

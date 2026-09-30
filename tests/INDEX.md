@@ -26,7 +26,8 @@
 - `SourceImportTests.cs` — PRD6: source-identity firm import (same-name accounts, rename, adoption,
   unchanged), repeat-safe opportunity create/qualify/decide and sourced facts, correction-required
   409s, relationship end dates/episodes/consolidation, partial update + local-edit conflicts, the
-  binding unique index, and the `/api/source-bindings` listing.
+  binding unique index, the one-decision-fact-per-opportunity index, and the `/api/source-bindings`
+  listing.
 
 ## ProductManager.Cli.Tests — unit tests + contract-drift guard
 - `ApiContractDriftTests.cs` — guards CLI DTOs/enums/routes against
@@ -51,6 +52,13 @@
   nothing, the approach index spans every process, and project/firm references fall back to
   workspace- and market-wide listings (roadmap-only, dependency, opportunities-only and
   churn/arrival-only fragments).
+- `FakeSourceApi.cs` — stateful in-memory stand-in for the API's PRD6 import surface (firms bulk
+  import, opportunities lifecycle, facts, source bindings, paging) with write-fault injection
+  (500 before applying, or applied then response lost). Used by `SeedLoaderSourceImportTests`.
+- `SeedLoaderSourceImportTests.cs` — PRD6 loader behaviour: source identity for firms,
+  relationships, opportunities, churn and arrivals; rename, partial update, conflicts, end dates,
+  consolidation; lifecycle advance and correction-required exceptions; pagination; preflight,
+  dry run, report file, and fail-midway-then-rerun equals one clean run.
 - `SeedLoaderOpportunityDecisionTests.cs` — `SeedLoader.HasDecision` guard: an opportunity with a
   null `decidedDate` is left Open/Qualified rather than passed to `DecideOpportunityAsync`.
 - `SeedTallyTests.cs` — created/matched/applied counting logic.

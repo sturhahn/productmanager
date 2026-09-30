@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using ProductManager.Domain.Common;
 using ProductManager.Domain.Execution;
 using ProductManager.Domain.Facts;
 using ProductManager.Domain.Imports;
@@ -96,6 +97,13 @@ public class FactEventConfiguration : IEntityTypeConfiguration<FactEvent>
         b.HasIndex(x => x.RecordedDate);
         b.HasIndex(x => new { x.Kind, x.EffectiveDate });
         b.HasIndex(x => new { x.SubjectType, x.SubjectId });
+        // One decision per opportunity, enforced by the database: two overlapping identical decide
+        // calls both see an undecided row, and only this stops the second from appending a second
+        // fact. Kind is stored as its name; the quoted-identifier filter is valid on Postgres and SQLite.
+        b.HasIndex(x => x.SubjectId)
+            .IsUnique()
+            .HasFilter($"\"Kind\" = '{nameof(FactEventKind.OpportunityDecided)}'")
+            .HasDatabaseName("IX_FactEvents_OneDecisionPerOpportunity");
     }
 }
 

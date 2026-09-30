@@ -8,6 +8,7 @@ namespace ProductManager.Cli.Seed;
 public sealed class NameIndex
 {
     private readonly Dictionary<string, Guid> _byName;
+    private readonly HashSet<string> _ambiguous = [];
 
     public NameIndex() => _byName = new Dictionary<string, Guid>();
 
@@ -16,13 +17,19 @@ public sealed class NameIndex
         _byName = new Dictionary<string, Guid>();
         // First entry for a given (normalized) name wins — a seed file should not need to care
         // about pre-existing duplicate names in the API; it just adopts whichever it finds first.
+        // The duplicates are remembered, though, for callers that must not guess (firm names).
         foreach (var (name, id) in existing)
         {
             var key = Normalize(name);
-            if (!_byName.ContainsKey(key))
+            if (!_byName.TryGetValue(key, out var first))
                 _byName[key] = id;
+            else if (first != id)
+                _ambiguous.Add(key);
         }
     }
+
+    /// <summary>True when the listing this index was built from held several ids under this name.</summary>
+    public bool IsAmbiguous(string name) => _ambiguous.Contains(Normalize(name));
 
     public int Count => _byName.Count;
 

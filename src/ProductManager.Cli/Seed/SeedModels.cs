@@ -317,6 +317,11 @@ public sealed class SeedMarketDynamics
 
     // ---------- Phase 3: firm-level choice engine ----------
 
+    /// <summary>File-level default for the <c>sourceSystem</c>/<c>sourceInstance</c> of every
+    /// <see cref="SeedSourceRef"/> below that leaves them out (PRD6). A row that names its own
+    /// system/instance wins.</summary>
+    public SeedSourceDefaults? SourceDefaults { get; set; }
+
     public List<SeedChannel> Channels { get; set; } = [];
     public List<SeedIntegration> Integrations { get; set; } = [];
     public List<SeedFirm> Firms { get; set; } = [];
@@ -362,22 +367,68 @@ public sealed class SeedIntegration
     public string? Notes { get; set; }
 }
 
+// ---------- PRD6: source identity ----------
+
+/// <summary>The source system and instance every row in the file shares, so rows only carry
+/// <c>objectKind</c> + <c>sourceRecordId</c>. Take both from the discovery manifest:
+/// <c>sources[].sourceId</c> and the stable id inside <c>sources[].instance</c>.</summary>
+public sealed class SeedSourceDefaults
+{
+    public string? SourceSystem { get; set; }
+    public string? SourceInstance { get; set; }
+}
+
+/// <summary>Identity of one source record. <c>sourceSystem</c>/<c>sourceInstance</c> may be left out
+/// when <c>marketDynamics.sourceDefaults</c> supplies them. Compared exactly (case-sensitive).</summary>
+public sealed class SeedSourceRef
+{
+    public string? SourceSystem { get; set; }
+    public string? SourceInstance { get; set; }
+    public string ObjectKind { get; set; } = "";
+    public string SourceRecordId { get; set; } = "";
+}
+
 public sealed class SeedFirmRelationship
 {
     public string ProductName { get; set; } = "";
+
+    /// <summary>Empty = "undecomposed" on a legacy edge; on a source-bound edge empty keeps what is
+    /// stored (clear it with <c>clearFields: ["servedProcessIds"]</c>).</summary>
     public List<string> ServedProcessNames { get; set; } = [];
-    public double PriceLevel { get; set; } = 1.0;
+
+    /// <summary>Null = keep what is stored on a source-bound edge; 1.0 on a new or legacy one.</summary>
+    public double? PriceLevel { get; set; }
+
     public string? AcquisitionDate { get; set; }
+
+    /// <summary>Ends the relationship on that date. Omitting it never ends (or reopens) anything.</summary>
+    public string? EndDate { get; set; }
+
+    /// <summary>Source records this one edge stands for. Several = a deliberate consolidation.</summary>
+    public List<SeedSourceRef> Sources { get; set; } = [];
+
+    /// <summary>Source-bound edges only: acquisitionDate | endDate | pricePaidPerPeriod | servedProcessIds.</summary>
+    public List<string> ClearFields { get; set; } = [];
 }
 
 public sealed class SeedFirm
 {
+    /// <summary>The reviewed display name. Unique per market; two source accounts with the same
+    /// source name need two distinct names here.</summary>
     public string Name { get; set; } = "";
     public string? SegmentName { get; set; }
-    public string EpistemicStatus { get; set; } = "Observed";
+
+    /// <summary>Null = Observed on a new or legacy firm, keep what is stored on a source-bound one.</summary>
+    public string? EpistemicStatus { get; set; }
     public string? AttributesJson { get; set; }
     public string? Notes { get; set; }
     public List<SeedFirmRelationship> Relationships { get; set; } = [];
+
+    /// <summary>Source identity (PRD6). With it the firm is matched by its binding, not its name.</summary>
+    public SeedSourceRef? Source { get; set; }
+
+    /// <summary>Source-bound firms only: clientSegmentId | attributesJson | notes.</summary>
+    public List<string> ClearFields { get; set; } = [];
 }
 
 /// <summary>
@@ -390,7 +441,15 @@ public sealed class SeedFirm
 /// </summary>
 public sealed class SeedOpportunity
 {
+    /// <summary>Give this or <see cref="FirmSource"/>.</summary>
     public string FirmName { get; set; } = "";
+
+    /// <summary>The firm's source identity: use it when names are ambiguous or may be renamed.</summary>
+    public SeedSourceRef? FirmSource { get; set; }
+
+    /// <summary>Source identity (PRD6): the opportunity is matched by it, advanced through
+    /// qualify/decide as the file says, and never duplicated.</summary>
+    public SeedSourceRef? Source { get; set; }
     public string? ChannelName { get; set; }
     public string OpenedDate { get; set; } = "";
     public string? QualifiedDate { get; set; }
@@ -419,6 +478,20 @@ public sealed class SeedChurnEvent
     public string EffectiveDate { get; set; } = "";
     public string? Notes { get; set; }
 
+    /// <summary>Source event identity (PRD6): two churns on the same day stay two facts.</summary>
+    public SeedSourceRef? Source { get; set; }
+
+    /// <summary>Optional affected customer, written to the payload as <c>firmId</c>.</summary>
+    public string? FirmName { get; set; }
+    public SeedSourceRef? FirmSource { get; set; }
+
+    /// <summary>Optional product churned from, written to the payload as <c>productId</c>.</summary>
+    public string? ProductName { get; set; }
+
+    /// <summary>Provenance only; calibration ignores it. Defaults to <c>firmSource.sourceRecordId</c>.</summary>
+    public string? SourceCustomerRef { get; set; }
+    public string? SourceRelationshipRef { get; set; }
+
     /// <summary>Passed through as the fact's recordedAt — see <see cref="SeedOpportunity.RecordedDate"/>.</summary>
     public string? RecordedDate { get; set; }
 }
@@ -432,6 +505,9 @@ public sealed class SeedArrivalCount
     public string Month { get; set; } = "";
     public int Count { get; set; }
     public double Exposure { get; set; } = 1.0;
+
+    /// <summary>Source identity (PRD6); without it the row matches on (segment, month, flowKind).</summary>
+    public SeedSourceRef? Source { get; set; }
 
     /// <summary>Passed through as the fact's recordedAt — see <see cref="SeedOpportunity.RecordedDate"/>.</summary>
     public string? RecordedDate { get; set; }

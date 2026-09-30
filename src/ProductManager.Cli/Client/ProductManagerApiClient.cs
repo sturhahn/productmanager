@@ -567,11 +567,13 @@ public sealed class ProductManagerApiClient(HttpClient http)
     {
         string? title = null;
         string? detail = null;
+        string? type = null;
         try
         {
             var problem = await response.Content.ReadFromJsonAsync<ProblemDetailsDto>(JsonOptions, ct);
             title = problem?.Title;
             detail = problem?.Detail;
+            type = problem?.Type;
         }
         catch (JsonException)
         {
@@ -591,7 +593,7 @@ public sealed class ProductManagerApiClient(HttpClient http)
             }
         }
 
-        return new ApiRequestException(response.StatusCode, title, detail);
+        return new ApiRequestException(response.StatusCode, title, detail, type);
     }
 
     private static string Query(string path, params (string Key, object? Value)[] parameters)

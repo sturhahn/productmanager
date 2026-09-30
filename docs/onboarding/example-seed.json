@@ -473,6 +473,10 @@
   },
   "marketDynamics": {
     "marketName": "Mid-market 3PL warehouse software",
+    "sourceDefaults": {
+      "sourceSystem": "salesforce",
+      "sourceInstance": "00DEX000000HRBLAAA"
+    },
     "segmentStockStates": [
       {
         "segmentName": "Regional 3PLs",
@@ -834,6 +838,10 @@
     "firms": [
       {
         "name": "Bluewater Logistics",
+        "source": {
+          "objectKind": "Account",
+          "sourceRecordId": "001EX000000B001AAA"
+        },
         "segmentName": "Regional 3PLs",
         "epistemicStatus": "Observed",
         "attributesJson": "{\"crmAccountId\":\"ACC-3142\",\"warehouses\":6,\"region\":\"US-Midwest\"}",
@@ -847,7 +855,13 @@
               "Order Picking"
             ],
             "priceLevel": 0.85,
-            "acquisitionDate": "2025-05-01"
+            "acquisitionDate": "2025-05-01",
+            "sources": [
+              {
+                "objectKind": "Contract",
+                "sourceRecordId": "800EX000000D001AAA"
+              }
+            ]
           },
           {
             "productName": "Harborline Carrier Connect",
@@ -861,6 +875,10 @@
       },
       {
         "name": "Cargo Nine",
+        "source": {
+          "objectKind": "Account",
+          "sourceRecordId": "001EX000000B002AAA"
+        },
         "segmentName": "E-commerce Fulfillment",
         "epistemicStatus": "Inferred",
         "notes": "Competitor account. Palletto win confirmed by their published case study; module breakdown unknown.",
@@ -869,12 +887,22 @@
             "productName": "Palletto Cloud",
             "servedProcessNames": [],
             "priceLevel": 1.0,
-            "acquisitionDate": "2025-08-01"
+            "acquisitionDate": "2025-08-01",
+            "sources": [
+              {
+                "objectKind": "CompetitorInstall__c",
+                "sourceRecordId": "a0BEX000000E001AAA"
+              }
+            ]
           }
         ]
       },
       {
         "name": "Meridian Fulfillment",
+        "source": {
+          "objectKind": "Account",
+          "sourceRecordId": "001EX000000B003AAA"
+        },
         "segmentName": "E-commerce Fulfillment",
         "epistemicStatus": "Observed",
         "notes": "Prospect. Running spreadsheets and a carrier portal; open opportunity in the pipeline.",
@@ -884,6 +912,10 @@
     "opportunities": [
       {
         "firmName": "Bluewater Logistics",
+        "source": {
+          "objectKind": "Opportunity",
+          "sourceRecordId": "006EX000000A001AAA"
+        },
         "channelName": "Direct sales",
         "openedDate": "2025-01-13",
         "qualifiedDate": "2025-02-10",
@@ -901,6 +933,10 @@
       },
       {
         "firmName": "Cargo Nine",
+        "source": {
+          "objectKind": "Opportunity",
+          "sourceRecordId": "006EX000000A002AAA"
+        },
         "channelName": "Supply chain consultants",
         "openedDate": "2025-03-04",
         "qualifiedDate": "2025-04-02",
@@ -933,6 +969,10 @@
       },
       {
         "firmName": "Meridian Fulfillment",
+        "source": {
+          "objectKind": "Opportunity",
+          "sourceRecordId": "006EX000000A006AAA"
+        },
         "channelName": "Direct sales",
         "openedDate": "2026-07-06",
         "qualifiedDate": "2026-08-03",
@@ -950,6 +990,13 @@
       {
         "segmentName": "Regional 3PLs",
         "effectiveDate": "2025-06-30",
+        "source": {
+          "sourceSystem": "billing",
+          "sourceInstance": "harborline-billing",
+          "objectKind": "Cancellation",
+          "sourceRecordId": "CXL-1042"
+        },
+        "sourceCustomerRef": "CUST-0417",
         "notes": "Client wound down its third-party warehousing arm; not attributed to a competitor.",
         "recordedDate": "2025-07-31"
       }

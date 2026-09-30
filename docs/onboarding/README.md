@@ -499,8 +499,34 @@ fragments together, outside the repository. See [`review/README.md`](review/READ
 Both strategies use the same command:
 
 ```
-dotnet run --project src/ProductManager.Cli -- seed --file <path-to-file>
+dotnet run --project src/ProductManager.Cli -- seed --file <path-to-file> --dry-run
+dotnet run --project src/ProductManager.Cli -- seed --file <path-to-file> --report <package>/<file>.report.json
 ```
+
+### Dry run, report, resume
+
+- **Dry run first, every file.** `--dry-run` reads the API, decides every record and writes
+  nothing. It prints the plan per kind (created, matched, applied, updated, unchanged, exceptions)
+  and lists every problem, not just the first. Show the human the exceptions before applying.
+- **A normal run checks the same way before its first write.** A file with any problem - bad
+  enum or date, unresolvable or ambiguous reference, a source id used twice, two rows for one
+  firm/product edge, an impossible lifecycle (`decidedDate` without `outcome`, qualified before
+  opened) - loads nothing, prints every problem, and exits 1.
+- **Keep the report.** `--report <path>` writes one JSON row per record: `kind`, `key` (the natural
+  key), `source` (the source identity, when the row has one), `planned`, `outcome`, `reason`,
+  `conflicts`, plus the run's `problems` and `failure`. Store it in the import package next to the
+  decision register and the manifest.
+- **Resume = run the same file again.** Records are applied one by one in dependency order, and
+  there is **no transaction** across records or datasets: a run that stops midway (a refused
+  write, a lost connection) leaves what it applied. Every write is repeat-safe - natural-key
+  matched, or bound to its source record - so rerunning the same file finishes the job without
+  duplicates, including after a response that was lost in transit. Fix the cause of the stop
+  first; the report's `failure` names it.
+- **Exit codes**: 0 clean (including an all-unchanged rerun); 1 preflight problems or invalid
+  input (nothing written); 2 API unreachable; 3 not signed in; 4 the API refused a write (the run
+  stopped - fix and rerun); 5 finished, but some records are exceptions (listed as `EXCEPTION`
+  lines and in the report). Field conflicts (`CONFLICT` lines: a value edited in the app is kept)
+  are reported but do not change the exit code.
 
 ### Strategy A: one file per dataset, loaded in dependency order
 
@@ -510,8 +536,8 @@ default. It gives you a small blast radius per subagent and a readable tally per
 Order matters because `SeedLoader` resolves every cross-entity reference **by name against what the
 API already has**, not against the file - `src/ProductManager.Cli/Seed/NameIndex.cs` builds a
 case-insensitive, trimmed name-to-id index from the API's current contents. A name that has not
-been created yet raises a `SeedReferenceException`, surfaced as
-`Seed file '<path>' has a broken reference: ...`. So `03` cannot reference a segment that `02`
+been created yet is a preflight problem (`Seed file references '<name>', which was not found ...`),
+and a file with any problem loads nothing. So `03` cannot reference a segment that `02`
 has not loaded, and `12` cannot reference a firm that `11` has not loaded.
 
 Four resolution rules make a per-dataset fragment work without repeating the market
@@ -561,6 +587,18 @@ top-level entity by name, scoped to its parent, before creating it, so a second 
 of duplicating. Sub-resources the API upserts (team capacity, project effort demand, dependency
 edges, delivered-feature links, roadmap plan links) are simply reapplied.
 
+**Source identity** (PRD6) is the stronger rule for data exported from a system: firms,
+relationships, opportunities, churn events and arrival counts may carry a `source`
+(system, instance, object kind, record id - taken from the discovery manifest, see
+[`discovery/README.md`](discovery/README.md) section 9). Such a row is matched by its binding, not
+its name or date: a renamed account stays one firm, same-day deals and churns stay distinct, an
+open deal advances when a later export says it was won, and a changed decision is reported as
+correction-required instead of being rewritten. Rows without `source` keep the rules below
+unchanged. Choose per dataset, once: adding `source` to rows already loaded without it produces
+exceptions, not bindings. Details in
+[11-firms-and-relationships](datasets/11-firms-and-relationships.md) and
+[12-historical-facts](datasets/12-historical-facts.md).
+
 The exception is append-only facts and a few sub-resources with no natural-key upsert endpoint -
 coverage assessments, needs, integrations, opportunities, covariate observations, churn events,
 arrival counts. Those use hand-rolled duplicate matching, and the rules differ per entity. Read
@@ -581,7 +619,9 @@ Loaded <path>:
 ```
 
 `created` plus `matched` is the total the file described. On a second run of the same file, expect
-`created 0` across the board. A handful of upserted sub-resources report `applied` instead, because
+`created 0` across the board. Rows with source identity report on their own line -
+`updated`, `unchanged`, `exceptions` - and a rerun of an unchanged file shows `updated 0` and
+`exceptions 0` there. Each exception and conflict is also printed on its own line. A handful of upserted sub-resources report `applied` instead, because
 they have no create-versus-match story: `segmentStock`, `modulePenetration`,
 `channelSegmentReach`, `channelProductAffinity` and `firmRelationship`. Everything else the API
 upserts - team capacities, project effort demands, dependency edges, delivered-feature links,
@@ -670,10 +710,15 @@ table means calibration found no facts to fit, which usually means dataset 12 di
 | `dotnet ef migrations list` shows `(Pending)` | The API has not started against this database since the migration was added | Start the API (it migrates on startup), or `dotnet ef database update --project src/ProductManager.Api` |
 | CLI returns 401 | Stored token expired - lifetime is 720 minutes (`Auth:TokenLifetimeMinutes`) | `pm auth login --password productmanager-dev`; confirm with `pm auth whoami` |
 | CLI hits the wrong host | `~/.productmanager/config.json` holds a stale `baseUrl` | Re-run `auth login`, or pass `--base-url http://localhost:5072` |
-| `Seed file '<path>' has a broken reference: ...` | A name reference does not resolve: the referenced entity is in a later file, is misspelled, or the file is being loaded out of order | Load in `01`..`12` order; check spelling against what `pm ... list` returns. Matching is case-insensitive and trims whitespace (`NameIndex.cs`), so case is not the cause - a typo or ordering is |
+| A problem line `... Seed file references '<name>', which was not found ...` | A name reference does not resolve: the referenced entity is in a later file, is misspelled, or the file is being loaded out of order | Load in `01`..`12` order; check spelling against what `pm ... list` returns. Matching is case-insensitive and trims whitespace (`NameIndex.cs`), so case is not the cause - a typo or ordering is |
 | `Seed file '<path>' could not be parsed: ...` | Invalid JSON, or a key that is not on `SeedFile` | Validate the JSON; check every key against `src/ProductManager.Cli/Seed/SeedModels.cs` |
 | 400 with "recordedAt ... is in the future" | A `recordedDate` later than now. The ledger accepts backdating only (`src/ProductManager.Api/Controllers/ApiControllerBase.cs:40-52`) | Use a date at or before today. Backdating is intentional and supported - see [`../../seed/CLAUDE.md`](../../seed/CLAUDE.md) |
-| Re-running a seed duplicated opportunities, covariate observations, churn events or arrival counts | Those are append-only facts without a natural-key upsert endpoint; duplicate matching is hand-rolled per entity and does not always dedupe | Check the loader method in `SeedLoader.cs` and the dataset file's `## Loading and idempotency` before re-running. If duplicates landed, delete them with the matching `pm ... delete <id>` verb |
+| Re-running a seed duplicated opportunities, covariate observations, churn events or arrival counts | Those are append-only facts without a natural-key upsert endpoint; unsourced rows use hand-rolled duplicate matching, which collapses or misses by design | Give the rows `source` identity from the discovery manifest (datasets 11 and 12). If duplicates landed, delete them with the matching `pm ... delete <id>` verb |
+| `Seed file '<path>' failed preflight (N problem(s) above); nothing was written.` (exit 1) | The whole-file check found problems; each is listed with its record | Fix every listed row, then `--dry-run` again. Nothing was loaded, so there is nothing to undo |
+| Exit 5, `EXCEPTION ... Correction required: ...` | A sourced record already recorded differently: a changed decision or winner, a deal moved to another firm, a restated fact, or an older export reloaded after a newer one | Nothing was changed. Confirm with the human which is true; the loader does not rewrite the ledger. Keep the report with the register |
+| Exit 5, `EXCEPTION firm ... Indistinguishable same-name firms` | Two source accounts would share one display name | Give each a distinct, reviewed `name` in the file and rerun |
+| Exit 5, `EXCEPTION ... loaded earlier without source identity` | The row gained `source` after its record was loaded without it | Load that dataset without `source`, or have the earlier record resolved deliberately |
+| Exit 4 or 2 partway through a load | The API refused one write, or the connection dropped; everything before it was applied | Fix the cause (the report's `failure`), then run the same file again - it resumes without duplicates |
 | `dotnet build` fails with "framework 'Microsoft.NETCore.App' version '9.0.x' was not found" or NETSDK1045 | Only a 10.x (or 8.x) SDK is installed; every project targets `net9.0` | Install the .NET 9 SDK; verify with `dotnet --list-sdks` |
 | `docker compose version` reports `docker-compose version 1.x` | Compose v1; `docker compose up -d --wait` does not exist there | Install Docker Compose v2 (bundled with current Docker Desktop) |
 | Frontend loads but every request fails with a CORS error | `NEXT_PUBLIC_API_URL` points somewhere the API's CORS policy does not allow | The API allows `http://localhost:3000` by default (`Cors:AllowedOrigins`). Keep the frontend on port 3000, or add the origin to `appsettings.Development.json` |

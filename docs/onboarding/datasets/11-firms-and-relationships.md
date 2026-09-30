@@ -36,7 +36,7 @@ There is no installed `pm` binary.
    Accounts all carry these under different names - ask which field means what rather than
    guessing.
 2. **"How many accounts is that?"** Hundreds is fine - the loader sends the whole roster in one
-   `POST /api/firms/bulk` call (`SeedLoader.cs:764-782`). If the answer is thousands, **ask to
+   `POST /api/firms/bulk` call (`SeedLoader.LoadFirmsAsync`). If the answer is thousands, **ask to
    sample**: take every client and every actively-worked prospect, plus a random sample of the
    cold ones, and let the segment stocks in [06-segment-economics](06-segment-economics.md) carry
    the rest as synthetic fill. A roster is evidence, not a census.
@@ -61,8 +61,13 @@ There is no installed `pm` binary.
    a job ad, or a conversation. Default `Observed` for your own accounts, `Inferred` for
    competitor accounts you did not confirm directly.
 10. **"Is there anything else about these accounts worth keeping?"** -> `attributesJson`. Free-form
-    and never read by the engine or calibration (see Units) - useful for the CRM id, warehouse
-    count, region. Offer it, do not insist.
+    and never read by the engine or calibration (see Units) - useful for warehouse count, region.
+    Offer it, do not insist.
+11. **Do not ask for record ids - read them.** Every account and every contract row from a source
+    system gets `source` identity (see Data requirements) taken from the discovery manifest, so a
+    later import of the same export updates instead of duplicating, and a rename stays one firm.
+    Ask only when two accounts share a name: **"Which display name should each of these carry?"**
+    -> distinct `name` values. The loader never merges or renames them for you.
 
 **Do not ask about synthetic firms.** They are generated, not seeded - see Units.
 
@@ -70,13 +75,32 @@ There is no installed `pm` binary.
 
 ## Data requirements
 
-### `marketDynamics.firms[]` (`SeedFirm`, `src/ProductManager.Cli/Seed/SeedModels.cs:373-381`)
+### Source identity (`SeedSourceRef`, `marketDynamics.sourceDefaults`)
+
+A row with `source` is matched by that identity, not by name (PRD6). Four strings, compared exactly
+(case-sensitive, untrimmed), max 200 chars each:
+
+| Field | From the discovery manifest ([discovery/README.md](../discovery/README.md) section 9) |
+|---|---|
+| `sourceSystem` | `sources[].sourceId`, e.g. `salesforce` |
+| `sourceInstance` | the stable id inside `sources[].instance`: Salesforce `orgId`, Aha! `accountSubdomain`, Jira `siteUrl` |
+| `objectKind` | `sources[].objects[].objectType`, e.g. `Account` |
+| `sourceRecordId` | one entry of that object's `sourceIds` |
+
+`marketDynamics.sourceDefaults` (`{"sourceSystem": ..., "sourceInstance": ...}`) fills in the first
+two for every row that omits them, so rows carry only `objectKind` and `sourceRecordId`. A row may
+still name its own system/instance (a second source in the same file). A source record appears on
+exactly one row of a file; the loader refuses the file otherwise.
+
+### `marketDynamics.firms[]` (`SeedFirm`, `src/ProductManager.Cli/Seed/SeedModels.cs`)
 
 | Field | Required? | Type | Unit / allowed values | Notes |
 |---|---|---|---|---|
-| `name` | yes | string | max 200 chars | Natural key, scoped to the market, case-insensitive and trimmed. Opportunities in [12-historical-facts](12-historical-facts.md) reference it. |
+| `name` | yes | string | max 200 chars | Unique per market, case-insensitive and trimmed. Without `source` it is the match key; with `source` it is the **reviewed display name** (a changed name is a rename). Opportunities in [12-historical-facts](12-historical-facts.md) may reference it. |
+| `source` | no | `SeedSourceRef` | see above | Match by source identity. Recommended for every row that comes from a system. |
+| `clearFields` | no | list of strings | `clientSegmentId` \| `attributesJson` \| `notes` | Sourced rows only. Sets those fields to null. Never also supply a field you clear. |
 | `segmentName` | technically no | string | must already exist | **Treat it as required.** A firm with no segment is silently dropped from every firm-level run (`FirmLevelInputBuilder.cs:607-609` filters on `ClientSegmentId is not null`). |
-| `epistemicStatus` | no | string | `Observed` \| `Inferred` \| `Synthetic` | Exact member names, `src/ProductManager.Cli/Client/Enums.cs:108-113`. Defaults to `Observed`. |
+| `epistemicStatus` | no | string | `Observed` \| `Inferred` \| `Synthetic` | Exact member names, `src/ProductManager.Cli/Client/Enums.cs:108-113`. Omitted: `Observed` on a new or unsourced firm; a sourced firm keeps what is stored. |
 | `attributesJson` | no | string | **a JSON string** | Stored in a `jsonb` column (`SeamAndMarketConfigurations.cs:94`), so it must itself parse as JSON. In the seed file it is a JSON *string* whose content is JSON - escape the inner quotes. |
 | `notes` | no | string | free text | Good place for the CRM account id and the provenance of an inferred row. |
 | `relationships[]` | no | list | - | Empty list = a prospect. |
@@ -86,12 +110,16 @@ There is no installed `pm` binary.
 | Field | Required? | Type | Unit / allowed values | Notes |
 |---|---|---|---|---|
 | `productName` | yes | string | must already exist | Ours or a competitor's - same edge shape. One relationship per (firm, product). |
-| `servedProcessNames[]` | no | list of strings | must already exist | Empty means "whatever the product covers in this firm's segment" - a defined fallback, see Units. |
-| `priceLevel` | no | double | multiplier on list price, `[Range(0.0001, 1000)]` | 1.0 = list. `Phase3Contracts.cs:135-140`. Defaults to 1.0. |
+| `servedProcessNames[]` | no | list of strings | must already exist | Empty means "whatever the product covers in this firm's segment" - a defined fallback, see Units. On a sourced edge empty keeps what is stored. |
+| `priceLevel` | no | double | multiplier on list price, `[Range(0.0001, 1000)]` | 1.0 = list. `Phase3Contracts.cs`. Omitted: 1.0 on a new or unsourced edge; a sourced edge keeps what is stored. |
 | `acquisitionDate` | no | string | ISO `yyyy-MM-dd` | Null is accepted but costs you calibration exposure - see Units. |
+| `endDate` | no | string | ISO `yyyy-MM-dd` | The real end. Ends the edge on that date. Omitting it never ends, and never reopens, anything. |
+| `sources[]` | no | list of `SeedSourceRef` | see above | The source records this one edge stands for. Two or more = a deliberate consolidation. |
+| `clearFields` | no | list of strings | `acquisitionDate` \| `endDate` \| `pricePaidPerPeriod` \| `servedProcessIds` | Sourced edges only. `endDate` here reopens an edge. |
 
-Not settable from a seed file: `pricePaidPerPeriod` (the loader always sends null,
-`SeedLoader.cs:803`), `endDate`, and `notes` on the relationship. Use
+One row per (firm, product). The model keeps one episode per edge: two rows for the same product
+on one firm are refused before anything is written. Not settable from a seed file:
+`pricePaidPerPeriod` (always sent as null) and `notes` on the relationship - use
 `pm firm-relationship update` for those.
 
 ## Units and conversions
@@ -121,6 +149,8 @@ Not settable from a seed file: `pricePaidPerPeriod` (the loader always sends nul
   - Listing a subset is how you model a partial deployment, and it is what makes a cross-sell
     opportunity possible: cross-sell scopes are restricted to processes the firm does **not**
     already hold.
+- **`endDate` closes the exposure clock.** An ended edge contributes client-months only up to its
+  end date, and is inactive (`pm firm-relationship list --active-only true` leaves it out).
 - **`acquisitionDate` is the calibration exposure clock.** Every relationship with an
   `acquisitionDate` on or before the calibration as-of date contributes client-months to the
   denominators of `ChurnHazard` and `CrossSellRate` (`CalibrationInputBuilder.cs:135-147`,
@@ -206,39 +236,138 @@ undecomposed modules; Meridian Fulfillment has no relationships at all.
 }
 ```
 
+Variant - the same roster with source identity (Salesforce ids from the discovery fixture). The
+`name` values are the reviewed display names; `sources` binds the contract rows to their edges:
+
+```json
+{
+  "marketDynamics": {
+    "marketName": "Mid-market 3PL warehouse software",
+    "sourceDefaults": { "sourceSystem": "salesforce", "sourceInstance": "00DEX000000HRBLAAA" },
+    "firms": [
+      {
+        "name": "Bluewater Logistics",
+        "source": { "objectKind": "Account", "sourceRecordId": "001EX000000B001AAA" },
+        "segmentName": "Regional 3PLs",
+        "epistemicStatus": "Observed",
+        "relationships": [
+          {
+            "productName": "Harborline WMS",
+            "servedProcessNames": ["Inbound Receiving", "Inventory Control", "Order Picking"],
+            "priceLevel": 0.85,
+            "acquisitionDate": "2025-05-01",
+            "sources": [{ "objectKind": "Contract", "sourceRecordId": "800EX000000D001AAA" }]
+          }
+        ]
+      },
+      {
+        "name": "Cargo Nine",
+        "source": { "objectKind": "Account", "sourceRecordId": "001EX000000B002AAA" },
+        "segmentName": "E-commerce Fulfillment",
+        "epistemicStatus": "Inferred",
+        "relationships": [
+          {
+            "productName": "Palletto Cloud",
+            "acquisitionDate": "2025-08-01",
+            "sources": [{ "objectKind": "CompetitorInstall__c", "sourceRecordId": "a0BEX000000E001AAA" }]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Variant - a later, incremental import. Bluewater was renamed in the CRM (same id, so the same firm),
+Cargo Nine left Palletto on 30 June, and the reviewer cleared Bluewater's notes. Everything the rows
+leave out keeps its stored value, and Meridian (not in this file) is untouched:
+
+```json
+{
+  "marketDynamics": {
+    "marketName": "Mid-market 3PL warehouse software",
+    "sourceDefaults": { "sourceSystem": "salesforce", "sourceInstance": "00DEX000000HRBLAAA" },
+    "firms": [
+      {
+        "name": "Bluewater Logistics Group",
+        "source": { "objectKind": "Account", "sourceRecordId": "001EX000000B001AAA" },
+        "clearFields": ["notes"]
+      },
+      {
+        "name": "Cargo Nine",
+        "source": { "objectKind": "Account", "sourceRecordId": "001EX000000B002AAA" },
+        "relationships": [
+          {
+            "productName": "Palletto Cloud",
+            "endDate": "2026-06-30",
+            "sources": [{ "objectKind": "CompetitorInstall__c", "sourceRecordId": "a0BEX000000E001AAA" }]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
 ## Loading and idempotency
 
 ```
 pm seed --file <your-file>.json
 ```
 
-- Load order: `SeedLoader.RunAsync` runs workspace -> market -> **marketDynamics** -> teams ->
-  initiatives -> features -> projects -> roadmap (`SeedLoader.cs:23-48`). Within marketDynamics,
+- Check first: `pm seed --file <your-file>.json --dry-run` prints the plan (per kind: creates,
+  matches, updates, no-ops, exceptions) and writes nothing. A normal run does the same check first
+  and writes nothing at all if the file has a problem (bad enum or date, unresolvable name, a
+  source id used twice, two rows for one firm/product edge, `clearFields` on an unsourced row).
+- Load order: `SeedLoader.LoadAsync` runs workspace -> market -> **marketDynamics** -> teams ->
+  initiatives -> features -> projects -> roadmap (`SeedLoader.cs`). Within marketDynamics,
   firms load after channels and integrations and **before** opportunities
-  (`SeedLoader.cs:547-552`), so a single file can carry firms and the historical facts that
+  (`LoadMarketDynamicsAsync`), so a single file can carry firms and the historical facts that
   reference them.
 - A firms-only file loads on its own. `marketDynamics.marketName` must name a market that already
   exists, and the segment, product and process indexes the rows resolve against are built from the
   API's listing for that market rather than from this file - so `segmentName`, `productName` and
   `servedProcessNames` resolve against whatever [02-market-structure](02-market-structure.md)
   created in an earlier run.
-- **Firm duplicate rule**: the whole roster goes to `POST /api/firms/bulk` in one call, upserted by
-  **(market, name)** case-insensitively (`MarketDynamicsControllers.cs:125-150`). A re-run updates
-  rather than duplicates. What an update **overwrites**: `epistemicStatus`, `clientSegmentId`,
-  `attributesJson`, `notes`. Omitting `attributesJson` on a re-import therefore **clears** it -
-  always re-send the full row.
-- **Relationship rule**: upserted by **(firm, product)** (`MarketDynamicsControllers.cs:155-176`).
-  Re-running updates `servedProcessNames`, `priceLevel` and `acquisitionDate` in place. A
-  relationship **not** present in the file is never removed - dropping a row from the seed file
-  does not end the relationship. To end one, use `pm firm-relationship update <id> --end-date
-  yyyy-MM-dd`; to remove it, `pm firm-relationship delete <id>`.
-- A firm omitted from a later import is likewise not deleted.
-- Tally lines printed by `pm seed`:
+- The whole roster goes to `POST /api/firms/bulk` in one call (`MarketDynamicsControllers.cs`,
+  `BulkImport`); the API reports an outcome per firm and per relationship, and the loader prints
+  every exception and conflict it reports.
+- **Sourced firm rule** (row has `source`): matched by its source binding. A changed `name` is a
+  rename of the same firm (an exception if another firm in the market already has that name). An
+  unbound record adopts an existing firm of the same name - including one loaded earlier without
+  source - and binds it, **unless** that firm is already bound to a different record of the same
+  system, instance and object kind: then it is an exception ("indistinguishable same-name firms"),
+  nothing is merged, and the fix is a distinct reviewed `name`. **Partial update**: an absent field
+  keeps its stored value; `clearFields` sets one to null. A field edited in the app since the last
+  import (including one the source never sent) is not overwritten and the local value is kept. It is
+  reported as a `CONFLICT` line once the source's value changes, and on every run after that until
+  someone makes the app value equal the source's; while the source still sends what it last sent,
+  nothing is reported.
+- **Unsourced (legacy) firm rule**: upserted by **(market, name)** case-insensitively, exactly as
+  before PRD6. An update **overwrites** `clientSegmentId`, `attributesJson`, `notes` (and
+  `epistemicStatus`, default `Observed`), so omitting `attributesJson` **clears** it - always
+  re-send the full row. Do not mix: an unsourced row for a sourced firm overwrites it by name.
+- **Relationship rule**: one edge per **(firm, product)**. Sourced (`sources`): every listed record
+  is bound to that one edge, fields are a partial update like firms, and these are per-edge
+  exceptions that leave it untouched: a listed record already bound to another edge; an edge
+  already bound to records none of which the row lists (list them together to consolidate
+  deliberately); a new record whose dates describe a different episode (starts after the stored
+  end, or ends before the stored start). Unsourced: upserted by (firm, product), overwriting
+  `servedProcessNames`, `priceLevel` and `acquisitionDate`; `endDate` is written only when given.
+- **Omission never ends or deletes anything.** A relationship or firm missing from a later file is
+  left exactly as it is. End a relationship with `endDate`; remove one with
+  `pm firm-relationship delete <id>`.
+- Tally lines printed by `pm seed` (first load of the variant above, then an identical rerun):
   ```
-  firm                 created   3, matched   0
-  firmRelationship     applied   3
+  firm                 created   2, matched   0
+  firmRelationship     created   2, matched   0
+  ...
+  firm                 updated   0, unchanged   2, exceptions   0
+  firmRelationship     updated   0, unchanged   2, exceptions   0
   ```
-  `matched` counts firms the bulk import updated rather than created.
+  An unsourced firm the bulk import updated counts as `matched`; an unsourced relationship always
+  counts as `applied`. `--report <path>` writes the per-record outcomes as JSON; see the guide,
+  [section 10](../README.md#10-assembling-and-loading).
 - After loading the roster and the segment stocks, run `pm firm generate-synthetic --market <id>`
   to fill the unobserved market. It is safe to re-run: the previous synthetic population is
   replaced, not duplicated.
@@ -281,7 +410,17 @@ pm seed --file <your-file>.json
 - **Skipping competitors' clients.** Without those edges the engine sees a greenfield market: no
   switching costs, no integration term, and win rates that flatter us everywhere.
 - **Expecting a re-run to prune.** The import is an upsert, never a replace. Firms and
-  relationships you delete from the seed file stay in the database.
+  relationships you delete from the seed file stay in the database. An incremental file that
+  leaves a relationship out does not end it; `endDate` does.
+- **Omitting a field to clear it.** On a sourced row an absent field keeps the stored value; clear
+  it with `clearFields`. On an unsourced row there is no partial update - `clearFields` is refused.
+- **Giving two accounts the same `name`.** Two source records with one display name are not merged:
+  the second is an exception. Ask the reviewer for distinct names.
+- **Two rows for one firm and product.** Refused before anything is written. If two source records
+  really are one relationship, list both in that row's `sources`; if they are two episodes, raise
+  it for review - the model keeps one episode per edge.
+- **Hand-typing ids.** `sourceRecordId` values come from the discovery manifest's `sourceIds`, and
+  `sourceInstance` from its `instance`. A typo is a new record, not a match.
 - **Loading firms before the market.** `productName`, `segmentName` and `servedProcessNames`
   resolve against what the API already has; a miss aborts the load with
   `Seed file references '<name>', which was not found among the entities loaded so far.`

@@ -142,17 +142,21 @@ public sealed class FirmsController(AppDbContext db) : ApiControllerBase
         }
 
         var existing = await db.Firms.Where(f => f.MarketId == request.MarketId).ToListAsync(ct);
-        var byName = existing
-            .GroupBy(f => f.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
+        // Firm/relationship bindings (for same-name and consolidation checks) plus any binding of a key
+        // this request carries, whatever it targets, so a key bound elsewhere is a per-item exception.
         // ponytail: loads the workspace's firm/relationship bindings whole; page by key if rosters reach 100k+.
-        bool anySource = request.Firms.Any(f =>
-            f.Source is not null || (f.Relationships ?? []).Any(r => r.Sources is { Count: > 0 }));
-        var import = new RosterImport(market.WorkspaceId, request.MarketId, existing, anySource
+        var requestRecordIds = request.Firms
+            .SelectMany(f => (f.Relationships ?? []).SelectMany(r => r.Sources ?? []).Append(f.Source))
+            .OfType<SourceRef>()
+            .Select(s => s.SourceRecordId)
+            .Distinct()
+            .ToList();
+        var import = new RosterImport(market.WorkspaceId, request.MarketId, existing, requestRecordIds.Count > 0
             ? await db.SourceBindings
                 .Where(b => b.WorkspaceId == market.WorkspaceId
-                            && (b.TargetType == nameof(Firm) || b.TargetType == nameof(FirmProductRelationship)))
+                            && (b.TargetType == nameof(Firm) || b.TargetType == nameof(FirmProductRelationship)
+                                || requestRecordIds.Contains(b.SourceRecordId)))
                 .ToListAsync(ct)
             : []);
 
@@ -170,13 +174,15 @@ public sealed class FirmsController(AppDbContext db) : ApiControllerBase
             {
                 string name = item.Name.Trim();
                 ImportOutcome legacy;
-                if (!byName.TryGetValue(name, out firm))
+                // Looked up live, so sourced creates and renames earlier in this request are seen.
+                // ponytail: linear scan per legacy item; index by name if legacy rosters get large.
+                firm = existing.FirstOrDefault(f => string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase));
+                if (firm is null)
                 {
                     firm = new Firm(request.MarketId, name, item.EpistemicStatus ?? EpistemicStatus.Observed,
                         item.ClientSegmentId);
                     db.Firms.Add(firm);
                     existing.Add(firm);
-                    byName[name] = firm;
                     legacy = ImportOutcome.Created;
                 }
                 else
@@ -462,6 +468,9 @@ public sealed class FirmsController(AppDbContext db) : ApiControllerBase
 
             binding.RecordImportedValues(merge.ImportedJson);
         }
+
+        // Records consolidated onto this edge but not listed this time see the same edge state.
+        foreach (var binding in boundHere) binding.RecordImportedValues(merge.ImportedJson);
 
         var outcome = create ? ImportOutcome.Created
             : merge.Changed || addsSource ? ImportOutcome.Updated

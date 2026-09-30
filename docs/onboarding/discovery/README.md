@@ -142,6 +142,12 @@ Worked example: [`source-manifest.example.json`](source-manifest.example.json), 
 Never store credentials, tokens, session IDs or connection strings anywhere in the manifest or in saved
 raw responses. `sourceIds` and `sourceLinks` let a later step re-read a record without re-crawling.
 
+The manifest is also where seed rows get their **source identity** (PRD6). A row's `source` is
+`sourceSystem` = `sources[].sourceId`, `sourceInstance` = the stable id inside `sources[].instance`
+(Salesforce `orgId`, Aha! `accountSubdomain`, Jira `siteUrl`), `objectKind` = `objects[].objectType`
+and `sourceRecordId` = one of that object's `sourceIds`. Copy them exactly; they are compared
+case-sensitively. See [11-firms-and-relationships](../datasets/11-firms-and-relationships.md).
+
 ## 10. Consolidated questions and tier offer
 
 Build one question list from everything above: unresolved boundaries, field-authority choices,

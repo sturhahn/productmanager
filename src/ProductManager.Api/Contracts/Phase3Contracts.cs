@@ -104,7 +104,9 @@ public sealed record FirmProductRelationshipDto(
 /// <c>sources</c> makes the create repeat-safe: when any listed source record is already bound, the
 /// bound relationship is returned (200) and nothing is created; every listed record is bound to
 /// the relationship. Records bound to different relationships, or to another firm/product, are a
-/// 409. Without <c>sources</c> every call creates, as before.
+/// 409, and so is an unbound request when the firm already has an edge for this product — bind
+/// records onto an existing edge through <c>POST /api/firms/bulk</c>, which checks the episode.
+/// Without <c>sources</c> every call creates, as before.
 /// </para>
 /// </summary>
 public sealed record CreateFirmProductRelationshipRequest(
@@ -155,8 +157,12 @@ public sealed record UpdateFirmProductRelationshipRequest(
 /// <c>clientSegmentId</c>, <c>epistemicStatus</c>, <c>attributesJson</c>, <c>notes</c>. An absent (null)
 /// field keeps the stored value; <c>clearFields</c> lists the fields to set to null (allowed:
 /// <c>clientSegmentId</c>, <c>attributesJson</c>, <c>notes</c>). A field whose stored value was edited
-/// locally since the last import (it differs from what this source last imported) is not
-/// overwritten: the item reports it under <c>conflicts</c> and keeps the local value.
+/// locally since the last import (it differs from what this source last imported — for a field the
+/// source never sent, from the value stored when the binding first saw it) is not overwritten: the
+/// local value is kept, silently while the source still sends its last-imported value, and reported
+/// under <c>conflicts</c> once the source's value differs from it. A conflict does not advance the
+/// last-imported snapshot, so it is reported on every import until someone makes the local value
+/// equal the source's.
 /// </para>
 /// </summary>
 public sealed record FirmImportItem(

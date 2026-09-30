@@ -223,22 +223,22 @@ Variant - an exclusive reseller that carries only two products. `Harborline WMS`
 pm seed --file <your-file>.json
 ```
 
-- Load order: `SeedLoader.RunAsync` runs workspace -> market -> **marketDynamics** -> teams ->
-  initiatives -> features -> projects -> roadmap (`src/ProductManager.Cli/Seed/SeedLoader.cs:23-48`).
+- Load order: `SeedLoader.LoadAsync` runs workspace -> market -> **marketDynamics** -> teams ->
+  initiatives -> features -> projects -> roadmap (`src/ProductManager.Cli/Seed/SeedLoader.cs`).
   Inside marketDynamics, channels load first among the Phase 3 entities, then integrations, then
-  firms, then opportunities, then churn events, then arrival counts (`SeedLoader.cs:547-552`).
+  firms, then opportunities, then churn events, then arrival counts (`LoadMarketDynamicsAsync`).
   Channels must therefore exist before [12-historical-facts](12-historical-facts.md) references
   them by name - in the same file or an earlier run.
 - **Channel duplicate rule**: matched by name within the market (case-insensitive, trimmed) before
-  creating (`SeedLoader.cs:701-712`, `NameIndex.cs`). A re-run matches. **A matched channel's
+  creating (`SeedLoader.LoadChannelsAsync`, `NameIndex.cs`). A re-run matches. **A matched channel's
   `description`, `originatesOpportunities` and `carriesOnlyListedProducts` are NOT updated** - only
   its reach and affinity rows are re-applied. To change those three, use `pm channel update`.
 - **Reach and affinity rows are PUT upserts** keyed by segment / by product, re-applied on every
-  run (`SeedLoader.cs:714-727`). Changing a number in the file and re-running does update it.
+  run (`LoadChannelsAsync`). Changing a number in the file and re-running does update it.
   Removing a row from the file does **not** delete it - use `pm channel remove-segment-reach` or
   `pm channel remove-product-affinity`.
 - **Integration duplicate rule**: no natural key. The loader lists the integrations touching
-  product A and matches **either ordering** of the pair before creating (`SeedLoader.cs:733-758`).
+  product A and matches **either ordering** of the pair before creating (`LoadIntegrationsAsync`).
   A matched edge is left alone, so **editing `qualityScore` in the seed file and re-running has no
   effect** - use `pm integration update <id> --quality <n>`.
 - Tally lines printed by `pm seed`:

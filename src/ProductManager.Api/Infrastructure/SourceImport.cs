@@ -85,11 +85,14 @@ internal static class ImportValues
 
 /// <summary>
 /// Partial update of one source-bound row's source-owned fields, one field at a time. An absent
-/// field keeps the stored value; a present (or explicitly cleared) one is applied — unless the
-/// stored value was edited locally since the last import through this binding (stored ≠ last
-/// imported), in which case the local value is kept and a conflict is reported. Nothing is written
-/// to the row here: <see cref="Merge{T}"/> returns the value to store, so the caller can still
-/// refuse the whole item before touching anything.
+/// field keeps the stored value (and, the first time, records it as the baseline a later local edit
+/// is detected against). A present (or explicitly cleared) one is applied — unless the stored value
+/// was edited locally since the last import through this binding (stored ≠ last imported). Then the
+/// local value is kept: silently while the source still sends what it last sent, and as a reported
+/// conflict once the source's value moves. The snapshot is left as it was after a conflict, so the
+/// conflict is reported on every import until a person makes the local value equal the source's.
+/// Nothing is written to the row here: <see cref="Merge{T}"/> returns the value to store, so the
+/// caller can still refuse the whole item before touching anything.
 /// </summary>
 internal sealed class FieldMerge(string? lastImportedJson)
 {
@@ -112,8 +115,14 @@ internal sealed class FieldMerge(string? lastImportedJson)
 
     public T Merge<T>(string field, T stored, bool present, T incoming, Func<T, string?> canonical, bool json = false)
     {
-        if (!present) return stored;
-        string? storedValue = canonical(stored), incomingValue = canonical(incoming);
+        string? storedValue = canonical(stored);
+        if (!present)
+        {
+            _imported.TryAdd(field, storedValue);
+            return stored;
+        }
+
+        string? incomingValue = canonical(incoming);
         if (Same(storedValue, incomingValue, json))
         {
             _imported[field] = incomingValue;
@@ -122,7 +131,8 @@ internal sealed class FieldMerge(string? lastImportedJson)
 
         if (_lastImported is not null && _lastImported.TryGetValue(field, out var last) && !Same(storedValue, last, json))
         {
-            Conflicts.Add(new FieldConflictDto(field, storedValue, incomingValue, last));
+            if (!Same(incomingValue, last, json))
+                Conflicts.Add(new FieldConflictDto(field, storedValue, incomingValue, last));
             return stored;
         }
 

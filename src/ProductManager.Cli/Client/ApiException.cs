@@ -17,12 +17,19 @@ public sealed class ApiConnectionException(string baseUrl, Exception inner)
 }
 
 /// <summary>The API responded, but with a non-success status. Carries the RFC 7807 details when present.</summary>
-public sealed class ApiRequestException(HttpStatusCode statusCode, string? title, string? detail)
+public sealed class ApiRequestException(HttpStatusCode statusCode, string? title, string? detail, string? type = null)
     : ApiClientException(BuildMessage(statusCode, title, detail))
 {
+    /// <summary>The ProblemDetails <c>type</c> the API sends when a restated decision or sourced fact
+    /// differs from what is recorded: nothing was changed, and a retry will not help.</summary>
+    public const string CorrectionRequiredType = "urn:productmanager:problem:correction-required";
+
     public HttpStatusCode StatusCode { get; } = statusCode;
     public string? Title { get; } = title;
     public string? Detail { get; } = detail;
+    public string? Type { get; } = type;
+
+    public bool IsCorrectionRequired => StatusCode == HttpStatusCode.Conflict && Type == CorrectionRequiredType;
 
     private static string BuildMessage(HttpStatusCode statusCode, string? title, string? detail)
     {

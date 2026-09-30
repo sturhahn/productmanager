@@ -283,6 +283,11 @@ namespace ProductManager.Api.Persistence.Migrations
 
                     b.HasIndex("RecordedDate");
 
+                    b.HasIndex("SubjectId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_FactEvents_OneDecisionPerOpportunity")
+                        .HasFilter("\"Kind\" = 'OpportunityDecided'");
+
                     b.HasIndex("WorkspaceId");
 
                     b.HasIndex("Kind", "EffectiveDate");

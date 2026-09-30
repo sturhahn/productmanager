@@ -168,11 +168,10 @@ Tally line printed by the CLI (`src/ProductManager.Cli/Commands/SeedCommand.cs` 
 
 Items are not counted in the tally. A second run prints `roadmap created 0, matched 1`.
 
-Failure modes: an `items[].projectName` that does not resolve stops the load with "Seed file
-'<path>' has a broken reference: Seed file references '<name>' ...". Because the roadmap is
-created before its items are planned, the roadmap itself already exists on the next run and is
-matched. `end` before `start` is rejected by the API ("Planned end cannot precede planned
-start.") for that item only; earlier items stay planned.
+Failure modes: an `items[].projectName` that does not resolve is a preflight problem ("Seed file
+references '<name>' ..."), and nothing in the file is written, the roadmap included. `end`
+before `start` is rejected by the API ("Planned end cannot precede planned start.") and stops the
+run at that item; earlier items stay planned, and rerunning the fixed file resumes.
 
 ## Verification
 

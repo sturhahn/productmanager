@@ -45,24 +45,36 @@ There is no installed `pm` binary.
 5. **"When did each of these facts enter your systems?"** -> `recordedDate`. Default: omit it, and
    the server stamps now. Set it deliberately when you genuinely know - see Units.
 6. **"How many clients did you lose, and when?"** -> one `churnEvent` per lost client
-   relationship, dated when the client actually left. If the user has a monthly churn count rather
-   than dates, ask for dates anyway: the loader deduplicates on (segment, exact date), so three
-   churns in one month need three distinct dates.
+   relationship, dated when the client actually left. Give each one the source record it came
+   from (`source`): then two churns on the same day stay two. Without a source the loader
+   deduplicates on (segment, exact date), so same-day churns collapse. Never shift a date to dodge
+   that; add the source instead. Ask which customer churned, too: `firmSource` / `firmName`,
+   `productName` and `sourceCustomerRef` go into the fact's provenance.
 7. **"How many firms entered each segment per month, and how big was the prospect pool?"** ->
    `arrivalCounts`. Two different flows, see Units. Many users have neither; that is fine, skip
    them and leave those parameters asserted.
 8. **"Is your CRM the source of record, or is there a finance system that disagrees?"** Pick one
    and say which in `notes`. Do not merge two sources into one ledger without a rule.
+9. **Do not ask for record ids - read them** from the discovery manifest (`sourceIds`): every
+   opportunity and churn row gets `source` identity, as in
+   [11-firms-and-relationships](11-firms-and-relationships.md#data-requirements). That is what lets
+   a later export of the same pipeline advance open deals instead of duplicating them.
 
 **Consequential choices** here: how stages and null amounts map to outcomes, whether an add-on for an existing customer is a cross-sell or a win, which system is the source of record, and the trustworthy window (`commercialClassification`). These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
 
 ## Data requirements
 
-### `marketDynamics.opportunities[]` (`SeedOpportunity`, `src/ProductManager.Cli/Seed/SeedModels.cs:385-415`)
+Source identity (`source`, `firmSource`, `marketDynamics.sourceDefaults`) has the shape described in
+[11-firms-and-relationships](11-firms-and-relationships.md#data-requirements): four exact strings,
+system and instance usually inherited from `sourceDefaults`.
+
+### `marketDynamics.opportunities[]` (`SeedOpportunity`, `src/ProductManager.Cli/Seed/SeedModels.cs`)
 
 | Field | Required? | Type | Unit / allowed values | Notes |
 |---|---|---|---|---|
-| `firmName` | yes | string | must already exist | From [11-firms-and-relationships](11-firms-and-relationships.md). |
+| `source` | no | `SeedSourceRef` | e.g. `Opportunity` + the CRM id | Match by source identity: advanced, never duplicated. Recommended. |
+| `firmName` | this or `firmSource` | string | must already exist | From [11-firms-and-relationships](11-firms-and-relationships.md). Refused when the name matches more than one firm. |
+| `firmSource` | this or `firmName` | `SeedSourceRef` | the firm's `source` | Survives renames and same-name firms. The firm must already be bound (loaded with that `source`). |
 | `channelName` | no | string | must already exist | Null = channel unknown/direct. |
 | `openedDate` | yes | string | ISO `yyyy-MM-dd` | Non-nullable; never `""`. Part of the duplicate key. |
 | `qualifiedDate` | no | string | ISO `yyyy-MM-dd` | Must not precede `openedDate` (`Dynamics.cs:91-99`). Recorded on the row; **not read by calibration**. |
@@ -81,8 +93,15 @@ There is no installed `pm` binary.
 |---|---|---|---|---|
 | `segmentName` | yes | string | must already exist | The fact's subject is the segment, not the firm. |
 | `effectiveDate` | yes | string | ISO `yyyy-MM-dd` | When the client actually left. Non-nullable; never `""`. |
+| `source` | no | `SeedSourceRef` | e.g. a billing cancellation id | Two same-day churns with different sources stay two facts. |
+| `firmName` / `firmSource` | no | string / `SeedSourceRef` | must already exist | The customer that left, written to the payload as `firmId`. |
+| `productName` | no | string | must already exist | The product left, written as `productId`. |
+| `sourceCustomerRef` | no | string | source customer id | Provenance for reconciliation. Defaults to `firmSource.sourceRecordId`. |
+| `sourceRelationshipRef` | no | string | source contract/subscription id | Provenance for reconciliation. |
 | `notes` | no | string | free text | |
 | `recordedDate` | no | string | ISO `yyyy-MM-dd`, never in the future | Omitted = stamped now. |
+
+The payload fields after `clientSegmentId` are provenance only; calibration ignores them.
 
 ### `marketDynamics.arrivalCounts[]` (`SeedArrivalCount`)
 
@@ -93,6 +112,7 @@ There is no installed `pm` binary.
 | `month` | yes | string | ISO `yyyy-MM-dd` | Any day in the month; the loader normalizes to the 1st. Non-nullable; never `""`. |
 | `count` | yes | int | whole firms observed that month | 0 is meaningful evidence - see Units. |
 | `exposure` | no | double | see Units | Defaults to 1.0. Must be **> 0** or the observation is dropped (`CalibrationInputBuilder.cs:122`). |
+| `source` | no | `SeedSourceRef` | the report or extract row id | Match by source identity instead of (segment, month, flowKind). |
 | `recordedDate` | no | string | ISO `yyyy-MM-dd`, never in the future | Omitted = stamped now. |
 
 ### CRM field mapping
@@ -112,7 +132,7 @@ There is no installed `pm` binary.
 ## Units and conversions
 
 - **All dates are ISO `yyyy-MM-dd`.** The loader converts each to UTC midnight
-  (`SeedLoader.cs:962`); there are no times of day in this dataset.
+  (`SeedLoader.ToUtcMidnight`); there are no times of day in this dataset.
 - **`effectiveDate` vs `recordedDate` is the bi-temporal pair.** Effective = when it was true;
   recorded = when it entered our ledger (`src/ProductManager.Domain/Facts/FactEvent.cs:5-21`).
   For an opportunity the effective date is `decidedDate` and the recorded date is `recordedDate`.
@@ -253,21 +273,52 @@ arrival counts.
 }
 ```
 
-Variant - three churn events in the same month. They need three distinct `effectiveDate` values,
-because the loader deduplicates on (segment, exact effective date):
+Variant - an incremental import with source identity, loaded after the example seed. The open
+Meridian deal (`006EX000000A006AAA`) is now won: the loader finds it by its source binding and
+advances it - one decide call, one `OpportunityDecided` fact. Two cancellations on the same day in
+one segment both land, because each has its own source record. The firm is referenced by source,
+so a rename in the CRM does not break the reference:
 
 ```json
 {
   "marketDynamics": {
     "marketName": "Mid-market 3PL warehouse software",
+    "sourceDefaults": { "sourceSystem": "salesforce", "sourceInstance": "00DEX000000HRBLAAA" },
+    "opportunities": [
+      {
+        "firmSource": { "objectKind": "Account", "sourceRecordId": "001EX000000B003AAA" },
+        "source": { "objectKind": "Opportunity", "sourceRecordId": "006EX000000A006AAA" },
+        "channelName": "Direct sales",
+        "openedDate": "2026-07-06",
+        "qualifiedDate": "2026-08-03",
+        "decidedDate": "2026-08-24",
+        "outcome": "Won",
+        "scopeProcessNames": ["Inventory Control", "Cycle Counting", "Order Picking"],
+        "winningProductName": "Harborline WMS",
+        "recordedDate": "2026-08-25"
+      }
+    ],
     "churnEvents": [
-      { "segmentName": "E-commerce Fulfillment", "effectiveDate": "2025-10-03", "recordedDate": "2025-10-31" },
-      { "segmentName": "E-commerce Fulfillment", "effectiveDate": "2025-10-17", "recordedDate": "2025-10-31" },
-      { "segmentName": "E-commerce Fulfillment", "effectiveDate": "2025-10-28", "recordedDate": "2025-11-30" }
+      {
+        "segmentName": "Regional 3PLs",
+        "effectiveDate": "2026-06-30",
+        "source": { "sourceSystem": "billing", "sourceInstance": "harborline-billing", "objectKind": "Cancellation", "sourceRecordId": "CXL-1107" },
+        "sourceCustomerRef": "CUST-0502",
+        "recordedDate": "2026-07-02"
+      },
+      {
+        "segmentName": "Regional 3PLs",
+        "effectiveDate": "2026-06-30",
+        "source": { "sourceSystem": "billing", "sourceInstance": "harborline-billing", "objectKind": "Cancellation", "sourceRecordId": "CXL-1108" },
+        "sourceCustomerRef": "CUST-0519",
+        "recordedDate": "2026-07-02"
+      }
     ]
   }
 }
 ```
+
+Without `source`, those two churns would collapse into one (legacy (segment, date) matching).
 
 ## Loading and idempotency
 
@@ -275,50 +326,75 @@ because the loader deduplicates on (segment, exact effective date):
 pm seed --file <your-file>.json
 ```
 
-- Load order: `SeedLoader.RunAsync` runs workspace -> market -> **marketDynamics** -> teams ->
-  initiatives -> features -> projects -> roadmap (`SeedLoader.cs:23-48`). Within marketDynamics
+- Check first: `pm seed --file <your-file>.json --dry-run` prints the plan - per kind, how many
+  records it would create, match, update (advance), leave unchanged, and which are exceptions -
+  and writes nothing. A normal run checks the same way first and writes nothing if the file has
+  a problem: a bad date or enum, an unresolvable or ambiguous firm, a source id used twice,
+  `decidedDate` without `outcome` (or the reverse), a `Won` without `winningProductName`, or dates
+  out of order (qualified or decided before opened, decided before qualified).
+- Load order: `SeedLoader.LoadAsync` runs workspace -> market -> **marketDynamics** -> teams ->
+  initiatives -> features -> projects -> roadmap (`SeedLoader.cs`). Within marketDynamics
   these load last: channels, integrations, firms, **opportunities, churn events, arrival counts**
-  (`SeedLoader.cs:547-552`). So one file can carry firms and their history.
+  (`LoadMarketDynamicsAsync`). So one file can carry firms and their history.
 - A facts-only file loads on its own. `marketDynamics.marketName` must name an existing market;
   the segment, product, process and channel indexes come from the API's listing for that market,
   and an opportunity's `firmName` is looked up first among the firms this file imported and then
   in a paged listing of every firm in the market, fetched once and only on the first miss
-  (`SeedLoader.FirmResolver`, `SeedLoader.cs:1078-1101`). So the `firms` block from
+  (`FirmResolver`, `src/ProductManager.Cli/Seed/SeedLoader.Sources.cs`). So the `firms` block from
   [11-firms-and-relationships](11-firms-and-relationships.md) does not have to be repeated here.
 - **Opportunities are loaded through the real lifecycle** - create, then qualify if
   `qualifiedDate` is set, then decide if `decidedDate` is set - so the API appends the same
   `OpportunityDecided` fact a live decision would. That fact, not the row, is what calibration
-  reads (`SeedLoader.cs:815-872`).
+  reads (`LoadOpportunitiesAsync`).
   - **A null `decidedDate` leaves the entry live**: stage `Open`, or `Qualified` if
     `qualifiedDate` was set. It is never pushed through the decide call, and `outcome` /
-    `winningProductName` are meaningless for it (`SeedLoader.HasDecision`, `SeedLoader.cs:881`).
+    `winningProductName` are meaningless for it (`SeedLoader.HasDecision`).
   - `recordedDate` is passed as `recordedAt` on the **decide** call only. It has no effect on an
     undecided entry.
-- **Opportunity duplicate rule**: there is no natural key. For each firm the loader lists existing
-  opportunities and matches on **(opened date, exact set of scope process ids)**
-  (`SeedLoader.cs:827-842`). A match is skipped and left alone - **never re-decided**, because a
-  decided opportunity refuses a second decide. Consequences:
-  - Two genuinely different deals at the same firm, opened the same day, with the same scope
-    collapse into one. Vary the opened date or the scope if that is real.
-  - Changing an outcome in the seed file and re-running does nothing. Fix it with
-    `pm opportunity decide` on a fresh opportunity, or delete and reload.
-- **Churn duplicate rule**: the ledger is append-only, so the loader queries for an existing
-  `Churn` fact on **(segment, exact effectiveDate)** and skips if it finds one
-  (`SeedLoader.cs:883-908`). Two churns in one segment on the same day collapse to one.
-- **Arrival duplicate rule**: matched on **(segment, month, flowKind)** - the loader queries the
-  month window and then parses each candidate fact's payload for `flowKind`
-  (`SeedLoader.cs:910-937`). `month` is normalized to the 1st of its month before both the query
-  and the write, so `2025-06-17` and `2025-06-01` are the same observation.
-  - **Caveat worth knowing** (`SeedLoader.cs:939-960`): the payload column is `jsonb` and Postgres
+- **Sourced opportunity rule** (row has `source`): matched by its source binding, never by date.
+  Two deals at one firm opened the same day with the same scope both import. The row is then
+  **advanced** to what the file says, each step once: an open deal takes changed `channelName`,
+  `notes`, `crossSellModuleProductName` and `scopeProcessNames` (fields the row leaves out keep
+  their stored value), then qualify, then decide. The API makes every step repeat-safe, so a rerun
+  after a lost response neither duplicates the deal nor appends a second decision fact.
+- **The correction-required boundary.** An import advances records; it never rewrites history.
+  These are reported as `EXCEPTION ... Correction required` and change nothing: a decided deal
+  whose file row now shows a different outcome, winner or decision date (or shows it still open);
+  a qualification date that differs from the stored one; a deal the file now places at a different
+  firm; a sourced churn or arrival whose date, subject or payload differs from the fact already
+  recorded for that source. The run carries on with the other records and exits with code 5. The
+  stored decision and its ledger fact stay; correcting the ledger is a deliberate step outside the
+  loader.
+- **A record loaded earlier without source identity** that matches a sourced row on the legacy key
+  (same firm, opened day and scope; same segment and day; same segment, month and flowKind) is an
+  exception, not a second copy: the API cannot attach a source to an existing opportunity or fact,
+  and a copy would count twice in calibration. Keep loading that dataset without `source`.
+- **Unsourced opportunity rule** (pre-PRD6, unchanged): for each firm the loader lists existing
+  opportunities (every page) and matches on **(opened date, exact set of scope process ids)**. A
+  match is skipped and left alone - never re-decided. Two deals at one firm opened the same day
+  with the same scope collapse into one, and changing an outcome and re-running does nothing.
+- **Churn rule**: with `source`, matched by the binding - same-day churns stay distinct. Without,
+  the loader skips a (segment, exact effectiveDate) pair that already has a `Churn` fact, so two
+  unsourced churns in one segment on the same day collapse to one.
+- **Arrival rule**: with `source`, matched by the binding. Without, matched on **(segment, month,
+  flowKind)** - the loader queries the month window (every page) and then parses each candidate
+  fact's payload for `flowKind` (`LoadArrivalCountsAsync`). `month` is normalized to the 1st of its
+  month before both the query and the write, so `2025-06-17` and `2025-06-01` are the same
+  observation.
+  - **Caveat worth knowing** (`PayloadFlowKindEquals`): the payload column is `jsonb` and Postgres
     re-serializes it with a space after each colon, so this match *must* parse the JSON rather than
     compare text. It does. But because the match is on (segment, month, flowKind) only, **editing
     `count` or `exposure` and re-running is a no-op** - the existing fact wins.
-- Tally lines printed by `pm seed`:
+- Tally lines printed by `pm seed` (the example above, then the incremental variant):
   ```
   opportunity          created   4, matched   0
   churnEvent           created   1, matched   0
   arrivalCount         created   2, matched   0
+  ...
+  churnEvent           created   2, matched   0
+  opportunity          updated   1, unchanged   0, exceptions   0
   ```
+  Rerunning the incremental file prints `unchanged` for every record and exits 0.
 
 ## Verification
 
@@ -366,11 +442,17 @@ pm seed --file <your-file>.json
   nobody.
 - **Recording the winner only for our wins.** A `Lost` deal should still carry the competitor's
   product in `winningProductName` - it is the evidence of who beats us where.
-- **Several churn events on the same date in the same segment.** All but the first are silently
-  skipped. Use the real dates.
+- **Several unsourced churn events on the same date in the same segment.** All but the first are
+  skipped. Give each its `source`; never invent dates to keep them apart.
 - **Skipping months with zero arrivals.** A zero is evidence; omitting it biases the fitted rate
   upward.
-- **Expecting a re-run to correct a number.** Matched opportunities are never re-decided and
-  matched facts are never rewritten - the ledger is append-only by design.
+- **Expecting a re-run to correct a decision or a number.** Decided opportunities are never
+  re-decided and recorded facts are never rewritten - the ledger is append-only by design. With
+  source identity the difference is reported as a correction-required exception (exit code 5);
+  without it, it is silently matched and left alone.
+- **Reloading an older export.** A file that still shows a deal open after a newer file decided it
+  is a correction-required exception, not a reopening. Load exports in order.
+- **Adding `source` to rows already loaded without it.** Those rows become exceptions (see above);
+  keep a dataset's first identity choice.
 - **Referencing a firm, channel or product that has not loaded yet.** The load aborts with
   `Seed file references '<name>', which was not found among the entities loaded so far.`

@@ -77,8 +77,9 @@
   entities.
 - `Configurations/SimulationAndFactsConfigurations.cs` — EF configs: AssumptionSet, Parameter,
   CalibrationRun, SimulationRun, FactEvent, SourceBinding (unique per workspace + source key).
-- `Migrations/` — five EF migrations (`InitialSchema`, `Phase2`, `Phase3`,
-  `AddInitiativeStrategicIntent`, `ReliableSourceImports`) + current model snapshot. Postgres-only; SQLite tests use
+- `Migrations/` — six EF migrations (`InitialSchema`, `Phase2`, `Phase3`,
+  `AddInitiativeStrategicIntent`, `ReliableSourceImports`, `OneDecisionFactPerOpportunity`) + current
+  model snapshot. Postgres-only; SQLite tests use
   `EnsureCreatedAsync` from the live model instead (see `CLAUDE.md` — nothing enforces the two
   stay in sync).
 

@@ -14,6 +14,14 @@
   assessments, needs, integrations, opportunities, and append-only facts like covariate
   observations/churn events/arrival counts) use hand-rolled duplicate-matching instead — check
   `SeedLoader.cs` for the specific rule before assuming every entity type dedupes on name alone.
+  Rows may instead carry PRD6 source identity (`source`, with `marketDynamics.sourceDefaults`),
+  matched by binding - see `docs/onboarding/datasets/11-firms-and-relationships.md` and `12-historical-facts.md`.
+  **These three demo files deliberately carry none**: they are the legacy-compatibility fixtures,
+  and adding `source` to rows an existing database loaded without it produces exceptions, not
+  bindings. `docs/onboarding/example-seed.json` is the sourced example.
+- **`pm seed` checks the whole file before writing** (dry-run pass) and writes nothing if any row
+  has a problem; `--dry-run` stops there and prints the plan, `--report <path>` writes per-record
+  outcomes. A load that stops midway resumes by running the same file again.
 - **References in the JSON are by name, not by id** (`SeedModels.cs` POCOs are name-referenced)
   — because ids are self-assigned by the Domain (see Domain's `CLAUDE.md`) and don't exist until
   the API creates the row. Keep new seed entries name-referenced; don't hardcode a Guid into

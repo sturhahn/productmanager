@@ -81,10 +81,15 @@
   different (fact, opportunity firm) → 409 with `type = ProblemTypes.CorrectionRequired`
   (`CorrectionRequiredProblem` in `ApiControllerBase`). Qualify/decide are idempotent for every
   opportunity; a different decision/qualification date → the same correction-required 409. Nothing
-  ever rewrites or deletes a fact.
+  ever rewrites or deletes a fact. The partial unique index `IX_FactEvents_OneDecisionPerOpportunity`
+  (SubjectId where Kind = 'OpportunityDecided') is what stops two overlapping decide calls from both
+  appending; the loser gets the ordinary unique-violation 409 and its retry returns 200.
 - Source-bound bulk items are partial updates through `FieldMerge` (`Infrastructure/SourceImport.cs`):
-  absent keeps, `clearFields` clears, and a stored value that differs from the binding's
-  `ImportedValuesJson` snapshot is a local edit → reported conflict, local value kept. The field
+  absent keeps (and records the stored value as the field's baseline the first time), `clearFields`
+  clears, and a stored value that differs from the binding's `ImportedValuesJson` snapshot is a local
+  edit → local value kept; reported as a conflict only when the incoming value also differs from the
+  snapshot, and the snapshot is not advanced, so it recurs until resolved. Every binding on a
+  consolidated edge gets the new snapshot. The field
   ownership lists are in the XML docs on `FirmImportItem` / `FirmImportRelationship` — keep those, the
   `FirmClearable`/`RelationshipClearable` arrays and the merge calls in `FirmsController` in step.
 - A binding whose target was deleted is re-pointed (`SourceBinding.RebindTo`), never duplicated.

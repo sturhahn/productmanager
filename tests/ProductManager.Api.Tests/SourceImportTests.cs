@@ -433,6 +433,191 @@ public sealed class SourceImportTests : Phase3TestBase
         Assert.Equal(world.SettlementProcessId, Assert.Single(stored.ServedProcessIds));
     }
 
+    // ---------- Review follow-ups ----------
+
+    [Fact]
+    public async Task A_local_edit_to_a_field_the_source_never_sent_is_caught_when_the_source_later_sends_it()
+    {
+        var world = await CreateMarketAsync();
+        var source = Crm("001R");
+        var id = (await ImportAsync(world.MarketId, new FirmImportItem("Romeo", world.SegmentId, Source: source)))
+            .Outcomes[0].FirmId!.Value;
+
+        await PutAsync<FirmDto>($"/api/firms/{id}",
+            new UpdateFirmRequest("Romeo", EpistemicStatus.Observed, world.SegmentId, null, "call Bob"));
+
+        var later = await ImportAsync(world.MarketId, new FirmImportItem("Romeo", Notes: "from CRM", Source: source));
+        Assert.Equal("notes", Assert.Single(later.Outcomes[0].Conflicts).Field);
+        Assert.Equal("call Bob", (await GetAsync<FirmDto>($"/api/firms/{id}")).Notes);
+    }
+
+    [Fact]
+    public async Task A_local_edit_after_adopting_a_name_loaded_firm_is_caught()
+    {
+        var world = await CreateMarketAsync();
+        var id = (await ImportAsync(world.MarketId, new FirmImportItem("Sierra", world.SegmentId, Notes: "legacy")))
+            .Firms.Single().Id;
+        var source = Crm("001S");
+        await ImportAsync(world.MarketId, new FirmImportItem("Sierra", Source: source)); // adopts
+
+        await PutAsync<FirmDto>($"/api/firms/{id}",
+            new UpdateFirmRequest("Sierra", EpistemicStatus.Observed, world.SegmentId, null, "local"));
+
+        var later = await ImportAsync(world.MarketId, new FirmImportItem("Sierra", Notes: "from CRM", Source: source));
+        Assert.Equal("notes", Assert.Single(later.Outcomes[0].Conflicts).Field);
+        Assert.Equal("local", (await GetAsync<FirmDto>($"/api/firms/{id}")).Notes);
+    }
+
+    [Fact]
+    public async Task A_local_edit_to_a_relationship_field_the_source_never_sent_is_caught()
+    {
+        var world = await CreateMarketAsync();
+        var contract = Crm("800T", "Contract");
+        FirmImportItem Tango(FirmImportRelationship relationship) =>
+            new("Tango", world.SegmentId, Source: Crm("001T"), Relationships: [relationship]);
+
+        var edgeId = (await ImportAsync(world.MarketId, Tango(new FirmImportRelationship(world.OurProductId,
+            AcquisitionDate: new DateOnly(2021, 1, 1), Sources: [contract])))).Outcomes[0].Relationships[0].RelationshipId!.Value;
+
+        await PutAsync<FirmProductRelationshipDto>($"/api/firm-relationships/{edgeId}",
+            new UpdateFirmProductRelationshipRequest(null, 0.7, null, new DateOnly(2021, 1, 1)));
+
+        var later = await ImportAsync(world.MarketId,
+            Tango(new FirmImportRelationship(world.OurProductId, PriceLevel: 0.95, Sources: [contract])));
+        Assert.Equal("priceLevel", Assert.Single(later.Outcomes[0].Relationships[0].Conflicts).Field);
+        Assert.Equal(0.7, (await GetAsync<FirmProductRelationshipDto>($"/api/firm-relationships/{edgeId}")).PriceLevel);
+    }
+
+    [Fact]
+    public async Task A_kept_local_edit_is_silent_while_the_source_stands_still_and_reported_until_resolved_once_it_moves()
+    {
+        var world = await CreateMarketAsync();
+        var source = Crm("001U");
+        FirmImportItem Uniform(string notes) => new("Uniform", Notes: notes, Source: source);
+        var id = (await ImportAsync(world.MarketId, Uniform("n1"))).Outcomes[0].FirmId!.Value;
+        await PutAsync<FirmDto>($"/api/firms/{id}", new UpdateFirmRequest("Uniform", Notes: "local"));
+
+        // The source still says n1: nothing to report, the local value stays.
+        var still = (await ImportAsync(world.MarketId, Uniform("n1"))).Outcomes[0];
+        Assert.Equal(ImportOutcome.Unchanged, still.Outcome);
+        Assert.Empty(still.Conflicts);
+
+        // The source moved: reported, and reported again on every import until someone resolves it.
+        Assert.Single((await ImportAsync(world.MarketId, Uniform("n2"))).Outcomes[0].Conflicts);
+        Assert.Single((await ImportAsync(world.MarketId, Uniform("n2"))).Outcomes[0].Conflicts);
+        Assert.Equal("local", (await GetAsync<FirmDto>($"/api/firms/{id}")).Notes);
+
+        await PutAsync<FirmDto>($"/api/firms/{id}", new UpdateFirmRequest("Uniform", Notes: "n2"));
+        var resolved = (await ImportAsync(world.MarketId, Uniform("n2"))).Outcomes[0];
+        Assert.Empty(resolved.Conflicts);
+        Assert.Equal(ImportOutcome.Unchanged, resolved.Outcome);
+    }
+
+    [Fact]
+    public async Task A_legacy_item_in_the_same_request_sees_sourced_creates_and_renames()
+    {
+        var world = await CreateMarketAsync();
+        await ImportAsync(world.MarketId,
+            new FirmImportItem("Victor", world.SegmentId, Source: Crm("001V")),
+            new FirmImportItem("Victor", world.SegmentId));
+        Assert.Equal(1, (await FirmsAsync(world.MarketId)).TotalCount);
+
+        var whiskey = (await ImportAsync(world.MarketId, new FirmImportItem("Old Whiskey", world.SegmentId, Source: Crm("001W"))))
+            .Outcomes[0].FirmId!.Value;
+        await ImportAsync(world.MarketId,
+            new FirmImportItem("New Whiskey", Source: Crm("001W")),
+            new FirmImportItem("Old Whiskey", world.SegmentId));
+        Assert.Equal("New Whiskey", (await GetAsync<FirmDto>($"/api/firms/{whiskey}")).Name);
+    }
+
+    [Fact]
+    public async Task A_firm_item_whose_source_key_is_bound_to_another_kind_of_row_is_a_per_item_exception()
+    {
+        var world = await CreateMarketAsync();
+        var firm = await PostAsync<FirmDto>("/api/firms",
+            new CreateFirmRequest(world.MarketId, "Xray", EpistemicStatus.Observed, world.SegmentId));
+        var reused = Crm("REUSED");
+        await PostAsync<OpportunityDto>("/api/opportunities",
+            new CreateOpportunityRequest(firm.Id, DateTimeOffset.UtcNow, Source: reused));
+
+        var import = await ImportAsync(world.MarketId,
+            new FirmImportItem("Yankee", world.SegmentId, Source: reused),
+            new FirmImportItem("Zulu", world.SegmentId, Source: Crm("001Z")));
+        Assert.Equal(ImportOutcome.Exception, import.Outcomes[0].Outcome);
+        Assert.Contains("Opportunity", import.Outcomes[0].Reason);
+        Assert.Equal(ImportOutcome.Created, import.Outcomes[1].Outcome);
+    }
+
+    [Fact]
+    public async Task Sources_on_the_relationships_endpoint_never_create_a_second_edge_beside_an_unbound_one()
+    {
+        var world = await CreateMarketAsync();
+        var firm = await PostAsync<FirmDto>("/api/firms",
+            new CreateFirmRequest(world.MarketId, "Alfa", EpistemicStatus.Observed, world.SegmentId));
+        await PostAsync<FirmProductRelationshipDto>("/api/firm-relationships",
+            new CreateFirmProductRelationshipRequest(firm.Id, world.OurProductId));
+
+        var sourced = await Client.PostAsJsonAsync("/api/firm-relationships",
+            new CreateFirmProductRelationshipRequest(firm.Id, world.OurProductId, Sources: [Crm("800Z", "Contract")]),
+            ApiFactory.Json);
+        Assert.Equal(HttpStatusCode.Conflict, sourced.StatusCode);
+        Assert.Contains("bulk", (await sourced.Content.ReadFromJsonAsync<ProblemDetails>(ApiFactory.Json))!.Detail);
+        Assert.Single((await GetAsync<PagedResponse<FirmProductRelationshipDto>>($"/api/firm-relationships?firmId={firm.Id}")).Items);
+    }
+
+    [Fact]
+    public async Task Importing_through_one_consolidated_record_refreshes_every_record_bound_to_the_edge()
+    {
+        var world = await CreateMarketAsync();
+        var (a, d) = (Crm("800A", "Contract"), Crm("800D", "Contract"));
+        FirmImportItem Bravo(double level, params SourceRef[] sources) => new("Bravo", world.SegmentId,
+            Source: Crm("001B"), Relationships: [new FirmImportRelationship(world.OurProductId, PriceLevel: level, Sources: sources)]);
+
+        await ImportAsync(world.MarketId, Bravo(0.9, a, d));
+        await ImportAsync(world.MarketId, Bravo(0.8, a));
+        var throughD = await ImportAsync(world.MarketId, Bravo(0.85, d));
+
+        var rel = throughD.Outcomes[0].Relationships[0];
+        Assert.Empty(rel.Conflicts);
+        Assert.Equal(0.85, (await GetAsync<FirmProductRelationshipDto>($"/api/firm-relationships/{rel.RelationshipId}")).PriceLevel);
+    }
+
+    [Fact]
+    public async Task The_ledger_refuses_a_second_decision_fact_for_one_opportunity()
+    {
+        var world = await CreateMarketAsync();
+        var firm = await PostAsync<FirmDto>("/api/firms",
+            new CreateFirmRequest(world.MarketId, "Charlie", EpistemicStatus.Observed, world.SegmentId));
+        var opened = new DateTimeOffset(2026, 1, 5, 0, 0, 0, TimeSpan.Zero);
+        var opportunity = await PostAsync<OpportunityDto>("/api/opportunities", new CreateOpportunityRequest(firm.Id, opened));
+        await PostAsync<OpportunityDto>($"/api/opportunities/{opportunity.Id}/decide",
+            new DecideOpportunityRequest(OpportunityStage.Lost, null, opened.AddDays(10)));
+
+        // Through the generic ledger endpoint: a clean 409, not a 500, and no second fact.
+        var second = await Client.PostAsJsonAsync("/api/facts", new CreateFactEventRequest(world.WorkspaceId,
+            FactEventKind.OpportunityDecided, DateOnly.FromDateTime(opened.AddDays(10).UtcDateTime), "Opportunity",
+            opportunity.Id, "{}"), ApiFactory.Json);
+        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+        Assert.Single((await GetAsync<PagedResponse<FactEventDto>>(
+            $"/api/facts?workspaceId={world.WorkspaceId}&kind={FactEventKind.OpportunityDecided}")).Items);
+
+        // Directly against the database, as the loser of two overlapping decide calls would meet it.
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.FactEvents.Add(new ProductManager.Domain.Facts.FactEvent(world.WorkspaceId, FactEventKind.OpportunityDecided,
+            new DateOnly(2026, 1, 15), DateTimeOffset.UtcNow, "Opportunity", opportunity.Id, "{}"));
+        var failure = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        Assert.Equal(StatusCodes.Status409Conflict, DomainExceptionHandler.Classify(failure).Status);
+
+        // Other kinds about the same subject are unaffected.
+        db.ChangeTracker.Clear();
+        db.FactEvents.Add(new ProductManager.Domain.Facts.FactEvent(world.WorkspaceId, FactEventKind.Churn,
+            new DateOnly(2026, 1, 15), DateTimeOffset.UtcNow, "Opportunity", opportunity.Id));
+        db.FactEvents.Add(new ProductManager.Domain.Facts.FactEvent(world.WorkspaceId, FactEventKind.Churn,
+            new DateOnly(2026, 1, 15), DateTimeOffset.UtcNow, "Opportunity", opportunity.Id));
+        await db.SaveChangesAsync();
+    }
+
     // ---------- The binding's uniqueness is the database's, not only the controller's ----------
 
     [Fact]
