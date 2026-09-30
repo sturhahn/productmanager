@@ -1,0 +1,32 @@
+{
+  "workspace": { "name": "Harborline" },
+  "teams": [
+    {
+      "name": "Core Platform",
+      "capacities": [
+        { "year": 2026, "month": 9, "points": 24 },
+        { "year": 2026, "month": 10, "points": 24 },
+        { "year": 2026, "month": 11, "points": 24 },
+        { "year": 2026, "month": 12, "points": 24 }
+      ]
+    },
+    {
+      "name": "Integrations",
+      "capacities": [
+        { "year": 2026, "month": 9, "points": 20 },
+        { "year": 2026, "month": 10, "points": 20 },
+        { "year": 2026, "month": 11, "points": 20 },
+        { "year": 2026, "month": 12, "points": 20 }
+      ]
+    },
+    {
+      "name": "Web",
+      "capacities": [
+        { "year": 2026, "month": 9, "points": 16 },
+        { "year": 2026, "month": 10, "points": 16 },
+        { "year": 2026, "month": 11, "points": 16 },
+        { "year": 2026, "month": 12, "points": 16 }
+      ]
+    }
+  ]
+}

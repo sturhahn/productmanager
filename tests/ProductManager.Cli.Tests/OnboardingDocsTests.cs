@@ -28,6 +28,10 @@ public class OnboardingDocsTests
     private const string ManifestPath = DiscoveryDirectory + "/source-manifest.example.json";
     private const string AssessmentPath = DiscoveryDirectory + "/source-assessment.example.md";
     private const string FixtureReadmePath = DiscoveryDirectory + "/fixture/README.md";
+    private const string PortfolioDirectory = "docs/onboarding/portfolio";
+    private const string PortfolioReadmePath = PortfolioDirectory + "/README.md";
+    private const string PortfolioMappingPath = PortfolioDirectory + "/portfolio-mapping.example.json";
+    private const string PortfolioFixtureReadmePath = PortfolioDirectory + "/fixture/README.md";
 
     /// <summary>Today is 2026-09-01 (see docs/onboarding house rules) - a fact cannot be recorded
     /// in the future, and the API refuses a future recordedAt.</summary>
@@ -87,7 +91,11 @@ public class OnboardingDocsTests
 
     /// <summary>Every markdown file the docs own: the READMEs, the discovery docs, and the 12 dataset files.</summary>
     public static IEnumerable<object[]> MarkdownFiles =>
-        new[] { RootReadmePath, GuidePath, DiscoveryReadmePath, AssessmentPath, FixtureReadmePath }
+        new[]
+        {
+            RootReadmePath, GuidePath, DiscoveryReadmePath, AssessmentPath, FixtureReadmePath,
+            PortfolioReadmePath, PortfolioFixtureReadmePath
+        }
             .Concat(DatasetFileNames.Select(name => $"{DatasetDirectory}/{name}"))
             .Select(path => new object[] { path });
 
@@ -976,4 +984,515 @@ public class OnboardingDocsTests
             $"{source}: {where} is '{value}', which is later than {LatestAllowedRecordedDate:yyyy-MM-dd}. " +
             "A fact cannot be recorded in the future - the API refuses a future recordedAt.");
     }
+
+    // ---------- PRD4: portfolio reconciliation ----------
+    // The mapping example is the shared artifact every dataset agent consumes; the fixture is the
+    // Aha!/Jira/Salesforce extract it was derived from; the seed fragments are generated from it.
+
+    private static readonly string[] PortfolioSeedFiles =
+        ["01-workspace-and-teams.json", "03-initiatives-projects-features.json", "04-roadmap.json"];
+
+    private static readonly string[] DateMeanings =
+        ["productTarget", "engineeringForecast", "actualCompletion", "customerAvailability", "salesCommitment"];
+
+    private static readonly string[] MappingConcepts =
+        ["initiative", "project", "feature", "team", "businessProcess"];
+
+    private static JsonNode Mapping() => ReadJson(PortfolioMappingPath);
+
+    private static IEnumerable<JsonNode> Nodes(JsonNode? array) => array!.AsArray().Select(n => n!);
+
+    private static IEnumerable<JsonNode> MappingRecords(JsonNode mapping, string concept) =>
+        Nodes(mapping["records"]).Where(r => r["concept"]!.GetValue<string>() == concept);
+
+    private static JsonNode RecordByKey(JsonNode mapping, string key) =>
+        Nodes(mapping["records"]).Single(r => r["key"]!.GetValue<string>() == key);
+
+    private static JsonNode RecordByName(JsonNode mapping, string concept, string name) =>
+        MappingRecords(mapping, concept).Single(r => r["name"]!.GetValue<string>() == name);
+
+    private static List<string> SourceIds(JsonNode? sources) =>
+        Nodes(sources).Select(s => s["id"]!.GetValue<string>()).ToList();
+
+    private static List<string> Strings(JsonNode? array) =>
+        Nodes(array).Select(n => n.GetValue<string>()).ToList();
+
+    private static JsonNode PortfolioFixture(string relativePath) =>
+        ReadJson($"{PortfolioDirectory}/fixture/{relativePath}")["response"]!;
+
+    /// <summary>The portfolio candidates: every Aha! feature and Jira epic in the fixture extracts.
+    /// Salesforce rows are date evidence, not candidates.</summary>
+    private static List<string> PortfolioCandidateIds() =>
+        Nodes(PortfolioFixture("aha/features.json")["features"]).Select(f => f["reference_num"]!.GetValue<string>())
+            .Concat(Nodes(PortfolioFixture("jira/epics.json")["issues"]).Select(i => i["key"]!.GetValue<string>()))
+            .ToList();
+
+    private static HashSet<string> FixtureStrings()
+    {
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var file in Directory.GetFiles(RepoPath($"{PortfolioDirectory}/fixture"), "*.json", SearchOption.AllDirectories)
+                     .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}seed{Path.DirectorySeparatorChar}")))
+            Collect(JsonNode.Parse(File.ReadAllText(file)));
+        return found;
+
+        void Collect(JsonNode? node)
+        {
+            switch (node)
+            {
+                case JsonObject obj: foreach (var (_, child) in obj) Collect(child); break;
+                case JsonArray array: foreach (var child in array) Collect(child); break;
+                case JsonValue value when value.TryGetValue<string>(out var text): found.Add(text); break;
+            }
+        }
+    }
+
+    /// <summary>Which disposition(s) each source ID ended up in: selected (a mapping record),
+    /// excluded, or exception (a held exception; flagged exceptions keep their record selected).</summary>
+    private static Dictionary<string, HashSet<string>> Dispositions(JsonNode mapping)
+    {
+        var map = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        void Add(JsonNode? sources, string kind)
+        {
+            foreach (var id in SourceIds(sources))
+            {
+                if (!map.TryGetValue(id, out var kinds)) map[id] = kinds = [];
+                kinds.Add(kind);
+            }
+        }
+
+        foreach (var record in Nodes(mapping["records"])) Add(record["sources"], "selected");
+        foreach (var exclusion in Nodes(mapping["exclusions"])) Add(exclusion["sources"], "excluded");
+        foreach (var exception in Nodes(mapping["exceptions"]).Where(e => e["disposition"]!.GetValue<string>() == "held"))
+            Add(exception["sources"], "exception");
+        return map;
+    }
+
+    private static SeedFile PortfolioSeedFile(string fileName) =>
+        ParseSeedFile(ReadRepoFile($"{PortfolioDirectory}/fixture/seed/{fileName}"), fileName);
+
+    private static SeedFile MergedPortfolioSeed()
+    {
+        var merged = new SeedFile();
+        foreach (var fileName in PortfolioSeedFiles)
+        {
+            var part = PortfolioSeedFile(fileName);
+            merged.Teams.AddRange(part.Teams);
+            merged.Initiatives.AddRange(part.Initiatives);
+            merged.Projects.AddRange(part.Projects);
+            merged.Features.AddRange(part.Features);
+            merged.Roadmap ??= part.Roadmap;
+        }
+
+        return merged;
+    }
+
+    [Fact]
+    public void The_mapping_references_the_discovery_manifest_instead_of_repeating_instance_identity()
+    {
+        var mapping = Mapping();
+        var manifestRef = mapping["manifest"]!;
+        var manifestFile = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(RepoPath(PortfolioMappingPath))!, manifestRef["file"]!.GetValue<string>()));
+        Assert.Equal(Path.GetFullPath(RepoPath(ManifestPath)), manifestFile);
+
+        var manifest = ReadJson(ManifestPath);
+        Assert.Equal(manifest["discovery"]!["runId"]!.GetValue<string>(), manifestRef["runId"]!.GetValue<string>());
+
+        var manifestSourceIds = Sources(manifest).Select(s => s!["sourceId"]!.GetValue<string>()).ToHashSet();
+        var all = Nodes(mapping["records"]).Concat(Nodes(mapping["exclusions"]))
+            .Concat(Nodes(mapping["exceptions"]).Where(e => e["sources"] is not null));
+        foreach (var source in all.SelectMany(n => n["sources"] is JsonArray a ? Nodes(a) : Enumerable.Empty<JsonNode>()))
+        {
+            Assert.Contains(source["system"]!.GetValue<string>(), manifestSourceIds);
+            Assert.False(source["link"]!.GetValue<string>().StartsWith("http", StringComparison.OrdinalIgnoreCase),
+                $"link '{source["link"]}' repeats instance identity; links are relative to the manifest instance.");
+        }
+    }
+
+    [Fact]
+    public void Every_mapping_record_has_key_sources_concept_decision_and_rationale_and_every_exclusion_and_exception_a_reason()
+    {
+        var mapping = Mapping();
+        var records = Nodes(mapping["records"]).ToList();
+
+        Assert.Equal(records.Count, records.Select(r => r["key"]!.GetValue<string>()).Distinct().Count());
+        foreach (var record in records)
+        {
+            var key = record["key"]!.GetValue<string>();
+            Assert.Contains(record["concept"]!.GetValue<string>(), MappingConcepts);
+            Assert.False(string.IsNullOrWhiteSpace(record["name"]!.GetValue<string>()), $"{key}: approved name.");
+            Assert.Equal("selected", record["decision"]!.GetValue<string>());
+            Assert.False(string.IsNullOrWhiteSpace(record["rationale"]!.GetValue<string>()), $"{key}: rationale.");
+            Assert.NotEmpty(record["sources"]!.AsArray());
+            foreach (var source in Nodes(record["sources"]))
+            {
+                Assert.False(string.IsNullOrWhiteSpace(source["id"]!.GetValue<string>()), $"{key}: source id.");
+                Assert.False(string.IsNullOrWhiteSpace(source["link"]!.GetValue<string>()), $"{key}: source link.");
+            }
+        }
+
+        Assert.Equal(MappingConcepts.Order(), records.Select(r => r["concept"]!.GetValue<string>()).Distinct().Order());
+        Assert.NotEmpty(mapping["exclusions"]!.AsArray());
+        Assert.NotEmpty(mapping["exceptions"]!.AsArray());
+        foreach (var node in Nodes(mapping["exclusions"]).Concat(Nodes(mapping["exceptions"])))
+        {
+            Assert.False(string.IsNullOrWhiteSpace(node["reason"]!.GetValue<string>()), $"{node["key"]}: reason.");
+            Assert.NotEmpty(node["key"]!.GetValue<string>());
+        }
+
+        foreach (var exception in Nodes(mapping["exceptions"]))
+        {
+            var held = exception["disposition"]!.GetValue<string>() == "held";
+            Assert.Contains(exception["disposition"]!.GetValue<string>(), new[] { "held", "flagged" });
+            Assert.Contains(exception["reviewPriority"]!.GetValue<string>(), new[] { "high", "medium", "low" });
+            Assert.False(held && exception["sources"] is null, $"{exception["key"]}: a held exception names its sources.");
+            Assert.False(!held && exception["recordKeys"] is null, $"{exception["key"]}: a flagged exception names its records.");
+            foreach (var recordKey in exception["recordKeys"] is JsonArray keys ? Strings(keys) : [])
+                Assert.Equal("selected", RecordByKey(mapping, recordKey)["decision"]!.GetValue<string>());
+        }
+    }
+
+    [Fact]
+    public void Every_mapping_source_exists_in_the_fixture_and_every_candidate_is_selected_excluded_or_an_exception_exactly_once()
+    {
+        var mapping = Mapping();
+        var fixtureStrings = FixtureStrings();
+        var dispositions = Dispositions(mapping);
+
+        foreach (var id in dispositions.Keys)
+            Assert.True(fixtureStrings.Contains(id), $"Mapping source '{id}' does not appear in the fixture extracts.");
+
+        var candidates = PortfolioCandidateIds();
+        Assert.True(candidates.Count >= 10, "The fixture must hold a realistic set of Aha! features and Jira epics.");
+        foreach (var candidate in candidates)
+        {
+            Assert.True(dispositions.TryGetValue(candidate, out var kinds), $"{candidate} was silently dropped.");
+            Assert.True(kinds!.Count == 1, $"{candidate} has conflicting dispositions: {string.Join(", ", kinds)}.");
+        }
+
+        // Date evidence names its source as system:id; every one must exist in the fixture too.
+        foreach (var evidence in Nodes(mapping["records"]).Where(r => r["dates"] is not null)
+                     .SelectMany(r => DateMeanings.Select(m => r["dates"]![m])).Where(d => d is not null))
+            Assert.Contains(evidence!["source"]!.GetValue<string>().Split(':')[1], fixtureStrings);
+    }
+
+    [Fact]
+    public void Seed_fragments_parse_strictly_own_only_their_keys_and_use_exactly_the_approved_names()
+    {
+        var mapping = Mapping();
+        foreach (var fileName in PortfolioSeedFiles)
+        {
+            var seed = PortfolioSeedFile(fileName);
+            var source = $"{PortfolioDirectory}/fixture/seed/{fileName}";
+            Assert.True(HasAnyTopLevelKey(seed), $"{source} is empty.");
+            AssertEnumsAreExactMemberNames(seed, source);
+            AssertDatesAreIsoAndRecordedDatesArePast(seed, source);
+        }
+
+        var teams = PortfolioSeedFile(PortfolioSeedFiles[0]);
+        Assert.Empty(teams.Initiatives.Concat<object>(teams.Projects).Concat(teams.Features));
+        var execution = PortfolioSeedFile(PortfolioSeedFiles[1]);
+        Assert.Empty(execution.Teams);
+        Assert.Null(execution.Roadmap);
+        var roadmap = PortfolioSeedFile(PortfolioSeedFiles[2]);
+        Assert.Empty(roadmap.Projects.Concat<object>(roadmap.Features).Concat(roadmap.Initiatives).Concat(roadmap.Teams));
+
+        var seedAll = MergedPortfolioSeed();
+        void AssertSameNames(string concept, IEnumerable<string> seedNames)
+        {
+            var approved = MappingRecords(mapping, concept).Select(r => r["name"]!.GetValue<string>()).Order().ToList();
+            Assert.Equal(approved, seedNames.Order().ToList());
+        }
+
+        AssertSameNames("initiative", seedAll.Initiatives.Select(i => i.Name));
+        AssertSameNames("project", seedAll.Projects.Select(p => p.Name));
+        AssertSameNames("feature", seedAll.Features.Select(f => f.Name));
+        AssertSameNames("team", seedAll.Teams.Select(t => t.Name));
+
+        var projectNames = NameSet(seedAll.Projects.Select(p => p.Name));
+        var featureNames = NameSet(seedAll.Features.Select(f => f.Name));
+        var initiativeNames = NameSet(seedAll.Initiatives.Select(i => i.Name));
+        var teamNames = NameSet(seedAll.Teams.Select(t => t.Name));
+        foreach (var project in seedAll.Projects)
+        {
+            AssertResolves(project.InitiativeName, initiativeNames, $"project '{project.Name}' initiativeName");
+            foreach (var name in project.DependsOnProjectNames) AssertResolves(name, projectNames, $"project '{project.Name}' dependency");
+            foreach (var name in project.DeliversFeatureNames) AssertResolves(name, featureNames, $"project '{project.Name}' feature");
+            foreach (var demand in project.EffortDemands) AssertResolves(demand.TeamName, teamNames, $"project '{project.Name}' demand team");
+        }
+
+        Assert.NotNull(seedAll.Roadmap);
+        foreach (var item in seedAll.Roadmap!.Items) AssertResolves(item.ProjectName, projectNames, "roadmap item project");
+    }
+
+    /// <summary>Acceptance criterion 1: one Aha! capability, two Jira epics, one Feature, two Projects.</summary>
+    [Fact]
+    public void One_capability_linked_to_two_epics_becomes_one_feature_delivered_by_two_traceable_projects()
+    {
+        var mapping = Mapping();
+        var seed = MergedPortfolioSeed();
+
+        var features = MappingRecords(mapping, "feature").Where(r => SourceIds(r["sources"]).Contains("HWMS-1")).ToList();
+        var feature = Assert.Single(features);
+        var name = feature["name"]!.GetValue<string>();
+        Assert.NotEqual("Carrier Connect v1", name); // an Aha! feature is not automatically a domain Feature
+        Assert.Single(seed.Features, f => f.Name == name);
+
+        var projects = Strings(feature["relations"]!["deliveredBy"]).Select(k => RecordByKey(mapping, k)).ToList();
+        Assert.Equal(new[] { "HINT-12", "HWEB-9" }, projects.SelectMany(p => SourceIds(p["sources"])).Order());
+        Assert.Equal(2, seed.Projects.Count(p => p.DeliversFeatureNames.Contains(name)));
+        Assert.DoesNotContain(MappingRecords(mapping, "feature"), r => SourceIds(r["sources"]).Intersect(["HINT-12", "HWEB-9"]).Any());
+        Assert.DoesNotContain(seed.Features, f => f.Name != name && f.Name.Contains("Carrier", StringComparison.OrdinalIgnoreCase));
+
+        // The explicit links exist on the Jira side of the fixture (evidence of association).
+        var epics = Nodes(PortfolioFixture("jira/epics.json")["issues"]).ToList();
+        foreach (var key in new[] { "HINT-12", "HWEB-9" })
+            Assert.Equal("HWMS-1", epics.Single(e => e["key"]!.GetValue<string>() == key)["fields"]!["customfield_10200"]!.GetValue<string>());
+    }
+
+    /// <summary>Acceptance criterion 2: similarly named, unlinked epics stay separate and go to review.</summary>
+    [Fact]
+    public void Two_similarly_named_unlinked_epics_are_not_merged_and_are_held_for_review()
+    {
+        var mapping = Mapping();
+        var epics = Nodes(PortfolioFixture("jira/epics.json")["issues"])
+            .Where(e => new[] { "HCORE-7", "HINT-16" }.Contains(e["key"]!.GetValue<string>())).ToList();
+        Assert.Equal(2, epics.Count);
+        Assert.All(epics, e => Assert.Contains("wave picking", e["fields"]!["summary"]!.GetValue<string>(), StringComparison.OrdinalIgnoreCase));
+        Assert.All(epics, e => Assert.Null(e["fields"]!["customfield_10200"]));
+
+        var held = Nodes(mapping["exceptions"]).Single(e => SourceIds(e["sources"] ?? new JsonArray()).Contains("HCORE-7"));
+        Assert.Equal("held", held["disposition"]!.GetValue<string>());
+        Assert.Contains("HINT-16", SourceIds(held["sources"]));
+        Assert.False(held["merge"]!.GetValue<bool>());
+        Assert.NotEmpty(held["proposedMatches"]!.AsArray());
+
+        Assert.DoesNotContain(Nodes(mapping["records"]), r => SourceIds(r["sources"]).Intersect(["HCORE-7", "HINT-16"]).Any());
+        Assert.DoesNotContain(MergedPortfolioSeed().Projects, p => p.Name.Contains("Wave picking", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Acceptance criterion 3: Jira Done with an unreleased capability produces no ship date.</summary>
+    [Fact]
+    public void A_done_epic_with_an_unreleased_capability_produces_no_shipped_date()
+    {
+        var mapping = Mapping();
+        var seed = MergedPortfolioSeed();
+        var feature = RecordByName(mapping, "feature", "Cycle counting");
+
+        Assert.Equal("Done", Nodes(PortfolioFixture("jira/epics.json")["issues"])
+            .Single(e => e["key"]!.GetValue<string>() == "HWEB-3")["fields"]!["status"]!["name"]!.GetValue<string>());
+        Assert.NotNull(feature["dates"]!["actualCompletion"]);
+        Assert.Null(feature["dates"]!["customerAvailability"]);
+
+        var seeded = seed.Features.Single(f => f.Name == "Cycle counting");
+        Assert.Null(seeded.ShippedDate);
+        Assert.NotEqual("Shipped", seeded.Status);
+        Assert.Contains(Nodes(mapping["exceptions"]), e => e["kind"]!.GetValue<string>() == "doneNotReleased"
+            && Strings(e["recordKeys"]).Contains(feature["key"]!.GetValue<string>()));
+
+        // A shipped feature is only ever shipped on customer-availability evidence from the authority.
+        foreach (var shipped in seed.Features.Where(f => f.ShippedDate is not null))
+        {
+            var availability = RecordByName(mapping, "feature", shipped.Name)["dates"]!["customerAvailability"]!;
+            Assert.Equal(shipped.ShippedDate, availability["value"]!.GetValue<string>());
+            Assert.StartsWith("aha:", availability["source"]!.GetValue<string>());
+        }
+    }
+
+    /// <summary>Acceptance criterion 4 and requirement 5: five date meanings, an authority-chosen planning date.</summary>
+    [Fact]
+    public void A_sales_promise_conflicting_with_the_plan_is_an_exception_and_does_not_overwrite_the_planning_date()
+    {
+        var mapping = Mapping();
+        var seed = MergedPortfolioSeed();
+        var exceptionKeys = Nodes(mapping["exceptions"]).Select(e => e["key"]!.GetValue<string>()).ToHashSet();
+
+        foreach (var feature in MappingRecords(mapping, "feature"))
+        {
+            var dates = feature["dates"]!;
+            foreach (var meaning in DateMeanings) Assert.True(dates.AsObject().ContainsKey(meaning), $"{feature["key"]}: {meaning}.");
+            var planning = dates["proposedPlanningDate"]!;
+            Assert.Contains(planning["meaning"]!.GetValue<string>(), new[] { "productTarget", "customerAvailability" });
+            Assert.Equal(dates[planning["meaning"]!.GetValue<string>()]!["value"]!.GetValue<string>(), planning["value"]!.GetValue<string>());
+            foreach (var conflict in Strings(planning["conflicts"])) Assert.Contains(conflict, exceptionKeys);
+        }
+
+        var carrier = RecordByName(mapping, "feature", "Multi-carrier rate shopping")["dates"]!;
+        var promised = carrier["salesCommitment"]!["value"]!.GetValue<string>();
+        var planned = carrier["proposedPlanningDate"]!["value"]!.GetValue<string>();
+        Assert.NotEqual(promised, planned);
+        Assert.NotEmpty(carrier["proposedPlanningDate"]!["conflicts"]!.AsArray());
+        Assert.Contains(Nodes(mapping["exceptions"]), e => e["kind"]!.GetValue<string>() == "dateConflict"
+            && e["disposition"]!.GetValue<string>() == "flagged");
+
+        var last = seed.Roadmap!.Items.Single(i => i.ProjectName == "Carrier Connect rate-shopping UI");
+        Assert.Equal(planned, last.End);
+        Assert.DoesNotContain(seed.Roadmap.Items, i => i.End == promised);
+    }
+
+    /// <summary>Acceptance criterion 5: stale but explicitly in the approved roadmap is flagged, not discarded.</summary>
+    [Fact]
+    public void A_stale_item_in_the_approved_roadmap_is_selected_and_flagged_not_discarded()
+    {
+        var mapping = Mapping();
+        var seed = MergedPortfolioSeed();
+        var staleAfter = mapping["conventions"]!["staleAfterDays"]!.GetValue<int>();
+        var extracted = DateOnly.FromDateTime(DateTime.Parse(mapping["portfolio"]!["extractedAt"]!.GetValue<string>(),
+            CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal));
+
+        var aha = Nodes(PortfolioFixture("aha/features.json")["features"]).Single(f => f["reference_num"]!.GetValue<string>() == "HWMS-4");
+        var updated = DateOnly.ParseExact(aha["updated_at"]!.GetValue<string>()[..10], "yyyy-MM-dd", CultureInfo.InvariantCulture);
+        Assert.True(extracted.DayNumber - updated.DayNumber > staleAfter, "HWMS-4 must be stale by the mapping's own threshold.");
+        Assert.Contains(aha["release"]!["reference_num"]!.GetValue<string>(), Strings(mapping["portfolio"]!["currentReleases"]));
+
+        var feature = MappingRecords(mapping, "feature").Single(r => SourceIds(r["sources"]).Contains("HWMS-4"));
+        Assert.Contains("stale", Strings(feature["flags"]));
+        Assert.Contains(seed.Features, f => f.Name == feature["name"]!.GetValue<string>());
+        Assert.Contains(Nodes(mapping["exceptions"]), e => e["kind"]!.GetValue<string>() == "staleInApprovedRoadmap"
+            && Strings(e["recordKeys"]).Contains(feature["key"]!.GetValue<string>()));
+        Assert.Contains(seed.Roadmap!.Items, i => i.ProjectName == "Returns portal");
+
+        // Recency informs review priority, never approval: a fresh tentative idea is held, not selected.
+        var tentative = Nodes(mapping["exceptions"]).Single(e => e["kind"]!.GetValue<string>() == "tentative");
+        Assert.Equal("held", tentative["disposition"]!.GetValue<string>());
+        Assert.DoesNotContain(Nodes(mapping["records"]), r => SourceIds(r["sources"]).Contains("HWMS-5"));
+    }
+
+    /// <summary>Acceptance criterion 6 and requirement 7: every dependency is mapped or explicitly unresolved.</summary>
+    [Fact]
+    public void Every_dependency_is_resolved_to_a_selected_project_or_listed_as_external_or_unresolved()
+    {
+        var mapping = Mapping();
+        var fixtureStrings = FixtureStrings();
+        var projectKeys = MappingRecords(mapping, "project").Select(r => r["key"]!.GetValue<string>()).ToHashSet();
+        var exceptionKeys = Nodes(mapping["exceptions"]).Select(e => e["key"]!.GetValue<string>()).ToHashSet();
+        var dependencies = Nodes(mapping["dependencies"]).ToList();
+        var statuses = dependencies.Select(d => d["status"]!.GetValue<string>()).ToHashSet();
+        Assert.Superset(new HashSet<string> { "resolved", "external", "unresolved" }, statuses);
+
+        foreach (var dependency in dependencies)
+        {
+            var key = dependency["key"]!.GetValue<string>();
+            switch (dependency["status"]!.GetValue<string>())
+            {
+                case "resolved":
+                    Assert.Contains(dependency["from"]!.GetValue<string>(), projectKeys);
+                    Assert.Contains(dependency["to"]!.GetValue<string>(), projectKeys);
+                    Assert.NotEqual(dependency["from"]!.GetValue<string>(), dependency["to"]!.GetValue<string>());
+                    break;
+                case "external":
+                    Assert.Contains(dependency["from"]!.GetValue<string>(), projectKeys);
+                    Assert.Null(dependency["to"]);
+                    Assert.Contains(dependency["external"]!["id"]!.GetValue<string>(), fixtureStrings);
+                    Assert.True(dependency["external"]!.AsObject().ContainsKey("owner"), $"{key}: an external prerequisite names its owner or null.");
+                    Assert.Null(dependency["startDate"]); // no invented dates
+                    break;
+                default:
+                    Assert.Contains(dependency["exception"]!.GetValue<string>(), exceptionKeys);
+                    break;
+            }
+
+            Assert.False(string.IsNullOrWhiteSpace(dependency["reason"]!.GetValue<string>()), $"{key}: reason.");
+        }
+
+        Assert.Contains(dependencies, d => d["status"]!.GetValue<string>() == "external" && d["external"]!["owner"] is null);
+        Assert.Contains(dependencies, d => d["kind"]?.GetValue<string>() == "cycle");
+
+        // Resolved edges appear as project dependencies in the fragment, nowhere else.
+        var seed = MergedPortfolioSeed();
+        var resolved = dependencies.Where(d => d["status"]!.GetValue<string>() == "resolved")
+            .Select(d => (RecordByKey(mapping, d["from"]!.GetValue<string>())["name"]!.GetValue<string>(),
+                          RecordByKey(mapping, d["to"]!.GetValue<string>())["name"]!.GetValue<string>())).Order().ToList();
+        var seeded = seed.Projects.SelectMany(p => p.DependsOnProjectNames.Select(d => (p.Name, d))).Order().ToList();
+        Assert.Equal(resolved, seeded);
+    }
+
+    /// <summary>Requirement 6: units are explicit, gaps stay gaps, nothing is converted without a convention.</summary>
+    [Fact]
+    public void Effort_and_capacity_units_are_explicit_and_gaps_are_never_filled_or_converted()
+    {
+        var mapping = Mapping();
+        var seed = MergedPortfolioSeed();
+        var conventions = mapping["conventions"]!;
+        var effortUnit = conventions["effortUnit"]!.GetValue<string>();
+        var capacityUnit = conventions["capacityUnit"]!.GetValue<string>();
+        Assert.Equal(effortUnit + " per month", capacityUnit);
+        Assert.Contains("no reviewed convention", conventions["unitConversion"]!.GetValue<string>());
+
+        foreach (var team in MappingRecords(mapping, "team"))
+        {
+            var capacity = team["capacity"]!;
+            Assert.Equal(capacityUnit, capacity["unit"]!.GetValue<string>());
+            var rows = seed.Teams.Single(t => t.Name == team["name"]!.GetValue<string>()).Capacities;
+            Assert.Equal(Strings(capacity["months"]), rows.Select(r => $"{r.Year:0000}-{r.Month:00}"));
+            Assert.All(rows, r => Assert.Equal(capacity["perMonth"]!.GetValue<decimal>(), r.Points));
+        }
+
+        var statuses = new List<string>();
+        foreach (var project in MappingRecords(mapping, "project"))
+        {
+            var effort = project["effort"]!;
+            var status = effort["status"]!.GetValue<string>();
+            statuses.Add(status);
+            var demands = seed.Projects.Single(p => p.Name == project["name"]!.GetValue<string>()).EffortDemands;
+            if (status == "estimated")
+            {
+                Assert.Equal(effortUnit, effort["unit"]!.GetValue<string>());
+                Assert.Equal(effort["total"]!.GetValue<decimal>(), demands.Sum(d => d.Points));
+                var team = RecordByKey(mapping, effort["team"]!.GetValue<string>())["name"]!.GetValue<string>();
+                Assert.All(demands, d => Assert.Equal(team, d.TeamName));
+            }
+            else
+            {
+                Assert.Contains(status, new[] { "gap", "complete" });
+                Assert.Empty(demands);
+                Assert.False(string.IsNullOrWhiteSpace(effort["reason"]!.GetValue<string>()));
+                Assert.Null(effort["total"]);
+            }
+        }
+
+        Assert.Contains("estimated", statuses);
+        var incompatible = MappingRecords(mapping, "project").Select(p => p["effort"]!)
+            .Single(e => e["reportedAs"] is not null);
+        Assert.NotEqual(effortUnit, incompatible["reportedAs"]!["unit"]!.GetValue<string>());
+        Assert.Equal("gap", incompatible["status"]!.GetValue<string>());
+        Assert.Contains(MappingRecords(mapping, "project"), p => p["effort"]!["status"]!.GetValue<string>() == "gap"
+            && p["effort"]!["reportedAs"] is null); // a missing estimate
+    }
+
+    [Fact]
+    public void The_guide_places_portfolio_selection_between_the_interview_and_loading_and_the_brief_carries_the_mapping_slot()
+    {
+        var guide = ReadRepoFile(GuidePath);
+        var interview = guide.IndexOf("## 7. Interviewing the human", StringComparison.Ordinal);
+        var portfolio = guide.IndexOf("## 8. Portfolio selection", StringComparison.Ordinal);
+        var loading = guide.IndexOf("## 9. Assembling and loading", StringComparison.Ordinal);
+        Assert.True(interview >= 0 && portfolio > interview && loading > portfolio,
+            "Portfolio selection must be section 8, after the interview and before assembling and loading.");
+
+        var linked = RelativeLinkTargets(guide, GuidePath).Select(t => t.ResolvedPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        Assert.Contains(Path.GetFullPath(RepoPath(PortfolioReadmePath)), linked);
+        Assert.Contains(Path.GetFullPath(RepoPath(PortfolioMappingPath)), linked);
+
+        Assert.Contains("Portfolio mapping:", guide);
+        Assert.Contains("never coin", guide);
+        Assert.Contains("PRD5", guide); // the named hook for the consequential-decision review
+
+        var readme = ReadRepoFile(PortfolioReadmePath);
+        foreach (var meaning in DateMeanings) Assert.Contains(meaning, readme);
+    }
+
+    /// <summary>PRD4 requirement 4: a name match only proposes; discovery must not call it ready.</summary>
+    [Fact]
+    public void The_manifest_does_not_classify_a_name_match_as_ready()
+    {
+        var manifest = ReadJson(ManifestPath);
+        var dataset03 = manifest["datasetReadiness"]!.AsArray().Single(r => r!["datasetId"]!.GetValue<string>() == "03")!;
+        Assert.Equal("requires a mapping decision", dataset03["classification"]!.GetValue<string>());
+        Assert.Contains("proposal", dataset03["proposedAssumptions"]!.ToJsonString());
+        Assert.Contains(manifest["openQuestions"]!.AsArray(),
+            q => q!["question"]!.GetValue<string>().Contains("HCORE-7", StringComparison.Ordinal));
+    }
+
+    // ---------- PRD4: append new tests above this line ----------
 }

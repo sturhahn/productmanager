@@ -30,7 +30,8 @@
 - `CalibrationSummaryTests.cs` — formatting logic for calibration diff summaries.
 - `OnboardingDocsTests.cs` — guards `docs/onboarding/`: every dataset file's JSON example parses
   strictly into `SeedFile`, enum spellings and ISO dates are exact, headings and links are
-  intact, and `example-seed.json` resolves its by-name references.
+  intact, and `example-seed.json` resolves its by-name references; also the discovery manifest
+  and fixture (PRD3) and the portfolio mapping, fixture and seed fragments (PRD4).
 - `ChoiceParameterKeysTests.cs` — CLI's mirror of the API's choice-model parameter key scheme.
 - `NameIndexTests.cs` — name-matching rules for idempotent seed loading.
 - `ParameterKeyHelperTests.cs` — engine-vs-free-form parameter key validation logic.

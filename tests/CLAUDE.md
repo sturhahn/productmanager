@@ -41,7 +41,9 @@ integration tests on CRUD/API. Light touch on UI.")
   `SeedModels.cs` can fail it (unknown keys are disallowed when parsing the doc examples). Fix
   the docs, not the test. It also guards `docs/onboarding/discovery/` (manifest
   keys, fixture page counts, no credentials, dataset readiness values); edit the manifest and fixture
-  together.
+  together. It also guards `docs/onboarding/portfolio/` (the mapping example, its Aha!/Jira/Salesforce
+  fixture and the seed fragments generated from it: names, dates, units, dependencies, every source
+  record dispositioned exactly once); edit the mapping, fixture and fragments together.
 
 ---
 Update this trio (`ABSTRACT.md` / `INDEX.md` / `CLAUDE.md`) whenever you add, remove, or

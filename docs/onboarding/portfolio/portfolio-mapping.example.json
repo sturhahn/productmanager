@@ -1,0 +1,364 @@
+{
+  "mappingVersion": 1,
+  "purpose": "The shared portfolio mapping every dataset agent consumes (docs/onboarding/portfolio/README.md). Derived from ./fixture; Harborline is fictional. Contains no credentials. Source links are relative to the instance recorded in the discovery manifest.",
+  "manifest": {
+    "file": "../discovery/source-manifest.example.json",
+    "runId": "harborline-discovery-2026-09-30",
+    "sourceIdsUsed": ["aha", "jira", "salesforce"]
+  },
+  "portfolio": {
+    "designatedBy": "user, in the portfolio question round after discovery",
+    "ahaProduct": "HWMS",
+    "currentReleases": ["HWMS-R-4", "HWMS-R-5", "HWMS-R-6"],
+    "shippedReleasesIncluded": ["HWMS-R-2"],
+    "shippedWindow": "capabilities released in the 12 months before the planning horizon starts (2025-10-01 onward)",
+    "agreedJiraProjects": ["HCORE", "HINT", "HWEB"],
+    "planningHorizon": { "start": "2026-10-01", "end": "2027-09-30" },
+    "extractedAt": "2026-09-30T15:00:00Z",
+    "extractFiles": ["fixture/aha/features.json", "fixture/jira/epics.json", "fixture/salesforce/commitments.json"]
+  },
+  "conventions": {
+    "answeredQuestions": {
+      "Q4": "Availability is the Aha! release date and status (confirmed).",
+      "Q5": "HCORE, HINT, HWEB are the teams Core Platform, Integrations, Web; capacity is story points per month (confirmed); the monthly numbers came from the human."
+    },
+    "dateAuthorityRule": "R1: a capability's planning date is the Aha! release date (product target), or the Aha! release date of a released capability (customer availability). Never Jira resolution, never a Salesforce commitment. R2: a project's roadmap window starts at its Jira start date, else the Aha! start date; it ends at its Jira due date, except the last project delivering a capability ends on that capability's planning date. R3: conflicts are flagged as exceptions and never rewrite the planning date.",
+    "staleAfterDays": 180,
+    "effortUnit": "story points",
+    "capacityUnit": "story points per month",
+    "unitConversion": "none - no reviewed convention; hours and story points are never converted and story points are never compared across teams"
+  },
+  "records": [
+    {
+      "key": "I-carrier-connectivity-parity", "concept": "initiative", "name": "Carrier connectivity parity", "decision": "selected",
+      "rationale": "Aha! initiative HWMS-S-1 owns an approved current-release feature (HWMS-1).",
+      "sources": [{ "system": "aha", "id": "HWMS-S-1", "link": "/initiatives/HWMS-S-1", "role": "initiative" }]
+    },
+    {
+      "key": "I-win-ecommerce-fulfillment", "concept": "initiative", "name": "Win e-commerce fulfillment", "decision": "selected",
+      "rationale": "Aha! initiative HWMS-S-2 owns three approved features (HWMS-2, HWMS-3, HWMS-4). Outcome and hypothesis are in no source: left unset for the dataset 03 subagent to ask.",
+      "sources": [{ "system": "aha", "id": "HWMS-S-2", "link": "/initiatives/HWMS-S-2", "role": "initiative" }]
+    },
+    {
+      "key": "I-warehouse-efficiency", "concept": "initiative", "name": "Warehouse efficiency", "decision": "selected",
+      "rationale": "Aha! initiative HWMS-S-3 owns the shipped Warehouse optimization pack (HWMS-6), a relevant shipped capability.",
+      "sources": [{ "system": "aha", "id": "HWMS-S-3", "link": "/initiatives/HWMS-S-3", "role": "initiative" }]
+    },
+    {
+      "key": "T-core-platform", "concept": "team", "name": "Core Platform", "decision": "selected",
+      "rationale": "Jira project HCORE, mapped to a team by the confirmed answer to Q5.",
+      "sources": [{ "system": "jira", "id": "HCORE", "link": "/projects/HCORE", "role": "team project" }],
+      "capacity": { "unit": "story points per month", "perMonth": 24, "months": ["2026-09", "2026-10", "2026-11", "2026-12"], "source": "human answer (Q5); no accessible system holds capacity" }
+    },
+    {
+      "key": "T-integrations", "concept": "team", "name": "Integrations", "decision": "selected",
+      "rationale": "Jira project HINT, mapped to a team by the confirmed answer to Q5.",
+      "sources": [{ "system": "jira", "id": "HINT", "link": "/projects/HINT", "role": "team project" }],
+      "capacity": { "unit": "story points per month", "perMonth": 20, "months": ["2026-09", "2026-10", "2026-11", "2026-12"], "source": "human answer (Q5); no accessible system holds capacity" }
+    },
+    {
+      "key": "T-web", "concept": "team", "name": "Web", "decision": "selected",
+      "rationale": "Jira project HWEB, mapped to a team by the confirmed answer to Q5.",
+      "sources": [{ "system": "jira", "id": "HWEB", "link": "/projects/HWEB", "role": "team project" }],
+      "capacity": { "unit": "story points per month", "perMonth": 16, "months": ["2026-09", "2026-10", "2026-11", "2026-12"], "source": "human answer (Q5); no accessible system holds capacity" }
+    },
+    {
+      "key": "BP-shipping-carrier-integration", "concept": "businessProcess", "name": "Shipping & Carrier Integration", "decision": "selected",
+      "rationale": "Aha! tag on HWMS-1. Dataset 02 owns the process definition; the name is fixed here so 02, 03 and 05 agree.",
+      "sources": [{ "system": "aha", "id": "HWMS-1", "link": "/features/HWMS-1", "role": "tag" }]
+    },
+    {
+      "key": "BP-order-picking", "concept": "businessProcess", "name": "Order Picking", "decision": "selected",
+      "rationale": "Aha! tag on HWMS-2. Same rule as above.",
+      "sources": [{ "system": "aha", "id": "HWMS-2", "link": "/features/HWMS-2", "role": "tag" }]
+    },
+    {
+      "key": "BP-cycle-counting", "concept": "businessProcess", "name": "Cycle Counting", "decision": "selected",
+      "rationale": "Aha! tag on HWMS-3. Same rule as above.",
+      "sources": [{ "system": "aha", "id": "HWMS-3", "link": "/features/HWMS-3", "role": "tag" }]
+    },
+    {
+      "key": "F-multi-carrier-rate-shopping", "concept": "feature", "name": "Multi-carrier rate shopping", "decision": "selected",
+      "nameBasis": "approved by the human; the Aha! title 'Carrier Connect v1' names a module release and is also the first project's name",
+      "rationale": "Approved current work: HWMS-1 is on release 2026.4. One capability delivered by two Jira epics (HINT-12 and HWEB-9, both linked explicitly), so one Feature and two Projects, not three records.",
+      "sources": [{ "system": "aha", "id": "HWMS-1", "link": "/features/HWMS-1", "role": "capability" }],
+      "relations": { "deliveredBy": ["P-carrier-connect-v1", "P-carrier-connect-rate-shopping-ui"], "improvesProcesses": ["BP-shipping-carrier-integration"] },
+      "status": "Planned",
+      "dates": {
+        "productTarget": { "value": "2026-10-31", "source": "aha:HWMS-1", "field": "release.release_date" },
+        "engineeringForecast": { "value": "2026-10-28", "source": "jira:HWEB-9", "field": "duedate" },
+        "actualCompletion": null,
+        "customerAvailability": null,
+        "salesCommitment": { "value": "2026-10-09", "source": "salesforce:006EX000000A004AAA", "field": "Committed_Date__c" },
+        "proposedPlanningDate": { "value": "2026-10-31", "meaning": "productTarget", "rule": "R1", "conflicts": ["EX-sales-commitment-date"] }
+      },
+      "flags": []
+    },
+    {
+      "key": "F-wave-picking", "concept": "feature", "name": "Wave picking", "decision": "selected",
+      "nameBasis": "approved by the human; the Aha! title 'Wave picking engine' names the delivery, the capability is wave picking",
+      "rationale": "Approved current work: HWMS-2 is on release 2026.5. No Jira epic is explicitly linked, so no delivering Project is selected until EX-wave-picking-delivery is answered.",
+      "sources": [{ "system": "aha", "id": "HWMS-2", "link": "/features/HWMS-2", "role": "capability" }],
+      "relations": { "deliveredBy": [], "improvesProcesses": ["BP-order-picking"] },
+      "status": "Planned",
+      "dates": {
+        "productTarget": { "value": "2026-12-31", "source": "aha:HWMS-2", "field": "release.release_date" },
+        "engineeringForecast": null,
+        "actualCompletion": null,
+        "customerAvailability": null,
+        "salesCommitment": null,
+        "proposedPlanningDate": { "value": "2026-12-31", "meaning": "productTarget", "rule": "R1", "conflicts": [] }
+      },
+      "flags": ["noDeliveryProject"]
+    },
+    {
+      "key": "F-cycle-counting", "concept": "feature", "name": "Cycle counting", "decision": "selected",
+      "nameBasis": "approved by the human; the Aha! title 'Cycle count workflows' is also the project's name",
+      "rationale": "Approved current work: HWMS-3 is on release 2026.4 with status Ready to release. Its Jira epic is Done, but the capability is not released, so the Feature stays Planned with no shippedDate.",
+      "sources": [{ "system": "aha", "id": "HWMS-3", "link": "/features/HWMS-3", "role": "capability" }],
+      "relations": { "deliveredBy": ["P-cycle-count-workflows"], "improvesProcesses": ["BP-cycle-counting"] },
+      "status": "Planned",
+      "dates": {
+        "productTarget": { "value": "2026-11-30", "source": "aha:HWMS-3", "field": "release.release_date" },
+        "engineeringForecast": null,
+        "actualCompletion": { "value": "2026-09-22", "source": "jira:HWEB-3", "field": "resolutiondate" },
+        "customerAvailability": null,
+        "salesCommitment": null,
+        "proposedPlanningDate": { "value": "2026-11-30", "meaning": "productTarget", "rule": "R1", "conflicts": [] }
+      },
+      "flags": ["doneNotReleased"]
+    },
+    {
+      "key": "F-returns-portal", "concept": "feature", "name": "Returns portal", "decision": "selected",
+      "rationale": "Explicitly on the approved roadmap: HWMS-4 is on release 2027.1. Not updated in Aha! or Jira for over 13 months, so it is flagged for review, not discarded.",
+      "sources": [{ "system": "aha", "id": "HWMS-4", "link": "/features/HWMS-4", "role": "capability" }],
+      "relations": { "deliveredBy": ["P-returns-portal"], "improvesProcesses": [] },
+      "status": "Planned",
+      "dates": {
+        "productTarget": { "value": "2027-03-31", "source": "aha:HWMS-4", "field": "release.release_date" },
+        "engineeringForecast": null,
+        "actualCompletion": null,
+        "customerAvailability": null,
+        "salesCommitment": null,
+        "proposedPlanningDate": { "value": "2027-03-31", "meaning": "productTarget", "rule": "R1", "conflicts": [] }
+      },
+      "flags": ["stale"]
+    },
+    {
+      "key": "F-zone-based-putaway", "concept": "feature", "name": "Zone-based putaway", "decision": "selected",
+      "nameBasis": "one Aha! feature (HWMS-6, 'Warehouse optimization pack') describes two separately delivered capabilities; the human split it",
+      "rationale": "Relevant shipped capability: released 2026-03-31 (release 2026.2, released). Shipped on the Aha! release, which the confirmed availability answer (Q4) names as the signal.",
+      "sources": [{ "system": "aha", "id": "HWMS-6", "link": "/features/HWMS-6", "role": "capability part" }],
+      "relations": { "deliveredBy": ["P-putaway-replenishment"], "improvesProcesses": [] },
+      "status": "Shipped",
+      "dates": {
+        "productTarget": { "value": "2026-03-31", "source": "aha:HWMS-6", "field": "release.release_date" },
+        "engineeringForecast": { "value": "2026-03-27", "source": "jira:HCORE-2", "field": "duedate" },
+        "actualCompletion": { "value": "2026-03-27", "source": "jira:HCORE-2", "field": "resolutiondate" },
+        "customerAvailability": { "value": "2026-03-31", "source": "aha:HWMS-6", "field": "release.release_date where release.released is true" },
+        "salesCommitment": null,
+        "proposedPlanningDate": { "value": "2026-03-31", "meaning": "customerAvailability", "rule": "R1", "conflicts": [] }
+      },
+      "flags": []
+    },
+    {
+      "key": "F-directed-replenishment", "concept": "feature", "name": "Directed replenishment", "decision": "selected",
+      "nameBasis": "second capability split out of HWMS-6, see Zone-based putaway",
+      "rationale": "Relevant shipped capability: the same release as Zone-based putaway (2026-03-31). One source item, two Features, one delivering Project.",
+      "sources": [{ "system": "aha", "id": "HWMS-6", "link": "/features/HWMS-6", "role": "capability part" }],
+      "relations": { "deliveredBy": ["P-putaway-replenishment"], "improvesProcesses": [] },
+      "status": "Shipped",
+      "dates": {
+        "productTarget": { "value": "2026-03-31", "source": "aha:HWMS-6", "field": "release.release_date" },
+        "engineeringForecast": { "value": "2026-03-27", "source": "jira:HCORE-2", "field": "duedate" },
+        "actualCompletion": { "value": "2026-03-27", "source": "jira:HCORE-2", "field": "resolutiondate" },
+        "customerAvailability": { "value": "2026-03-31", "source": "aha:HWMS-6", "field": "release.release_date where release.released is true" },
+        "salesCommitment": null,
+        "proposedPlanningDate": { "value": "2026-03-31", "meaning": "customerAvailability", "rule": "R1", "conflicts": [] }
+      },
+      "flags": []
+    },
+    {
+      "key": "P-carrier-connect-v1", "concept": "project", "name": "Carrier Connect v1", "decision": "selected",
+      "rationale": "Delivery work for HWMS-1, explicit link on both sides. A Jira epic is a Project only because it is delivery work with its own team, dates and effort; it does not define the capability.",
+      "sources": [{ "system": "jira", "id": "HINT-12", "link": "/browse/HINT-12", "role": "delivery epic" }],
+      "relations": { "initiative": "I-carrier-connectivity-parity", "team": "T-integrations", "delivers": ["F-multi-carrier-rate-shopping"] },
+      "status": "InProgress",
+      "roadmapItem": { "start": "2026-09-01", "end": "2026-10-15", "basis": "R2: Jira start and due date; not the last project delivering the capability" },
+      "effort": { "status": "estimated", "total": 34, "unit": "story points", "team": "T-integrations", "basis": "jira:HINT-12 customfield_10016", "spread": "even over 2026-09 and 2026-10" },
+      "flags": []
+    },
+    {
+      "key": "P-carrier-connect-rate-shopping-ui", "concept": "project", "name": "Carrier Connect rate-shopping UI", "decision": "selected",
+      "rationale": "Delivery work for HWMS-1 by a different team, explicit link on both sides. The Jira blocked-by link makes it depend on HINT-12.",
+      "sources": [{ "system": "jira", "id": "HWEB-9", "link": "/browse/HWEB-9", "role": "delivery epic" }],
+      "relations": { "initiative": "I-carrier-connectivity-parity", "team": "T-web", "delivers": ["F-multi-carrier-rate-shopping"] },
+      "status": "Planned",
+      "roadmapItem": { "start": "2026-10-15", "end": "2026-10-31", "basis": "R2: Jira start date; last project delivering the capability, so it ends on the planning date (Jira forecast 2026-10-28 is earlier)" },
+      "effort": { "status": "gap", "total": null, "unit": null, "team": "T-web", "reportedAs": { "value": 120, "unit": "person-hours", "basis": "jira:HWEB-9 timeoriginalestimate 432000 seconds" }, "reason": "Web capacity is story points per month and no reviewed convention converts person-hours to points. No demand rows are written." },
+      "flags": ["incompatibleUnits"]
+    },
+    {
+      "key": "P-cycle-count-workflows", "concept": "project", "name": "Cycle count workflows", "decision": "selected",
+      "rationale": "Delivery work for HWMS-3, explicit link on both sides. Jira status is Done, so the Project is Done; the capability is not.",
+      "sources": [{ "system": "jira", "id": "HWEB-3", "link": "/browse/HWEB-3", "role": "delivery epic" }],
+      "relations": { "initiative": "I-win-ecommerce-fulfillment", "team": "T-web", "delivers": ["F-cycle-counting"] },
+      "status": "Done",
+      "roadmapItem": { "start": "2026-10-01", "end": "2026-11-30", "basis": "R2: Aha! start date (no Jira start); ends on the capability planning date, not on the Jira resolution date, because a simulation applies coverage deltas at the roadmap item's end" },
+      "effort": { "status": "complete", "total": null, "unit": null, "team": "T-web", "reason": "Delivery work is Done in Jira; no remaining demand. The 21 story points already spent are not future demand." },
+      "flags": []
+    },
+    {
+      "key": "P-returns-portal", "concept": "project", "name": "Returns portal", "decision": "selected",
+      "rationale": "Delivery work for HWMS-4, explicit link on both sides. Carried with the stale flag of its capability.",
+      "sources": [{ "system": "jira", "id": "HWEB-14", "link": "/browse/HWEB-14", "role": "delivery epic" }],
+      "relations": { "initiative": "I-win-ecommerce-fulfillment", "team": "T-web", "delivers": ["F-returns-portal"] },
+      "status": "Planned",
+      "roadmapItem": { "start": "2027-01-04", "end": "2027-03-31", "basis": "R2: Aha! start date (no Jira start); ends on the capability planning date" },
+      "effort": { "status": "gap", "total": null, "unit": null, "team": "T-web", "reason": "No estimate in Jira or Aha!. Left a gap: not inferred from other epics or ticket counts." },
+      "flags": ["stale", "missingEstimate", "externalPrerequisite"]
+    },
+    {
+      "key": "P-putaway-replenishment", "concept": "project", "name": "Putaway and replenishment", "decision": "selected",
+      "rationale": "Delivery work for the shipped Warehouse optimization pack (HWMS-6), explicit link on both sides. One epic delivering two Features.",
+      "sources": [{ "system": "jira", "id": "HCORE-2", "link": "/browse/HCORE-2", "role": "delivery epic" }],
+      "relations": { "initiative": "I-warehouse-efficiency", "team": "T-core-platform", "delivers": ["F-zone-based-putaway", "F-directed-replenishment"] },
+      "status": "Done",
+      "roadmapItem": null,
+      "roadmapNote": "No roadmap item: delivered before the planning horizon (2026-10-01), so it is history on the Project and Feature, not a plan.",
+      "effort": { "status": "complete", "total": null, "unit": null, "team": "T-core-platform", "reason": "Delivered; no remaining demand." },
+      "flags": []
+    }
+  ],
+  "dependencies": [
+    {
+      "key": "D-ui-after-v1", "status": "resolved", "from": "P-carrier-connect-rate-shopping-ui", "to": "P-carrier-connect-v1",
+      "evidence": "jira:HWEB-9 issue link 'is blocked by' HINT-12",
+      "reason": "Both ends are selected Projects; becomes dependsOnProjectNames in dataset 03. Sequencing holds: the UI starts on the day the v1 project ends."
+    },
+    {
+      "key": "D-returns-sso", "status": "external", "from": "P-returns-portal", "to": null,
+      "external": { "system": "jira", "id": "HPLAT-31", "summary": "Customer SSO for the portal", "owner": null, "ownerNote": "HPLAT is outside the agreed Jira projects, so no assignee was read" },
+      "startDate": null,
+      "evidence": "jira:HWEB-14 issue link 'is blocked by' HPLAT-31",
+      "reason": "External prerequisite with no known owner or date. Not a project dependency (the edge would be dropped or dangle); no date is invented.",
+      "exception": "EX-external-prerequisite"
+    },
+    {
+      "key": "D-wave-cutoffs-blocked-by-engine", "status": "unresolved", "kind": "cycle", "fromSource": "jira:HINT-16", "toSource": "jira:HCORE-7",
+      "evidence": "jira:HINT-16 issue link 'is blocked by' HCORE-7",
+      "reason": "Both epics are held out of the portfolio (EX-wave-picking-delivery); together with the reverse edge they form a cycle, so no order can be proposed.",
+      "exception": "EX-wave-picking-delivery"
+    },
+    {
+      "key": "D-wave-engine-blocked-by-cutoffs", "status": "unresolved", "kind": "cycle", "fromSource": "jira:HCORE-7", "toSource": "jira:HINT-16",
+      "evidence": "jira:HCORE-7 issue link 'is blocked by' HINT-16",
+      "reason": "Reverse edge of the cycle above; raise with both teams.",
+      "exception": "EX-wave-picking-delivery"
+    }
+  ],
+  "exclusions": [
+    {
+      "key": "X-legacy-report-writer", "sources": [{ "system": "aha", "id": "HWMS-7", "link": "/features/HWMS-7" }],
+      "reason": "Aha! status is Will not do: the source closed it. Not on any current release; nothing to reconcile."
+    },
+    {
+      "key": "X-multi-tenant-rewrite", "sources": [{ "system": "jira", "id": "HCORE-11", "link": "/browse/HCORE-11" }],
+      "reason": "Jira resolution is Won't Do (2026-06-02) and no Aha! record links to it. A closed decision, not a stale one."
+    }
+  ],
+  "exceptions": [
+    {
+      "key": "EX-wave-picking-delivery", "kind": "ambiguousMatch", "disposition": "held",
+      "sources": [{ "system": "jira", "id": "HCORE-7", "link": "/browse/HCORE-7" }, { "system": "jira", "id": "HINT-16", "link": "/browse/HINT-16" }],
+      "merge": false,
+      "proposedMatches": [{ "target": "aha:HWMS-2", "evidence": "HCORE-7 has the same title as HWMS-2; HINT-16 shares its leading words. Neither epic carries an Aha! reference and HWMS-2 lists no Jira link." }],
+      "reason": "Name similarity only proposes a match. Two epics are similarly named, neither is linked, and both could deliver HWMS-2 or be one body of work; they stay separate and out of the seed until a human decides.",
+      "question": "Which epic(s) deliver HWMS-2 Wave picking, and are HCORE-7 and HINT-16 one piece of work or two? They also block each other.",
+      "candidates": ["HCORE-7 is one Project delivering Wave picking; HINT-16 is a second Project delivering it too", "HCORE-7 only; HINT-16 is separate work", "One Project covering both (merge)", "Neither delivers it"],
+      "reviewPriority": "high",
+      "priorityBasis": "An approved release-2026.5 capability has no delivery Project, and both epics are In Progress and were updated within the last two weeks. Recency raises review priority; it does not approve either epic.",
+      "blocks": ["dataset 03 Project for Wave picking", "dataset 04 roadmap item for it"]
+    },
+    {
+      "key": "EX-contradictory-link-hweb-15", "kind": "contradictoryLink", "disposition": "held",
+      "sources": [{ "system": "jira", "id": "HWEB-15", "link": "/browse/HWEB-15" }],
+      "reason": "HWEB-15 names HWMS-6 as its Aha! reference, but HWMS-6 lists only HCORE-2 as its Jira link and the titles have nothing in common. An explicit link is evidence of association, not of equal scope, and these two explicit links disagree.",
+      "question": "Is HWEB-15 Admin console refactor part of the Warehouse optimization pack, or is its Aha! reference a mistake?",
+      "candidates": ["The reference is a mistake; HWEB-15 is unrelated internal work", "HWEB-15 is a third delivery epic of HWMS-6"],
+      "reviewPriority": "medium",
+      "priorityBasis": "Updated 2026-09-15 and In Progress, but it touches only a shipped capability whose delivery is already mapped."
+    },
+    {
+      "key": "EX-tentative-slotting-optimizer", "kind": "tentative", "disposition": "held",
+      "sources": [{ "system": "aha", "id": "HWMS-5", "link": "/features/HWMS-5" }],
+      "reason": "Status Under consideration, no release and no initiative: not on the approved roadmap, so not selected.",
+      "question": "Is Slotting optimizer approved for a release, or should it stay off the portfolio?",
+      "candidates": ["Keep off the portfolio", "Approve it and name a release and initiative"],
+      "reviewPriority": "medium",
+      "priorityBasis": "Updated 2026-09-24, so someone is working on it. Recency raises the review priority; it never approves the item."
+    },
+    {
+      "key": "EX-sales-commitment-date", "kind": "dateConflict", "disposition": "flagged",
+      "recordKeys": ["F-multi-carrier-rate-shopping"],
+      "evidence": ["salesforce:006EX000000A004AAA"],
+      "reason": "The Bluewater Logistics add-on opportunity records a sales commitment of 2026-10-09; the product target is 2026-10-31 and the engineering forecast of the last delivering epic is 2026-10-28. A sales commitment is a commercial fact, not a delivery date.",
+      "effectOnPlan": "None: the planning date stays 2026-10-31 and no roadmap item ends on 2026-10-09.",
+      "question": "Does the commercial team know the 2026-10-31 target, and is the customer promise still 2026-10-09?",
+      "candidates": ["Keep the planning date and tell the account owner", "Ask product to move the Aha! release earlier (a product decision, outside onboarding)"],
+      "reviewPriority": "high",
+      "priorityBasis": "A signed customer is promised a date the plan cannot meet."
+    },
+    {
+      "key": "EX-done-not-released", "kind": "doneNotReleased", "disposition": "flagged",
+      "recordKeys": ["F-cycle-counting", "P-cycle-count-workflows"],
+      "evidence": ["jira:HWEB-3", "aha:HWMS-3"],
+      "reason": "HWEB-3 is Done (2026-09-22) but HWMS-3 is Ready to release on 2026-11-30. Jira Done is execution evidence, not customer availability, so the Feature is Planned with no shippedDate.",
+      "effectOnPlan": "The Project is Done; the Feature ships on the Aha! release, and the roadmap item ends on 2026-11-30.",
+      "question": "Is 2026-11-30 still the release date for cycle counting?",
+      "candidates": ["Yes, keep the Aha! release date", "The release date moved: update Aha! first, then re-run the mapping"],
+      "reviewPriority": "low",
+      "priorityBasis": "Consistent with the agreed authority rule; listed so nobody reads Done as shipped."
+    },
+    {
+      "key": "EX-stale-returns-portal", "kind": "staleInApprovedRoadmap", "disposition": "flagged",
+      "recordKeys": ["F-returns-portal", "P-returns-portal"],
+      "evidence": ["aha:HWMS-4", "jira:HWEB-14"],
+      "reason": "HWMS-4 was last updated 2025-08-12 and HWEB-14 on 2025-08-20 (over the 180-day threshold), but HWMS-4 is explicitly on release 2027.1 of the approved roadmap. Selected and flagged, not discarded.",
+      "question": "Is the Returns portal still planned for 2027.1 with the current dates?",
+      "candidates": ["Yes, keep it as is", "It slipped: give new dates in Aha!", "Drop it from the portfolio"],
+      "reviewPriority": "high",
+      "priorityBasis": "Approved, and it feeds the roadmap and simulation, but nothing has touched it for over a year."
+    },
+    {
+      "key": "EX-external-prerequisite", "kind": "externalPrerequisite", "disposition": "flagged",
+      "recordKeys": ["P-returns-portal"],
+      "evidence": ["jira:HPLAT-31"],
+      "reason": "HWEB-14 is blocked by HPLAT-31 (Customer SSO for the portal) in a Jira project outside the agreed scope. No owner and no date are known.",
+      "question": "Who owns HPLAT-31 and when will it land?",
+      "candidates": ["Name the owning team and a date", "Treat the prerequisite as already satisfied", "Add HPLAT to the Jira scope"],
+      "reviewPriority": "high",
+      "priorityBasis": "It can block an approved project and has no owner."
+    },
+    {
+      "key": "EX-incompatible-units-web-estimate", "kind": "incompatibleUnits", "disposition": "flagged",
+      "recordKeys": ["P-carrier-connect-rate-shopping-ui"],
+      "evidence": ["jira:HWEB-9"],
+      "reason": "HWEB-9 is estimated in person-hours; capacity for Web is story points per month. No conversion is documented, so the demand stays a gap.",
+      "question": "Is there an agreed hours-to-points convention for the Web team, shared with its capacity?",
+      "candidates": ["Supply a documented convention and re-run", "Re-estimate the epic in story points", "Leave the gap"],
+      "reviewPriority": "medium",
+      "priorityBasis": "Understates Web demand in the feasibility check until resolved."
+    },
+    {
+      "key": "EX-missing-estimate-returns-portal", "kind": "missingEstimate", "disposition": "flagged",
+      "recordKeys": ["P-returns-portal"],
+      "evidence": ["jira:HWEB-14"],
+      "reason": "No estimate on HWEB-14 or HWMS-4. Not inferred from other epics or from ticket counts.",
+      "question": "What is the Web team's estimate for the Returns portal, in story points?",
+      "candidates": ["Supply an estimate", "Leave the gap"],
+      "reviewPriority": "medium",
+      "priorityBasis": "Understates 2027 Web demand until resolved."
+    }
+  ]
+}

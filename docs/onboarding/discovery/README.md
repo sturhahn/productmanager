@@ -92,7 +92,7 @@ For each requested dataset (01-12), read only its `## Tier and prerequisites` an
 
 | Classification | Meaning |
 |---|---|
-| `ready` | Evidence is in scope and maps without a further decision |
+| `ready` | Evidence is in scope and maps without a further decision (a match between records by name alone is only a proposal, so it is never `ready`; see the [portfolio step](../portfolio/README.md)) |
 | `requires a mapping decision` | Evidence exists but the human must choose which field or interpretation is authoritative |
 | `requires another source` | Needed values are absent from, or unreadable in, the accessible systems |
 | `intentionally deferred` | Outside the requested tier, or optional and not requested |

@@ -5,8 +5,9 @@ who has data somewhere (spreadsheets, a CRM, Jira, a finance system) and end wit
 instance loaded with that human's data.
 
 Read this file end to end before you start. Do not read the dataset files under `datasets/` - each
-one is read by the subagent you spawn for it. (Discovery, section 6, is the one exception: it reads
-each requested dataset's tier and data-requirements sections only to map evidence.)
+one is read by the subagent you spawn for it. (Discovery, section 6, and portfolio selection, section 8,
+are the exceptions: they read a requested dataset's tier, data-requirements and units sections only to
+map evidence and shape the mapping.)
 
 Shorthand used below: `pm` means `dotnet run --project src/ProductManager.Cli --`. There is no
 installed `pm` binary. Every command is run from the repository root.
@@ -24,7 +25,7 @@ spec - the *why* behind every dataset).
 
 | Role | Reads | Does |
 |---|---|---|
-| Orchestrator (you) | this file, plus [`discovery/README.md`](discovery/README.md) when sources are connected | environment checks, stack up, source discovery, consolidated interview, spawns subagents, assembles and loads, verifies |
+| Orchestrator (you) | this file, plus [`discovery/README.md`](discovery/README.md) when sources are connected and [`portfolio/README.md`](portfolio/README.md) when Aha! or Jira are connected | environment checks, stack up, source discovery, consolidated interview, portfolio selection, spawns subagents, assembles and loads, verifies |
 | Dataset subagent | one file under `datasets/` | asks its dataset's questions, converts the human's source data, emits a seed JSON fragment, loads it, reports |
 
 This is progressive disclosure on purpose: the 12 dataset files together are far too long for one
@@ -59,6 +60,12 @@ Source manifest: <absolute path to source-manifest.json, or "none - no connected
 If given, read this dataset's `datasetReadiness` entry and the objects it cites; use the source IDs
 and `rawResponseFiles` instead of re-querying. Only ask the human about what the manifest and the
 agreed answers leave open. Discovery is read-only: do not re-run it or widen its scope.
+
+Portfolio mapping: <absolute path to portfolio-mapping.json, or "none - no Aha!/Jira sources">
+If given, take every initiative, project, feature, team and business process name, every inclusion
+decision and every effort or capacity unit from it. Never coin your own name, merge or split records,
+or include a record the mapping holds out or excludes; a name you think is wrong goes in your report
+for the orchestrator. Prepare the fragment only from the mapping's selected records.
 
 Source data location:
 <path to spreadsheet / export / API, plus any credentials handling the human specified>
@@ -328,9 +335,9 @@ Procedure - the detail and every field is in [`discovery/README.md`](discovery/R
 Hard rules:
 
 - Discovery is read-only and creates nothing: no ProductManager entities, no writes to any source
-  system, no database access. Loading stays API-only and later, exactly as sections 8 and 9 describe.
+  system, no database access. Loading stays API-only and later, exactly as sections 9 and 10 describe.
 - It precedes all per-dataset preparation and any real-data load. Environment checks, authentication,
-  load order and verification (sections 2, 3, 8, 9) are unchanged.
+  load order and verification (sections 2, 3, 9, 10) are unchanged.
 - Store no credentials, tokens or connection strings in any artifact.
 - Finance costs and market-wide totals stay gaps when no accessible system holds them; a Jira Done
   status is not customer availability; a sales commitment is not a delivery date.
@@ -374,11 +381,54 @@ per-dataset questions belong to the subagents - do not pre-empt them.
 8. **Who decides when the data is ambiguous?** Default: the subagent picks a documented default and
    flags it in its report; you surface every flag to the human at the end.
 
-Write the answers down. You will paste the relevant slice of them into each subagent brief.
+Write the answers down. You will paste the relevant slice of them into each subagent brief. With Aha! or Jira connected, section 8 comes next.
 
 ---
 
-## 8. Assembling and loading
+## 8. Portfolio selection (Aha! or Jira connected, before any dataset subagent)
+
+**When:** Aha! or Jira sources were discovered (section 6) and tier A is requested, after the interview
+(section 7) and before you spawn a subagent for datasets 01, 03 or 04. **Skip it** on the
+spreadsheet-only path; the brief's "Portfolio mapping" slot is then `none`.
+
+**Why:** Aha! and Jira hold approved plans next to stale ideas, tickets and old releases. Loading it all
+gives an unrecognizable portfolio, and independent subagents would name and slice the same capability
+differently. One approved mapping, made once, is the shared vocabulary.
+
+Procedure - the detail and every field is in [`portfolio/README.md`](portfolio/README.md):
+
+1. Run one portfolio question round (which Aha! releases are the current portfolio, how far back shipped
+   capabilities matter, the stale threshold); reuse the interview's answers on availability and team unit.
+2. Start from the current Aha! portfolio and follow explicit links into the agreed Jira projects. Select
+   approved current work and relevant shipped capabilities; hold stale, tentative, unlinked and
+   conflicting records in an exception list. Recency ranks review priority, never approves.
+3. Model capability and delivery separately: an Aha! feature is not automatically a Feature and a Jira
+   epic is not automatically a Project; keep `Project delivers Feature` explicit.
+4. Treat links as evidence, not proof of equal scope; a name match only proposes. Contradictory links and
+   several plausible matches go to the human.
+5. Keep the five date meanings apart, choose the planning date by the agreed authority, flag conflicts;
+   Jira Done is not shipped. Keep capacity and effort units explicit; missing estimates stay gaps.
+6. Resolve dependencies inside the portfolio; surface external prerequisites, missing owners and cycles.
+7. Write the mapping ([`portfolio/portfolio-mapping.example.json`](portfolio/portfolio-mapping.example.json))
+   outside the repo, show the human the readable portfolio, exclusions and ranked exceptions, and put
+   its path in every subagent brief.
+
+Hard rules:
+
+- Read-only and creating nothing, as in discovery: no ProductManager entities, no writes to Aha! or Jira.
+  It is reconciliation, not reprioritization: never reorder or re-rank the plan.
+- Dataset subagents for 01, 03 and 04, and for anything that references business processes, take names
+  and inclusion decisions from the mapping and never coin their own vocabulary. Fragments are prepared
+  only from the mapping's selected records.
+- Store no credentials, tokens or connection strings in the mapping.
+
+> **PRD5 hook - consequential-decision review.** Before any fragment is loaded (section 9), the mapping's
+> inclusion decisions, exceptions and date conflicts go through the consequential-decision review.
+> Link: <!-- PRD5: link the decision-register procedure here -->
+
+---
+
+## 9. Assembling and loading
 
 Both strategies use the same command:
 
@@ -474,7 +524,7 @@ appears in the tally at all.
 
 ---
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 Run this after every dataset load, and again at the end.
 
@@ -544,7 +594,7 @@ table means calibration found no facts to fit, which usually means dataset 12 di
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|

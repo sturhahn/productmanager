@@ -1,0 +1,11 @@
+{
+  "request": "GET /services/data/v62.0/query?q=SELECT Id, Name, StageName, CloseDate, Committed_Aha_Ref__c, Committed_Date__c FROM Opportunity WHERE Committed_Aha_Ref__c != null",
+  "httpStatus": 200,
+  "response": {
+    "totalSize": 1,
+    "done": true,
+    "records": [
+      { "attributes": { "type": "Opportunity", "url": "/services/data/v62.0/sobjects/Opportunity/006EX000000A004AAA" }, "Id": "006EX000000A004AAA", "Name": "Bluewater Logistics - Carrier Connect add-on", "StageName": "Closed Won", "CloseDate": "2026-05-29", "Committed_Aha_Ref__c": "HWMS-1", "Committed_Date__c": "2026-10-09" }
+    ]
+  }
+}

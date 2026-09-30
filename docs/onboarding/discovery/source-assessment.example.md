@@ -37,7 +37,7 @@ ProductManager entities created, no source records changed.
 |---|---|---|
 | 01 workspace and teams | requires a mapping decision | Jira projects as teams; capacity from you (Q5) |
 | 02 market structure | requires a mapping decision | segmentation field (Q1) |
-| 03 initiatives, projects, features | ready | Aha! intent plus Jira execution |
+| 03 initiatives, projects, features | requires a mapping decision | Aha! intent plus Jira execution; HCORE-7 has no Aha! link and only its name resembles HWMS-2 (Q8) |
 | 04 roadmap | ready | Aha! start and due dates |
 | 05 coverage and needs | requires another source | no system holds a coverage grid |
 | 06 segment economics | requires another source | finance costs and prospect pool are gaps |
@@ -74,3 +74,7 @@ tier A now, decide B to D after Q2 and Q3.
 7. **Q7** How do StageName and null Amount map to outcomes?
    Candidates: Closed Won to Won, Closed Lost to Lost, Negotiation to open; treat null Amount as
    unknown, not zero.
+8. **Q8** Does Jira epic HCORE-7 deliver Aha! feature HWMS-2?
+   Candidates: yes, HCORE-7 is the delivering project (its title equals HWMS-2 but it carries no Aha!
+   reference); no, keep it separate and link HWMS-2 to a different epic; not sure, review both in the
+   portfolio step. A name match only proposes; it never merges the records.

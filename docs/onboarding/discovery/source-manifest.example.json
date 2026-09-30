@@ -215,11 +215,11 @@
     },
     {
       "datasetId": "03", "file": "datasets/03-initiatives-projects-features.md", "tier": "A",
-      "classification": "ready",
+      "classification": "requires a mapping decision",
       "observed": ["Aha! initiatives and features HWMS-1..3", "Jira epics HINT-12, HCORE-7, HWEB-3"],
-      "proposedAssumptions": ["Jira epic to Aha! feature by the Aha! reference field; HCORE-7 has none, match by name (Wave picking engine)"],
+      "proposedAssumptions": ["Jira epic to Aha! feature by the Aha! reference field", "HCORE-7 has no Aha! reference; its name equals HWMS-2 (Wave picking engine). Name similarity is only a proposal for review, never a merge (Q8)"],
       "gaps": [],
-      "dependsOnQuestions": ["Q4"]
+      "dependsOnQuestions": ["Q4", "Q8"]
     },
     {
       "datasetId": "04", "file": "datasets/04-roadmap.md", "tier": "A",
@@ -296,7 +296,7 @@
   ],
   "tierReadiness": {
     "requested": "D",
-    "A": { "datasets": ["01", "03", "04"], "status": "completable", "blockedByCommercialGaps": false, "dependsOnQuestions": ["Q4", "Q5"] },
+    "A": { "datasets": ["01", "03", "04"], "status": "completable", "blockedByCommercialGaps": false, "dependsOnQuestions": ["Q4", "Q5", "Q8"] },
     "B": { "datasets": ["02", "05"], "status": "needs another source", "blockedByCommercialGaps": false, "dependsOnQuestions": ["Q1"] },
     "C": { "datasets": ["06", "08"], "status": "blocked", "blockedByCommercialGaps": true, "dependsOnQuestions": ["Q1", "Q3"] },
     "D": { "datasets": ["10", "11", "12"], "status": "blocked", "blockedByCommercialGaps": true, "dependsOnQuestions": ["Q2", "Q6", "Q7"] },
@@ -309,6 +309,7 @@
     { "id": "Q4", "rank": 4, "question": "Which signal marks a feature as available to customers?", "consequence": "Sets feature status and shippedDate; a wrong choice makes shipped features look available too early.", "candidateAnswers": ["Aha! release_date and status (proposed default)", "Jira resolutiondate (HWEB-3 is Done since 2026-09-22 but its Aha! release is 2026-11-30; not proposed)"], "affectsDatasets": ["03"] },
     { "id": "Q5", "rank": 5, "question": "Are the three Jira projects your teams, and what is capacity measured in?", "consequence": "Team list and the unit shared by capacity and effort demand.", "candidateAnswers": ["HCORE, HINT, HWEB as Core Platform, Integrations, Web", "Story points per month (Jira customfield_10016 is populated on all 3 epics)"], "affectsDatasets": ["01", "03"] },
     { "id": "Q6", "rank": 6, "question": "Is LeadSource the channel, and which values are channels?", "consequence": "Defines channels and per-deal attribution.", "candidateAnswers": ["Direct, Partner - Consultant, Inbound Web as channels; Existing Customer as a cross-sell marker", "Ignore LeadSource and use one direct channel"], "affectsDatasets": ["10", "12"] },
-    { "id": "Q7", "rank": 7, "question": "How do StageName and null Amount map to outcomes?", "consequence": "Which deals count as won, lost, or still open.", "candidateAnswers": ["Closed Won to Won, Closed Lost to Lost, Negotiation to open", "Treat null Amount as unknown, not zero"], "affectsDatasets": ["12"] }
+    { "id": "Q7", "rank": 7, "question": "How do StageName and null Amount map to outcomes?", "consequence": "Which deals count as won, lost, or still open.", "candidateAnswers": ["Closed Won to Won, Closed Lost to Lost, Negotiation to open", "Treat null Amount as unknown, not zero"], "affectsDatasets": ["12"] },
+    { "id": "Q8", "rank": 8, "question": "Does Jira epic HCORE-7 deliver Aha! feature HWMS-2?", "consequence": "Without an answer Wave picking has no delivering project and no roadmap item; datasets 03 and 04 leave it out.", "candidateAnswers": ["Yes, HCORE-7 is the delivering project (its title equals HWMS-2 but it carries no Aha! reference)", "No, keep HCORE-7 separate and link HWMS-2 to a different epic", "Not sure, review both in the portfolio step"], "affectsDatasets": ["03", "04"] }
   ]
 }

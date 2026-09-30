@@ -31,6 +31,17 @@
   fixture and assessment together. Source-specific field names (for example `StageName`) stay in
   these mapping artifacts, never in the seed schema. The directory has no ABSTRACT/INDEX/CLAUDE
   trio, matching `onboarding/` and `datasets/`.
+- **`onboarding/portfolio/` is documentation plus examples only** (PRD4): no transformation code, API,
+  database or seed-schema changes; reconciliation is done by the orchestrator agent. The tests check
+  that `portfolio-mapping.example.json` references the discovery manifest without repeating instance
+  identity, that every record, exclusion and exception carries a reason, that every fixture Aha! feature
+  and Jira epic is selected, excluded or held exactly once, that the three fragments in
+  `portfolio/fixture/seed/` parse strictly against `SeedModels` and use exactly the approved names, and
+  that dependencies, dates and units follow the rules in `portfolio/README.md`. Change the mapping, the
+  fixture extracts, the fragments and the walkthrough together. The guide's section 8 (portfolio
+  selection) sits between the interview and loading; if you renumber guide sections, fix every
+  cross-reference (grep for "section"). The PRD5 hook there is a placeholder for the decision-register
+  link. No ABSTRACT/INDEX/CLAUDE trio inside this directory, matching `discovery/`.
 - Dataset files are written for an agent reader: state units only when verified in code, cite
   the file, keep the shared Harborline example world consistent across files, and never invent a
   `pm` verb or option.

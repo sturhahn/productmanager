@@ -31,7 +31,10 @@ and Jira, a few records each. The [manifest example](../source-manifest.example.
 4. `accessLimitations`: the 403 file, the only place the fixture shows a read that failed.
 5. `authorityRules`: `HWEB-3` is Done in Jira (`resolutiondate` 2026-09-22) while Aha! `HWMS-3` has
    release date 2026-11-30, the concrete case behind "Jira Done is not customer availability" (Q4).
-6. `datasetReadiness`, `tierReadiness` and `openQuestions` are the discovery judgments on top of the
+6. `HCORE-7` has no Aha! reference (null `customfield_10200`) while its title equals Aha! `HWMS-2`. A name
+   match only proposes, so dataset 03 is `requires a mapping decision` with question Q8, not `ready`;
+   the [portfolio step](../../portfolio/README.md) resolves it.
+7. `datasetReadiness`, `tierReadiness` and `openQuestions` are the discovery judgments on top of the
    evidence; the assessment restates them for the human.
 
 ## Acceptance criteria

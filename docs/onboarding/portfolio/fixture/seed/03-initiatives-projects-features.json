@@ -1,0 +1,62 @@
+{
+  "initiatives": [
+    { "name": "Carrier connectivity parity" },
+    { "name": "Win e-commerce fulfillment" },
+    { "name": "Warehouse efficiency" }
+  ],
+  "features": [
+    { "name": "Multi-carrier rate shopping", "status": "Planned" },
+    { "name": "Wave picking", "status": "Planned" },
+    { "name": "Cycle counting", "status": "Planned" },
+    { "name": "Returns portal", "status": "Planned" },
+    { "name": "Zone-based putaway", "description": "Released with the Warehouse optimization pack (Aha! release 2026.2).", "status": "Shipped", "shippedDate": "2026-03-31" },
+    { "name": "Directed replenishment", "description": "Released with the Warehouse optimization pack (Aha! release 2026.2).", "status": "Shipped", "shippedDate": "2026-03-31" }
+  ],
+  "projects": [
+    {
+      "name": "Carrier Connect v1",
+      "initiativeName": "Carrier connectivity parity",
+      "status": "InProgress",
+      "startDate": "2026-09-01",
+      "endDate": "2026-10-15",
+      "effortDemands": [
+        { "teamName": "Integrations", "year": 2026, "month": 9, "points": 17 },
+        { "teamName": "Integrations", "year": 2026, "month": 10, "points": 17 }
+      ],
+      "deliversFeatureNames": [ "Multi-carrier rate shopping" ]
+    },
+    {
+      "name": "Carrier Connect rate-shopping UI",
+      "initiativeName": "Carrier connectivity parity",
+      "status": "Planned",
+      "startDate": "2026-10-15",
+      "endDate": "2026-10-31",
+      "dependsOnProjectNames": [ "Carrier Connect v1" ],
+      "deliversFeatureNames": [ "Multi-carrier rate shopping" ]
+    },
+    {
+      "name": "Cycle count workflows",
+      "initiativeName": "Win e-commerce fulfillment",
+      "status": "Done",
+      "startDate": "2026-10-01",
+      "endDate": "2026-11-30",
+      "deliversFeatureNames": [ "Cycle counting" ]
+    },
+    {
+      "name": "Returns portal",
+      "initiativeName": "Win e-commerce fulfillment",
+      "status": "Planned",
+      "startDate": "2027-01-04",
+      "endDate": "2027-03-31",
+      "deliversFeatureNames": [ "Returns portal" ]
+    },
+    {
+      "name": "Putaway and replenishment",
+      "initiativeName": "Warehouse efficiency",
+      "status": "Done",
+      "startDate": "2026-01-12",
+      "endDate": "2026-03-27",
+      "deliversFeatureNames": [ "Zone-based putaway", "Directed replenishment" ]
+    }
+  ]
+}

@@ -15,7 +15,7 @@
   `onboarding/`.
 - `onboarding/README.md` — the orchestrator agent's onboarding guide: environment checks,
   running the stack, source discovery, the mandatory/optional dataset task list, the consolidated
-  interview, load order, verification. Hand this file to an agent onboarding a new instance.
+  interview, portfolio selection, load order, verification. Hand this file to an agent onboarding a new instance.
 - `onboarding/discovery/README.md` - the detailed source-discovery procedure (PRD3): scope
   boundaries, inspection, pagination, authority by concept, dataset-to-evidence mapping, manifest
   field reference. Open when the human has connected sources.
@@ -25,6 +25,13 @@
   the consolidated ranked question list.
 - `onboarding/discovery/fixture/` - trimmed Salesforce/Aha!/Jira responses (multi-page, missing
   fields, unreadable history) the examples are derived from; `fixture/README.md` walks through them.
+- `onboarding/portfolio/README.md` - the detailed portfolio-reconciliation procedure (PRD4): selecting
+  the current portfolio, capability versus delivery, matching evidence, date meanings, units,
+  dependencies, outputs, mapping field reference. Open when Aha! or Jira are connected.
+- `onboarding/portfolio/portfolio-mapping.example.json` - the shared mapping artifact example
+  (Harborline, fictional); guarded by tests.
+- `onboarding/portfolio/fixture/` - Aha!/Jira/Salesforce extracts, the seed fragments generated from the
+  mapping (`seed/`), and `README.md`, the walkthrough of every PRD4 acceptance criterion.
 - `onboarding/datasets/NN-*.md` — one file per dataset (12, numbered in load order): data
   requirements, units and conversions, seed JSON shape, idempotency rule, verification. Each
   follows the same eight-heading skeleton; a subagent reads exactly one.

@@ -4,4 +4,5 @@ simulation semantics, or phasing; it is the authoritative source, and no other f
 should duplicate its content. `onboarding/` is what a new user hands to an agent to load their
 own data into a fresh instance (guide plus one requirements file per dataset), including a
 read-only source-discovery step (`onboarding/discovery/`) that assesses connected Aha!, Jira and
-Salesforce sources before any data is prepared.
+Salesforce sources before any data is prepared, and a portfolio-reconciliation step
+(`onboarding/portfolio/`) that turns them into one approved, traceable mapping every dataset agent uses.
