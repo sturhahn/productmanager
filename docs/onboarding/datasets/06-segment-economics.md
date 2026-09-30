@@ -47,6 +47,13 @@ numbers. `pm` below means `dotnet run --project src/ProductManager.Cli --`.
 
 **Consequential choices** here: how ARPU is derived from revenue, every cost line (`operatingCosts`) and the prospect pool (`marketPopulation`) when no accessible system holds them, and module penetration defaults. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
 
+**From Salesforce evidence** (tier C or D with a commercial source): do not derive these numbers by
+hand. The [commercial normalization](../commercial/README.md) turns contract and subscription lines
+into normalized `arpuPerMonth` (base product only, term- and quantity-adjusted, one reporting
+currency with the rate and date recorded), `implementationFee`, and module `penetration` (unique
+active firms holding the module, never won-deal counts). Take its `segmentTotals`. A segment whose
+numbers are unresolved is left out entirely, because a stock state cannot hold an unknown.
+
 ## Data requirements
 
 Entity: `marketDynamics.segmentStockStates[]` (one per segment; natural key `segmentName`).
@@ -214,3 +221,6 @@ The CLI prints `Loaded <path>:` followed by one line per entity kind, e.g.
 - Leaving out fields: a missing field is 0, and the PUT replaces the whole state, so a partial
   object zeroes whatever you omitted.
 - Mixed currencies across segments: the engine adds them as if they were the same unit.
+- **Loading an unresolved number as 0.** Every stock-state number is non-nullable and the PUT
+  replaces the whole state, so an unknown cost, pool or ARPU becomes an observed zero. Leave the
+  whole row out, or load a reviewed assumption; see [normalization](../commercial/README.md#11-unresolved-is-never-zero).

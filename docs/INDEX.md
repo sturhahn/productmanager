@@ -15,7 +15,7 @@
   `onboarding/`.
 - `onboarding/README.md` — the orchestrator agent's onboarding guide: environment checks,
   running the stack, source discovery, the mandatory/optional dataset task list, the consolidated
-  interview, portfolio selection, consequential-decision review, load order, verification. Hand this file to an agent onboarding a new instance.
+  interview, portfolio selection, commercial normalization, consequential-decision review, load order, verification. Hand this file to an agent onboarding a new instance.
 - `onboarding/discovery/README.md` - the detailed source-discovery procedure (PRD3): scope
   boundaries, inspection, pagination, authority by concept, dataset-to-evidence mapping, manifest
   field reference. Open when the human has connected sources.
@@ -32,6 +32,16 @@
   (Harborline, fictional); guarded by tests.
 - `onboarding/portfolio/fixture/` - Aha!/Jira/Salesforce extracts, the seed fragments generated from the
   mapping (`seed/`), and `README.md`, the walkthrough of every PRD4 acceptance criterion.
+- `onboarding/commercial/README.md` - the detailed commercial-normalization procedure (PRD7): deal types,
+  the calibration-eligible population and outcomes, date meanings, firms and active relationships, recurring
+  amounts and formulas (F1-F10), currency, module penetration and churn level, CRM-is-not-the-market, the
+  artifact field reference and stable keys, and how an unresolved value is encoded. Open when Salesforce is
+  connected and tier C or D is requested.
+- `onboarding/commercial/commercial-normalization.example.json` and `commercial-register-excerpt.example.json` -
+  the worked normalization artifact and the register entries it cites (Harborline, fictional); guarded by tests.
+- `onboarding/commercial/fixture/` - the Salesforce extract (accounts, opportunities, stage history,
+  contracts, subscription lines), the seed fragments generated from the normalized rows (`seed/`: 06, 11, 12),
+  and `README.md`, the walkthrough of every PRD7 acceptance criterion.
 - `onboarding/review/README.md` - the detailed consequential-decision review procedure (PRD5): mechanical
   versus interpretive choices, the decision register and its label map, the consolidated review, the
   needs and coverage rubric, confidence versus uncertainty, outside-evidence quantities, acceptance tied to

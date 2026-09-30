@@ -1,0 +1,25 @@
+{
+  "marketDynamics": {
+    "marketName": "Mid-market 3PL warehouse software",
+    "segmentStockStates": [
+      {
+        "segmentName": "Regional 3PLs",
+        "initialProspectPool": 420,
+        "initialClientCount": 2,
+        "arpuPerMonth": 4194,
+        "implementationFee": 14493.33,
+        "servicingCostPerClient": 350,
+        "infraFixedCostPerMonth": 6000,
+        "infraCostPerClient": 45,
+        "rdDragPerMonth": 9000,
+        "modulePenetrations": [
+          {
+            "moduleProductName": "Harborline Carrier Connect",
+            "penetration": 0.5,
+            "arpuPerMonth": 900
+          }
+        ]
+      }
+    ]
+  }
+}

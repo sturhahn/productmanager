@@ -1,0 +1,199 @@
+{
+  "normalizationVersion": 1,
+  "purpose": "Worked commercial normalization for the Harborline example (fictional): what a run over the Salesforce extract in ./fixture produces before any seed fragment is prepared. Field reference and stable keys: README.md. Instance identity lives in the discovery manifest; decisions live in the registers. Contains no credentials.",
+  "manifest": {
+    "file": "../discovery/source-manifest.example.json",
+    "runId": "harborline-discovery-2026-09-30",
+    "sourceId": "salesforce"
+  },
+  "register": {
+    "file": "commercial-register-excerpt.example.json",
+    "alsoReferences": "../review/decision-register.example.json"
+  },
+  "extract": {
+    "extractedAt": "2026-09-30T16:20:00Z",
+    "asOf": "2026-09-30",
+    "observationPeriod": {
+      "start": "2024-10-01",
+      "end": "2026-09-30"
+    },
+    "note": "A fuller capture of the same fictional org than the discovery fixture: the five discovery opportunities keep their IDs and values; the other records exist only here.",
+    "objects": [
+      {"objectType": "Account", "rawResponseFiles": ["fixture/salesforce/accounts.json"], "rowCount": 7},
+      {"objectType": "Opportunity", "rawResponseFiles": ["fixture/salesforce/opportunities.json"], "rowCount": 11},
+      {"objectType": "OpportunityHistory", "rawResponseFiles": ["fixture/salesforce/opportunity-history.json"], "rowCount": 6},
+      {"objectType": "Contract", "rawResponseFiles": ["fixture/salesforce/contracts.json"], "rowCount": 6},
+      {"objectType": "Subscription__c", "rawResponseFiles": ["fixture/salesforce/subscription-lines.json"], "rowCount": 12}
+    ],
+    "unreadable": [
+      {"object": "ContractHistory", "evidence": "../../discovery/fixture/salesforce/contract-history-denied.json"}
+    ]
+  },
+  "mappingRules": {
+    "segment": {
+      "decisionKey": "RULE-segment-from-segment-c",
+      "note": "Reviewed in PRD5; a null Segment__c is not covered."
+    },
+    "identity": {
+      "decisionKey": "RULE-commercial-identity",
+      "firmUnit": "the contracting Account (billing account); duplicates share Website host and BillingCountry"
+    },
+    "dealType": {
+      "decisionKey": "RULE-commercial-deal-type",
+      "classes": [{"class": "newLogo", "source": "Type = New Business", "model": "opportunity; a decided outcome feeds WinRate"}, {"class": "renewal", "source": "Type = Renewal", "model": "none: excluded, kept with reason"}, {"class": "crossSell", "source": "Type = Existing Business AND a contract line naming a module the firm did not hold; needs a per-deal decision", "model": "opportunity with crossSellModuleProductName (feeds CrossSellRate)"}, {"class": "sameProductExpansion", "source": "Type = Existing Business AND the line names a product the firm already holds; needs a per-deal decision", "model": "none: excluded until the model has an expansion behavior"}, {"class": "services", "source": "Type = Services, or only one-time service lines", "model": "none: excluded, kept with reason"}, {"class": "unknown", "source": "any other Type, or a null Type", "model": "none: unresolved until decided"}]
+    },
+    "outcome": {
+      "decisionKey": "RULE-commercial-outcome"
+    },
+    "dates": {
+      "decisionKey": "RULE-commercial-dates"
+    },
+    "activeRelationship": {
+      "decisionKey": "RULE-commercial-active-relationship",
+      "churnEvidenceLevel": "logo"
+    },
+    "recurring": {
+      "decisionKey": "RULE-commercial-recurring"
+    }
+  },
+  "currency": {
+    "reporting": "USD",
+    "rates": [
+      {"from": "EUR", "to": "USD", "rate": 1.08, "rateDate": "2026-09-30", "source": "Finance treasury rate table FX-2026-09 (fictional), supplied by the human", "decisionKey": "RULE-commercial-currency"}
+    ],
+    "convertedWhere": "here, in the normalization artifact; the engine never converts and the seed carries reporting-currency numbers only",
+    "deferredAlternative": {
+      "when": "The human does not accept RULE-commercial-currency (or supplies no rate).",
+      "movesToUnresolved": ["001EX000000B006AAA", "006EX000000A008AAA", "006EX000000A011AAA", "800EX000000C005AAA", "a1BEX000000S010AAA", "a1BEX000000S011AAA"],
+      "segmentTotalsReportingOnly": {"Regional 3PLs": {"activeCustomers": 1, "baseArr": 54000, "implementationFee": 18500, "separatePopulations": {"EUR": {"currency": "EUR", "activeCustomers": 1, "baseArr": 43200}}}},
+      "note": "The EUR population is reported next to the USD one and is never added to it; the fragments then omit Alpenhaus, its edge and its deals."
+    }
+  },
+  "formulas": [
+    {"key": "F1-term-months", "expression": "termMonths = whole calendar months from Contract.StartDate to Contract.EndDate + 1 day; it must equal Contract.ContractTerm and Subscription__c.TermMonths__c", "unit": "months"},
+    {"key": "F2-recurring-monthly", "expression": "monthly = Quantity__c x UnitPrice__c / termMonths (UnitPrice__c is one unit's price for the whole line term, so Quantity x UnitPrice = TotalPrice__c)", "unit": "source currency per month"},
+    {"key": "F3-annual", "expression": "annual = monthly x 12", "unit": "source currency per year"},
+    {"key": "F4-currency", "expression": "reportingAmount = sourceAmount x rate(source to reporting currency, rateDate), rounded to 2 decimals per line; every row keeps its source amount, currency and rate", "unit": "reporting currency"},
+    {"key": "F5-base-arpu", "expression": "baseArpuPerMonth = sum(current base monthly, reporting currency, of active edges in the segment) / count(active firms with a base edge); module revenue is never in this sum", "unit": "reporting currency per client per month"},
+    {"key": "F6-module-arpu", "expression": "arpuPerHolderPerMonth = sum(current module monthly of active module edges) / holders", "unit": "reporting currency per holder per month"},
+    {"key": "F7-penetration", "expression": "penetration = holders (unique active firms with an active edge to the module) / active firms with a base edge in the segment; never a count of won opportunities", "unit": "fraction in [0, 1]"},
+    {"key": "F8-implementation-fee", "expression": "implementationFee = mean of the imported implementation one-time amounts (reporting currency) of the segment's new-logo contracts signed in the observation period", "unit": "reporting currency, one-time per new client"},
+    {"key": "F9-price-level", "expression": "priceLevel = contractedMonthlyReporting / listMonthly, where listMonthly is the dataset 02 price row for the product and segment; rounded to 4 decimals; sanity band 0.5 to 1.2", "unit": "multiplier"},
+    {"key": "F10-reconcile", "expression": "for a contract with one opportunity, sum(TotalPrice__c of all its lines, every component) = Opportunity.Amount; a contract that does not reconcile is unresolved", "unit": "source currency"}
+  ],
+  "normalized": {
+    "firms": [
+      {"sourceId": "001EX000000B001AAA", "objectType": "Account", "classification": "firm", "name": "Bluewater Logistics", "segment": {"name": "Regional 3PLs", "via": "RULE-segment-from-segment-c", "sourceValue": "Regional 3PL"}, "status": "active-customer", "statusEvidence": "Activated contracts 800EX000000C001AAA (base) and 800EX000000C002AAA (module) cover 2026-09-30.", "mergedDuplicateIds": ["001EX000000B007AAA"]},
+      {"sourceId": "001EX000000B002AAA", "objectType": "Account", "classification": "firm", "name": "Cargo Nine", "segment": {"name": "E-commerce Fulfillment", "via": "RULE-segment-from-segment-c", "sourceValue": "E-commerce Fulfillment"}, "status": "prospect", "statusEvidence": "No contract record; the only deal was lost.", "mergedDuplicateIds": []},
+      {"sourceId": "001EX000000B004AAA", "objectType": "Account", "classification": "firm", "name": "Northgate Freight", "segment": {"name": "Regional 3PLs", "via": "RULE-segment-from-segment-c", "sourceValue": "Regional 3PL"}, "status": "prospect", "statusEvidence": "No contract record; one deal open, one closed lost.", "mergedDuplicateIds": []},
+      {"sourceId": "001EX000000B005AAA", "objectType": "Account", "classification": "firm", "name": "Tidewater Cargo", "segment": {"name": "Regional 3PLs", "via": "RULE-segment-from-segment-c", "sourceValue": "Regional 3PL"}, "status": "former-customer", "statusEvidence": "Contract 800EX000000C004AAA is Terminated on 2026-06-30; Account.Type is still Customer in the CRM.", "mergedDuplicateIds": []},
+      {"sourceId": "001EX000000B006AAA", "objectType": "Account", "classification": "firm", "name": "Alpenhaus Logistik GmbH", "segment": {"name": "Regional 3PLs", "via": "RULE-segment-from-segment-c", "sourceValue": "Regional 3PL"}, "status": "active-customer", "statusEvidence": "Activated contract 800EX000000C005AAA covers 2026-09-30.", "mergedDuplicateIds": []}
+    ],
+    "deals": [
+      {"sourceId": "006EX000000A001AAA", "objectType": "Opportunity", "classification": "newLogo", "classificationVia": "RULE-commercial-deal-type", "accountId": "001EX000000B001AAA", "outcome": "Won", "outcomeVia": "RULE-commercial-outcome", "eligibleForCalibration": true, "dates": {"opened": {"value": "2025-01-13", "basis": "OpportunityHistory Prospecting row"}, "qualified": {"value": "2025-02-10", "basis": "OpportunityHistory Qualification row"}, "decided": {"value": "2025-04-28", "basis": "OpportunityHistory Closed Won row"}, "recorded": {"value": "2025-04-28", "basis": "date of the Closed transition row"}, "expectedClose": null}, "recordedBasis": "the transition row's date", "winningProductName": "Harborline WMS"},
+      {"sourceId": "006EX000000A002AAA", "objectType": "Opportunity", "classification": "newLogo", "classificationVia": "RULE-commercial-deal-type", "accountId": "001EX000000B002AAA", "outcome": "Lost", "outcomeVia": "RULE-commercial-outcome", "eligibleForCalibration": true, "dates": {"opened": {"value": "2025-03-04", "basis": "OpportunityHistory Prospecting row"}, "qualified": {"value": "2025-04-02", "basis": "OpportunityHistory Qualification row"}, "decided": {"value": "2025-07-15", "basis": "OpportunityHistory Closed Lost row"}, "recorded": {"value": "2025-07-15", "basis": "date of the Closed transition row"}, "expectedClose": null}, "recordedBasis": "the transition row's date", "winningProductName": "Palletto Cloud", "competitorSourceValue": "Palletto"},
+      {"sourceId": "006EX000000A005AAA", "objectType": "Opportunity", "classification": "newLogo", "classificationVia": "RULE-commercial-deal-type", "accountId": "001EX000000B004AAA", "outcome": "Open", "outcomeVia": "RULE-commercial-outcome", "eligibleForCalibration": false, "dates": {"opened": {"value": "2026-06-15", "basis": "Opportunity.CreatedDate (UTC date); no history rows"}, "qualified": null, "decided": null, "recorded": null, "expectedClose": {"value": "2026-11-30", "basis": "CloseDate of an open deal is a forecast, never a decision"}}, "recordedBasis": "not applicable: undecided"},
+      {"sourceId": "006EX000000A006AAA", "objectType": "Opportunity", "classification": "newLogo", "classificationVia": "RULE-commercial-deal-type", "accountId": "001EX000000B005AAA", "outcome": "Won", "outcomeVia": "RULE-commercial-outcome", "eligibleForCalibration": true, "dates": {"opened": {"value": "2025-01-20", "basis": "Opportunity.CreatedDate (UTC date); no history rows"}, "qualified": null, "decided": {"value": "2025-02-20", "basis": "CloseDate of a Closed deal; no history rows"}, "recorded": null, "expectedClose": null}, "recordedBasis": "omitted: no transition history, so import time is the honest known-as-of date", "winningProductName": "Harborline WMS"},
+      {"sourceId": "006EX000000A008AAA", "objectType": "Opportunity", "classification": "newLogo", "classificationVia": "RULE-commercial-deal-type", "accountId": "001EX000000B006AAA", "outcome": "Won", "outcomeVia": "RULE-commercial-outcome", "eligibleForCalibration": true, "dates": {"opened": {"value": "2025-06-16", "basis": "Opportunity.CreatedDate (UTC date); no history rows"}, "qualified": null, "decided": {"value": "2025-09-10", "basis": "CloseDate of a Closed deal; no history rows"}, "recorded": null, "expectedClose": null}, "recordedBasis": "omitted: no transition history, so import time is the honest known-as-of date", "winningProductName": "Harborline WMS"},
+      {"sourceId": "006EX000000A011AAA", "objectType": "Opportunity", "classification": "newLogo", "classificationVia": "RULE-commercial-deal-type", "accountId": "001EX000000B006AAA", "outcome": "NoDecision", "outcomeVia": "RULE-commercial-outcome", "eligibleForCalibration": true, "dates": {"opened": {"value": "2025-01-20", "basis": "Opportunity.CreatedDate (UTC date); no history rows"}, "qualified": null, "decided": {"value": "2025-04-15", "basis": "CloseDate of a Closed deal; no history rows"}, "recorded": null, "expectedClose": null}, "recordedBasis": "omitted: no transition history, so import time is the honest known-as-of date", "noDecisionEvidence": "Loss_Reason__c = No Decision; Loss_Notes__c: Evaluation paused after an internal reorganisation; staying on spreadsheets for now."}
+    ],
+    "contracts": [
+      {"sourceId": "800EX000000C001AAA", "objectType": "Contract", "classification": "recurringContract", "accountId": "001EX000000B001AAA", "opportunityId": "006EX000000A001AAA", "status": "Activated", "startDate": "2025-05-01", "endDate": "2028-04-30", "terminatedDate": null, "termMonths": 36, "currency": "USD", "lineIds": ["a1BEX000000S001AAA", "a1BEX000000S002AAA", "a1BEX000000S003AAA", "a1BEX000000S004AAA"]},
+      {"sourceId": "800EX000000C002AAA", "objectType": "Contract", "classification": "recurringContract", "accountId": "001EX000000B001AAA", "opportunityId": "006EX000000A004AAA", "status": "Activated", "startDate": "2026-06-01", "endDate": "2029-05-31", "terminatedDate": null, "termMonths": 36, "currency": "USD", "lineIds": ["a1BEX000000S005AAA", "a1BEX000000S006AAA"]},
+      {"sourceId": "800EX000000C003AAA", "objectType": "Contract", "classification": "recurringContract", "accountId": "001EX000000B005AAA", "opportunityId": "006EX000000A006AAA", "status": "Expired", "startDate": "2025-03-01", "endDate": "2026-02-28", "terminatedDate": null, "termMonths": 12, "currency": "USD", "lineIds": ["a1BEX000000S007AAA", "a1BEX000000S008AAA"]},
+      {"sourceId": "800EX000000C004AAA", "objectType": "Contract", "classification": "recurringContract", "accountId": "001EX000000B005AAA", "opportunityId": "006EX000000A007AAA", "status": "Terminated", "startDate": "2026-03-01", "endDate": "2027-02-28", "terminatedDate": "2026-06-30", "termMonths": 12, "currency": "USD", "lineIds": ["a1BEX000000S009AAA"]},
+      {"sourceId": "800EX000000C005AAA", "objectType": "Contract", "classification": "recurringContract", "accountId": "001EX000000B006AAA", "opportunityId": "006EX000000A008AAA", "status": "Activated", "startDate": "2025-10-01", "endDate": "2027-09-30", "terminatedDate": null, "termMonths": 24, "currency": "EUR", "lineIds": ["a1BEX000000S010AAA", "a1BEX000000S011AAA"]}
+    ],
+    "lines": [
+      {"sourceId": "a1BEX000000S001AAA", "objectType": "Subscription__c", "classification": "recurringBase", "contractId": "800EX000000C001AAA", "product": "Harborline WMS", "quantity": 3, "unitPrice": 54000, "termMonths": 36, "totalPrice": 162000, "currency": "USD", "rate": 1.0, "formula": "F2-recurring-monthly", "monthly": 4500, "annual": 54000, "reporting": {"currency": "USD", "monthly": 4500, "annual": 54000, "oneTime": null}, "feeds": "REL-bluewater-wms and segment base ARPU"},
+      {"sourceId": "a1BEX000000S002AAA", "objectType": "Subscription__c", "classification": "implementation", "contractId": "800EX000000C001AAA", "product": "Implementation", "quantity": 1, "unitPrice": 25000, "termMonths": null, "totalPrice": 25000, "currency": "USD", "rate": 1.0, "formula": "F4-currency", "monthly": null, "annual": null, "reporting": {"currency": "USD", "monthly": null, "annual": null, "oneTime": 25000}, "feeds": "segment implementation fee (F8)"},
+      {"sourceId": "a1BEX000000S005AAA", "objectType": "Subscription__c", "classification": "recurringModule", "contractId": "800EX000000C002AAA", "product": "Harborline Carrier Connect", "quantity": 1, "unitPrice": 32400, "termMonths": 36, "totalPrice": 32400, "currency": "USD", "rate": 1.0, "formula": "F2-recurring-monthly", "monthly": 900, "annual": 10800, "reporting": {"currency": "USD", "monthly": 900, "annual": 10800, "oneTime": null}, "feeds": "REL-bluewater-carrier-connect and module ARPU"},
+      {"sourceId": "a1BEX000000S007AAA", "objectType": "Subscription__c", "classification": "recurringBase", "contractId": "800EX000000C003AAA", "product": "Harborline WMS", "quantity": 1, "unitPrice": 32400, "termMonths": 12, "totalPrice": 32400, "currency": "USD", "rate": 1.0, "formula": "F2-recurring-monthly", "monthly": 2700, "annual": 32400, "reporting": {"currency": "USD", "monthly": 2700, "annual": 32400, "oneTime": null}, "feeds": "REL-tidewater-wms"},
+      {"sourceId": "a1BEX000000S008AAA", "objectType": "Subscription__c", "classification": "implementation", "contractId": "800EX000000C003AAA", "product": "Implementation", "quantity": 1, "unitPrice": 12000, "termMonths": null, "totalPrice": 12000, "currency": "USD", "rate": 1.0, "formula": "F4-currency", "monthly": null, "annual": null, "reporting": {"currency": "USD", "monthly": null, "annual": null, "oneTime": 12000}, "feeds": "segment implementation fee (F8)"},
+      {"sourceId": "a1BEX000000S009AAA", "objectType": "Subscription__c", "classification": "recurringBase", "contractId": "800EX000000C004AAA", "product": "Harborline WMS", "quantity": 1, "unitPrice": 32400, "termMonths": 12, "totalPrice": 32400, "currency": "USD", "rate": 1.0, "formula": "F2-recurring-monthly", "monthly": 2700, "annual": 32400, "reporting": {"currency": "USD", "monthly": 2700, "annual": 32400, "oneTime": null}, "feeds": "REL-tidewater-wms (renewal line)"},
+      {"sourceId": "a1BEX000000S010AAA", "objectType": "Subscription__c", "classification": "recurringBase", "contractId": "800EX000000C005AAA", "product": "Harborline WMS", "quantity": 2, "unitPrice": 43200, "termMonths": 24, "totalPrice": 86400, "currency": "EUR", "rate": 1.08, "formula": "F2-recurring-monthly", "monthly": 3600, "annual": 43200, "reporting": {"currency": "USD", "monthly": 3888, "annual": 46656, "oneTime": null}, "feeds": "REL-alpenhaus-wms and segment base ARPU"},
+      {"sourceId": "a1BEX000000S011AAA", "objectType": "Subscription__c", "classification": "implementation", "contractId": "800EX000000C005AAA", "product": "Implementation", "quantity": 1, "unitPrice": 6000, "termMonths": null, "totalPrice": 6000, "currency": "EUR", "rate": 1.08, "formula": "F4-currency", "monthly": null, "annual": null, "reporting": {"currency": "USD", "monthly": null, "annual": null, "oneTime": 6480}, "feeds": "segment implementation fee (F8)"}
+    ],
+    "relationships": [
+      {"key": "REL-bluewater-wms", "firmSourceId": "001EX000000B001AAA", "product": "Harborline WMS", "kind": "base", "sourceIds": ["a1BEX000000S001AAA"], "currentLineId": "a1BEX000000S001AAA", "acquisitionDate": "2025-05-01", "endDate": null, "active": true, "contractedMonthlyReporting": 4500, "listMonthly": 4500, "listPriceRow": "dataset 02 price row: Harborline WMS, default segment price", "priceLevel": 1.0},
+      {"key": "REL-bluewater-carrier-connect", "firmSourceId": "001EX000000B001AAA", "product": "Harborline Carrier Connect", "kind": "module", "sourceIds": ["a1BEX000000S005AAA"], "currentLineId": "a1BEX000000S005AAA", "acquisitionDate": "2026-06-01", "endDate": null, "active": true, "contractedMonthlyReporting": 900, "listMonthly": 900, "listPriceRow": "dataset 02 price row: Harborline Carrier Connect", "priceLevel": 1.0},
+      {"key": "REL-tidewater-wms", "firmSourceId": "001EX000000B005AAA", "product": "Harborline WMS", "kind": "base", "sourceIds": ["a1BEX000000S007AAA", "a1BEX000000S009AAA"], "currentLineId": null, "acquisitionDate": "2025-03-01", "endDate": "2026-06-30", "active": false, "contractedMonthlyReporting": 2700, "listMonthly": 4500, "listPriceRow": "dataset 02 price row: Harborline WMS, default segment price", "priceLevel": 0.6},
+      {"key": "REL-alpenhaus-wms", "firmSourceId": "001EX000000B006AAA", "product": "Harborline WMS", "kind": "base", "sourceIds": ["a1BEX000000S010AAA"], "currentLineId": "a1BEX000000S010AAA", "acquisitionDate": "2025-10-01", "endDate": null, "active": true, "contractedMonthlyReporting": 3888, "listMonthly": 4500, "listPriceRow": "dataset 02 price row: Harborline WMS, default segment price", "priceLevel": 0.864}
+    ],
+    "churnEvents": [
+      {"key": "CHURN-tidewater-2026-06-30", "firmSourceId": "001EX000000B005AAA", "segment": "Regional 3PLs", "effectiveDate": "2026-06-30", "level": "logo", "sourceObjectType": "Contract", "sourceId": "800EX000000C004AAA", "sourceRelationshipRef": "a1BEX000000S009AAA", "recordedDate": null, "recordedBasis": "Terminated_Date__c is a current field value and ContractHistory is unreadable, so nothing proves when the termination entered the CRM: recordedDate is omitted.", "evidence": "Contract 800EX000000C004AAA Status Terminated, Terminated_Date__c 2026-06-30; the firm held one edge, so logo and product level coincide."}
+    ]
+  },
+  "excluded": [
+    {"objectType": "Account", "sourceId": "001EX000000B007AAA", "classification": "duplicate", "reason": "Same Website host and BillingCountry as Bluewater Logistics (001EX000000B001AAA): one firm, not two.", "decisionKey": "RULE-commercial-identity", "duplicateOf": "001EX000000B001AAA"},
+    {"objectType": "Opportunity", "sourceId": "006EX000000A007AAA", "classification": "renewal", "reason": "Type Renewal on Tidewater's first contract: a retention event, not a new-logo decision and not a cross-sell. Its contract 800EX000000C004AAA stays on the Tidewater edge as evidence.", "decisionKey": "RULE-commercial-deal-type"},
+    {"objectType": "Opportunity", "sourceId": "006EX000000A010AAA", "classification": "services", "reason": "Type Services; its only lines are one-time consulting. It is attached to the duplicate account B007. No recurring product was sold.", "decisionKey": "RULE-commercial-deal-type"},
+    {"objectType": "Contract", "sourceId": "800EX000000C006AAA", "classification": "duplicate", "reason": "Draft copy of 800EX000000C001AAA (same account, opportunity, dates and price); the Activated contract is the record.", "decisionKey": "RULE-commercial-active-relationship", "duplicateOf": "800EX000000C001AAA"},
+    {"objectType": "Subscription__c", "sourceId": "a1BEX000000S003AAA", "classification": "services", "reason": "One-time professional services (Component__c One-time - Services): not recurring, not modeled.", "decisionKey": "RULE-commercial-recurring"},
+    {"objectType": "Subscription__c", "sourceId": "a1BEX000000S004AAA", "classification": "usageEstimate", "reason": "A quoted usage estimate, not a contracted fee: labelled, never presented as observed recurring revenue.", "decisionKey": "RULE-commercial-recurring"},
+    {"objectType": "Subscription__c", "sourceId": "a1BEX000000S006AAA", "classification": "moduleImplementation", "reason": "Module implementation fee: a product price row (dataset 02), not the segment's base implementationFee.", "decisionKey": "RULE-commercial-recurring"},
+    {"objectType": "Subscription__c", "sourceId": "a1BEX000000S012AAA", "classification": "duplicate", "reason": "Line of the Draft duplicate contract 800EX000000C006AAA.", "decisionKey": "RULE-commercial-active-relationship", "duplicateOf": "a1BEX000000S001AAA"}
+  ],
+  "unresolved": [
+    {"objectType": "Account", "sourceId": "001EX000000B003AAA", "reason": "Segment__c is null, so RULE-segment-from-segment-c does not cover it; no contract record shows an active relationship either.", "decisionKey": "DEC-account-meridian-segment", "question": "Which segment is Meridian Fulfillment in?"},
+    {"objectType": "Opportunity", "sourceId": "006EX000000A003AAA", "reason": "The firm has no reviewed segment, and a Closed Won deal with no contract record does not establish an active customer. The deal is held until the firm resolves.", "decisionKey": "DEC-account-meridian-segment", "question": "Which segment is Meridian Fulfillment in, and is there a contract?"},
+    {"objectType": "Opportunity", "sourceId": "006EX000000A004AAA", "reason": "Type Existing Business is not covered by RULE-commercial-deal-type. The cross-sell reading is proposed and unanswered. New evidence: the line on contract 800EX000000C002AAA names Harborline Carrier Connect, the evidence that entry lists as missing; the entry is re-proposed with it.", "decisionKey": "DEC-commercial-a004-existing-business", "question": "Is the Bluewater Carrier Connect add-on a cross-sell of the module or a new-client win?"},
+    {"objectType": "Opportunity", "sourceId": "006EX000000A009AAA", "reason": "Closed Lost with a blank loss reason, no competitor and no notes: it could be a lost competitive deal or a no-decision. Neither is invented.", "decisionKey": "DEC-commercial-northgate-a009-loss-reason", "question": "Why was Northgate Freight's first evaluation lost?"}
+  ],
+  "sourceCounts": [
+    {"objectType": "Account", "source": 7, "imported": 5, "excluded": 1, "unresolved": 1},
+    {"objectType": "Opportunity", "source": 11, "imported": 6, "excluded": 2, "unresolved": 3},
+    {"objectType": "Contract", "source": 6, "imported": 5, "excluded": 1, "unresolved": 0},
+    {"objectType": "Subscription__c", "source": 12, "imported": 8, "excluded": 4, "unresolved": 0}
+  ],
+  "calibrationPopulation": {
+    "observationPeriod": {
+      "start": "2024-10-01",
+      "end": "2026-09-30"
+    },
+    "asOf": "2026-09-30",
+    "winRate": {
+      "Regional 3PLs": {"won": ["006EX000000A001AAA", "006EX000000A006AAA", "006EX000000A008AAA"], "lost": [], "noDecision": ["006EX000000A011AAA"], "open": ["006EX000000A005AAA"], "unresolved": ["006EX000000A009AAA"], "denominatorCaveat": "The only loss-like deal in the segment (006EX000000A009AAA) is unresolved, so 3 wins of 3 decided is an upper bound until it is answered."},
+      "E-commerce Fulfillment": {"won": [], "lost": ["006EX000000A002AAA"], "noDecision": [], "open": [], "unresolved": []},
+      "unassignedSegment": {"unresolved": ["006EX000000A003AAA"]}
+    },
+    "excludedByReason": {
+      "renewal": ["006EX000000A007AAA"],
+      "services": ["006EX000000A010AAA"]
+    },
+    "salesCycle": {
+      "decidedDealIds": ["006EX000000A001AAA", "006EX000000A002AAA", "006EX000000A006AAA", "006EX000000A008AAA", "006EX000000A011AAA"],
+      "note": "opened to decided, every decided outcome; qualified dates are not used by calibration"
+    },
+    "crossSell": {
+      "decidedDealIds": [],
+      "reason": "The only cross-sell candidate (006EX000000A004AAA) is unresolved, so no crossSellModuleProductName is loaded and CrossSellRate has no evidence."
+    },
+    "churn": {
+      "level": "logo",
+      "eventKeys": ["CHURN-tidewater-2026-06-30"],
+      "exposureNote": "Calibration counts every relationship of ours per segment as client-months, module edges included; logo-level events over-weight the denominator for firms holding a module. Tidewater held one edge. PRD8 checks exposure against events."
+    },
+    "arrivals": {
+      "loaded": false,
+      "reason": "Account and Lead creation counts are not firm births (gap firmBirthsFromCrmCreation)."
+    },
+    "relationships": {
+      "activeEdgeKeys": ["REL-bluewater-wms", "REL-bluewater-carrier-connect", "REL-alpenhaus-wms"],
+      "endedEdgeKeys": ["REL-tidewater-wms"]
+    }
+  },
+  "segmentTotals": [
+    {"segment": "Regional 3PLs", "status": "resolved", "currency": "USD", "asOf": "2026-09-30", "activeFirmSourceIds": ["001EX000000B001AAA", "001EX000000B006AAA"], "activeCustomers": 2, "baseMonthly": 8388, "baseArr": 100656, "baseArpuPerMonth": 4194, "baseInputs": [{"relationship": "REL-bluewater-wms", "lineId": "a1BEX000000S001AAA", "monthlyReporting": 4500}, {"relationship": "REL-alpenhaus-wms", "lineId": "a1BEX000000S010AAA", "monthlyReporting": 3888}], "modules": [{"product": "Harborline Carrier Connect", "holders": 1, "holderSourceIds": ["001EX000000B001AAA"], "monthly": 900, "arr": 10800, "penetration": 0.5, "arpuPerHolderPerMonth": 900, "inputs": [{"relationship": "REL-bluewater-carrier-connect", "lineId": "a1BEX000000S005AAA", "monthlyReporting": 900}]}], "implementationFee": {"value": 14493.33, "formula": "F8-implementation-fee", "inputs": [{"lineId": "a1BEX000000S002AAA", "oneTimeReporting": 25000}, {"lineId": "a1BEX000000S008AAA", "oneTimeReporting": 12000}, {"lineId": "a1BEX000000S011AAA", "oneTimeReporting": 6480}]}, "endedInObservationPeriod": ["001EX000000B005AAA"], "doubleCountCheck": {"naiveArpuIfModulesIncluded": 4644, "used": 4194, "note": "Base ARPU excludes module revenue because the engine adds module revenue on top."}, "assumptionInputs": [{"field": "initialProspectPool", "value": 420, "decisionKey": "DEC-assumption-prospect-pool-regional-3pl"}, {"field": "servicingCostPerClient", "value": 350, "decisionKey": "DEC-assumption-operating-costs-regional-3pl"}, {"field": "infraFixedCostPerMonth", "value": 6000, "decisionKey": "DEC-assumption-operating-costs-regional-3pl"}, {"field": "infraCostPerClient", "value": 45, "decisionKey": "DEC-assumption-operating-costs-regional-3pl"}, {"field": "rdDragPerMonth", "value": 9000, "decisionKey": "DEC-assumption-operating-costs-regional-3pl"}]},
+    {"segment": "E-commerce Fulfillment", "status": "unresolved", "currency": "USD", "asOf": "2026-09-30", "activeCustomers": null, "activeCustomersLowerBound": 0, "pendingSourceIds": ["001EX000000B003AAA"], "decisionKey": "DEC-account-meridian-segment", "reason": "No resolved firm is an active customer, but Meridian Fulfillment (Customer, no segment) may belong here. The count is unresolved, not 0, so the stock state is not loaded."}
+  ],
+  "gaps": [
+    {"key": "firmBirthsFromCrmCreation", "status": "gap", "quantity": "marketPopulation", "reason": "Account and Lead creation counts are CRM activity (a rep adding a record), not firm formation in the market. No arrivalCounts are loaded."},
+    {"key": "prospectPoolIsNotCrmList", "status": "assumption", "quantity": "marketPopulation", "decisionKey": "DEC-assumption-prospect-pool-regional-3pl", "reason": "The CRM knows 4 prospect or customer Accounts in the segment; the addressable pool is a reviewed assumption of 420."},
+    {"key": "marketWideConversionExposure", "status": "gap", "quantity": "marketPopulation", "reason": "CRM opportunity rates only cover firms Harborline worked; a conversion rate needs the market-wide prospect pool as exposure, which no accessible system holds."},
+    {"key": "channelReachAndAttribution", "status": "gap", "quantity": "channelMarketReach", "reason": "LeadSource on won and lost deals is attribution, not channel reach or origination share. No channelName is loaded (guide question Q6 is not accepted in this example)."},
+    {"key": "competitorAffinity", "status": "gap", "quantity": null, "reason": "One named competitor win (Palletto on 006EX000000A002AAA) is evidence of that deal, not of a channel's or a segment's affinity for a competitor."},
+    {"key": "operatingCosts", "status": "assumption", "quantity": "operatingCosts", "decisionKey": "DEC-assumption-operating-costs-regional-3pl", "reason": "Cost lines are separately sourced: no accessible system holds them, so they are reviewed assumptions supplied by finance."},
+    {"key": "contractHistory", "status": "gap", "quantity": null, "reason": "ContractHistory is unreadable (403, see the discovery manifest). Used instead: current Contract and Subscription__c fields. Unresolved: whether start dates were edited after signing, and contract chains that began before the earliest readable contract."}
+  ]
+}

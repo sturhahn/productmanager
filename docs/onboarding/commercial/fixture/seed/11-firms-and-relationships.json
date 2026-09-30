@@ -1,0 +1,77 @@
+{
+  "marketDynamics": {
+    "marketName": "Mid-market 3PL warehouse software",
+    "sourceDefaults": { "sourceSystem": "salesforce", "sourceInstance": "00DEX000000HRBLAAA" },
+    "firms": [
+      {
+        "name": "Bluewater Logistics",
+        "source": { "objectKind": "Account", "sourceRecordId": "001EX000000B001AAA" },
+        "segmentName": "Regional 3PLs",
+        "epistemicStatus": "Observed",
+        "notes": "Active customer. Duplicate account 001EX000000B007AAA merged under RULE-commercial-identity. Edges from Subscription__c lines; servedProcessNames unknown, left empty.",
+        "relationships": [
+          {
+            "productName": "Harborline WMS",
+            "priceLevel": 1.0,
+            "acquisitionDate": "2025-05-01",
+            "sources": [{ "objectKind": "Subscription__c", "sourceRecordId": "a1BEX000000S001AAA" }]
+          },
+          {
+            "productName": "Harborline Carrier Connect",
+            "priceLevel": 1.0,
+            "acquisitionDate": "2026-06-01",
+            "sources": [{ "objectKind": "Subscription__c", "sourceRecordId": "a1BEX000000S005AAA" }]
+          }
+        ]
+      },
+      {
+        "name": "Cargo Nine",
+        "source": { "objectKind": "Account", "sourceRecordId": "001EX000000B002AAA" },
+        "segmentName": "E-commerce Fulfillment",
+        "epistemicStatus": "Observed",
+        "notes": "Prospect: no contract record. The lost deal names Palletto, which is not evidence of an installed relationship."
+      },
+      {
+        "name": "Northgate Freight",
+        "source": { "objectKind": "Account", "sourceRecordId": "001EX000000B004AAA" },
+        "segmentName": "Regional 3PLs",
+        "epistemicStatus": "Observed",
+        "notes": "Prospect with one open deal."
+      },
+      {
+        "name": "Tidewater Cargo",
+        "source": { "objectKind": "Account", "sourceRecordId": "001EX000000B005AAA" },
+        "segmentName": "Regional 3PLs",
+        "epistemicStatus": "Observed",
+        "notes": "Former customer: CRM Type still says Customer, contract 800EX000000C004AAA was terminated on 2026-06-30. One edge over two contracts (original and renewal).",
+        "relationships": [
+          {
+            "productName": "Harborline WMS",
+            "priceLevel": 0.6,
+            "acquisitionDate": "2025-03-01",
+            "endDate": "2026-06-30",
+            "sources": [
+              { "objectKind": "Subscription__c", "sourceRecordId": "a1BEX000000S007AAA" },
+              { "objectKind": "Subscription__c", "sourceRecordId": "a1BEX000000S009AAA" }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Alpenhaus Logistik GmbH",
+        "source": { "objectKind": "Account", "sourceRecordId": "001EX000000B006AAA" },
+        "segmentName": "Regional 3PLs",
+        "epistemicStatus": "Observed",
+        "notes": "EUR contract converted to USD at 1.08 on 2026-09-30 under RULE-commercial-currency; priceLevel is on the converted amount.",
+        "relationships": [
+          {
+            "productName": "Harborline WMS",
+            "priceLevel": 0.864,
+            "acquisitionDate": "2025-10-01",
+            "sources": [{ "objectKind": "Subscription__c", "sourceRecordId": "a1BEX000000S010AAA" }]
+          }
+        ]
+      }
+    ]
+  }
+}

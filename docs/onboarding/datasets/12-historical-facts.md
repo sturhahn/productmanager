@@ -62,6 +62,14 @@ There is no installed `pm` binary.
 
 **Consequential choices** here: how stages and null amounts map to outcomes, whether an add-on for an existing customer is a cross-sell or a win, which system is the source of record, and the trustworthy window (`commercialClassification`). These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
 
+**From Salesforce evidence**: the [commercial normalization](../commercial/README.md) classifies
+every opportunity by deal type and outcome and dates it by meaning. Only its normalized `newLogo`
+deals (and decided `crossSell` deals, with `crossSellModuleProductName`) become opportunities;
+renewals, services and expansions do not. A closed-lost deal with a blank reason is unresolved, not
+`NoDecision`; an unnamed competitor is `Lost` with no `winningProductName`; an open deal's expected
+close date is never `decidedDate`; omit `recordedDate` unless a history row proves it. Use one churn
+level, logo or product, per fitted rate.
+
 ## Data requirements
 
 Source identity (`source`, `firmSource`, `marketDynamics.sourceDefaults`) has the shape described in
@@ -456,3 +464,5 @@ pm seed --file <your-file>.json
   keep a dataset's first identity choice.
 - **Referencing a firm, channel or product that has not loaded yet.** The load aborts with
   `Seed file references '<name>', which was not found among the entities loaded so far.`
+- **Counting renewals or services as new-logo wins, or an unexplained loss as `NoDecision`.** Both
+  distort the fitted win rate; see [commercial normalization](../commercial/README.md).

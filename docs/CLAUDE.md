@@ -40,8 +40,9 @@
   that dependencies, dates and units follow the rules in `portfolio/README.md`. Change the mapping, the
   fixture extracts, the fragments and the walkthrough together. The guide's section 8 (portfolio
   selection) sits between the interview and loading; if you renumber guide sections, fix every
-  cross-reference (grep for "section"). Section 9 is the consequential-decision review; assembling and
-  loading is section 10. No ABSTRACT/INDEX/CLAUDE trio inside this directory, matching `discovery/`.
+  cross-reference (grep for "section"). Section 9 is commercial normalization, section 10 the
+  consequential-decision review, and assembling and loading is section 11. No ABSTRACT/INDEX/CLAUDE trio
+  inside this directory, matching `discovery/`.
 - **`onboarding/review/` is documentation plus examples only** (PRD5): no assembly code, API, database or
   seed-schema changes; the register is a local artifact and the seed shape is unchanged. The tests check that
   the template and example register parse with every required key and an allowed review state, that every
@@ -53,6 +54,18 @@
   guide, brief template and all 12 dataset files point at the procedure. Change the register, the review
   walkthrough and the fragments together. The dataset files keep their eight headings; each carries one
   "Consequential choices" note. No ABSTRACT/INDEX/CLAUDE trio inside this directory.
+- **`onboarding/commercial/` is documentation plus examples only** (PRD7): no connector, transformation
+  code, API, database or seed-schema changes; the orchestrator agent normalizes with its existing source
+  access and ad-hoc scripts kept outside the repo. The tests recompute the fixture's arithmetic from the raw
+  extract with the documented formulas F1-F10 (term, quantity, currency, ARPU, penetration, fee, price level,
+  reconciliation) and compare it with `commercial-normalization.example.json`; they check that every extract
+  record is imported, excluded or unresolved exactly once and that `sourceCounts` reconciles, that renewals
+  and services never reach dataset 12, that an open deal stays open and a blank loss reason stays
+  unresolved, that a churned account is out of the active totals but keeps its ended edge, that the three
+  fragments in `commercial/fixture/seed/` parse strictly, bind only extract records and hold no unresolved
+  value as a zero, and that every decision key exists in the PRD5 register or the commercial excerpt.
+  Change the artifact, the extract, the fragments, the excerpt and the walkthrough together. The artifact's
+  stable keys (README section 10) are what PRD8 references. Salesforce field names stay in these artifacts.
 - Dataset files are written for an agent reader: state units only when verified in code, cite
   the file, keep the shared Harborline example world consistent across files, and never invent a
   `pm` verb or option.

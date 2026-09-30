@@ -174,7 +174,7 @@ their brief. Fragment rules:
   dataset 02.
 
 Before any fragment is loaded, the consequential-decision review in
-[guide section 9](../README.md#9-consequential-decision-review-before-any-consequential-record-loads)
+[guide section 10](../README.md#10-consequential-decision-review-before-any-consequential-record-loads)
 applies to the inclusion decisions, exceptions and date conflicts; its procedure is in
 [`../review/README.md`](../review/README.md).
 

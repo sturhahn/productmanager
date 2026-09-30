@@ -1,0 +1,17 @@
+{
+  "request": "GET /services/data/v62.0/query?q=SELECT Id, AccountId, Opportunity__c, Status, StartDate, EndDate, ContractTerm, CurrencyIsoCode, Terminated_Date__c FROM Contract WHERE Account.Type IN ('Customer','Prospect') ORDER BY StartDate",
+  "httpStatus": 200,
+  "note": "Contract, unlike ContractHistory (see ../../../discovery/fixture/salesforce/contract-history-denied.json), is readable with the integration user. Terminated_Date__c is a custom field.",
+  "response": {
+    "totalSize": 6,
+    "done": true,
+    "records": [
+      { "attributes": { "type": "Contract", "url": "/services/data/v62.0/sobjects/Contract/800EX000000C001AAA" }, "Id": "800EX000000C001AAA", "AccountId": "001EX000000B001AAA", "Opportunity__c": "006EX000000A001AAA", "Status": "Activated", "StartDate": "2025-05-01", "EndDate": "2028-04-30", "ContractTerm": 36, "CurrencyIsoCode": "USD", "Terminated_Date__c": null },
+      { "attributes": { "type": "Contract", "url": "/services/data/v62.0/sobjects/Contract/800EX000000C006AAA" }, "Id": "800EX000000C006AAA", "AccountId": "001EX000000B001AAA", "Opportunity__c": "006EX000000A001AAA", "Status": "Draft", "StartDate": "2025-05-01", "EndDate": "2028-04-30", "ContractTerm": 36, "CurrencyIsoCode": "USD", "Terminated_Date__c": null },
+      { "attributes": { "type": "Contract", "url": "/services/data/v62.0/sobjects/Contract/800EX000000C003AAA" }, "Id": "800EX000000C003AAA", "AccountId": "001EX000000B005AAA", "Opportunity__c": "006EX000000A006AAA", "Status": "Expired", "StartDate": "2025-03-01", "EndDate": "2026-02-28", "ContractTerm": 12, "CurrencyIsoCode": "USD", "Terminated_Date__c": null },
+      { "attributes": { "type": "Contract", "url": "/services/data/v62.0/sobjects/Contract/800EX000000C005AAA" }, "Id": "800EX000000C005AAA", "AccountId": "001EX000000B006AAA", "Opportunity__c": "006EX000000A008AAA", "Status": "Activated", "StartDate": "2025-10-01", "EndDate": "2027-09-30", "ContractTerm": 24, "CurrencyIsoCode": "EUR", "Terminated_Date__c": null },
+      { "attributes": { "type": "Contract", "url": "/services/data/v62.0/sobjects/Contract/800EX000000C004AAA" }, "Id": "800EX000000C004AAA", "AccountId": "001EX000000B005AAA", "Opportunity__c": "006EX000000A007AAA", "Status": "Terminated", "StartDate": "2026-03-01", "EndDate": "2027-02-28", "ContractTerm": 12, "CurrencyIsoCode": "USD", "Terminated_Date__c": "2026-06-30" },
+      { "attributes": { "type": "Contract", "url": "/services/data/v62.0/sobjects/Contract/800EX000000C002AAA" }, "Id": "800EX000000C002AAA", "AccountId": "001EX000000B001AAA", "Opportunity__c": "006EX000000A004AAA", "Status": "Activated", "StartDate": "2026-06-01", "EndDate": "2029-05-31", "ContractTerm": 36, "CurrencyIsoCode": "USD", "Terminated_Date__c": null }
+    ]
+  }
+}

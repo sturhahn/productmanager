@@ -73,6 +73,13 @@ There is no installed `pm` binary.
 
 **Consequential choices** here: which segment a firm belongs to when the segment field is empty or unlisted, merging account records into one firm (`identityMerge`), competitor accounts and the installed base (`competitorInstalledBase`), and `Inferred` versus `Observed` status. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
 
+**From Salesforce evidence**: the [commercial normalization](../commercial/README.md) fixes the firm
+unit, deduplicates accounts, and derives each edge's `acquisitionDate`, `endDate`, `priceLevel` and
+`sources` from contract evidence. Bind an edge to its recurring `Subscription__c` line(s) (a renewal
+chain lists all of them), not to the Contract header. An old won deal or a CRM type of Customer is
+not an active relationship; an ended contract is an `endDate` plus a churn event in dataset 12. Take
+its normalized rows rather than recomputing them.
+
 ## Data requirements
 
 ### Source identity (`SeedSourceRef`, `marketDynamics.sourceDefaults`)
@@ -367,7 +374,7 @@ pm seed --file <your-file>.json
   ```
   An unsourced firm the bulk import updated counts as `matched`; an unsourced relationship always
   counts as `applied`. `--report <path>` writes the per-record outcomes as JSON; see the guide,
-  [section 10](../README.md#10-assembling-and-loading).
+  [section 11](../README.md#11-assembling-and-loading).
 - After loading the roster and the segment stocks, run `pm firm generate-synthetic --market <id>`
   to fill the unobserved market. It is safe to re-run: the previous synthetic population is
   replaced, not duplicated.
@@ -424,3 +431,5 @@ pm seed --file <your-file>.json
 - **Loading firms before the market.** `productName`, `segmentName` and `servedProcessNames`
   resolve against what the API already has; a miss aborts the load with
   `Seed file references '<name>', which was not found among the entities loaded so far.`
+- **Treating a won deal or the CRM Customer type as an active relationship.** Only contract or
+  subscription evidence covering the as-of date makes an edge active; see [normalization](../commercial/README.md).

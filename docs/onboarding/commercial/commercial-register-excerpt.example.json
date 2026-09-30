@@ -1,0 +1,1227 @@
+{
+  "registerVersion": 1,
+  "purpose": "Register excerpt for the commercial normalization example (docs/onboarding/commercial). It ADDS entries to the PRD5 register example (../review/decision-register.example.json), which still holds DEC-commercial-a004-existing-business, DEC-account-meridian-segment and RULE-segment-from-segment-c; keys are never redefined here. Harborline is fictional. Contains no credentials.",
+  "basedOn": {
+    "file": "../review/decision-register.example.json"
+  },
+  "manifest": {
+    "file": "../discovery/source-manifest.example.json",
+    "runId": "harborline-discovery-2026-09-30"
+  },
+  "reviewedOn": "2026-09-30",
+  "humanEvidence": [
+    {
+      "id": "H6",
+      "date": "2026-09-30",
+      "statement": "Finance controller: use the treasury table FX-2026-09; EUR to USD is 1.08 on 2026-09-30, one rate for the whole import."
+    },
+    {
+      "id": "H7",
+      "date": "2026-09-30",
+      "statement": "Strategy lead and finance controller, in the review interview: about 420 addressable regional 3PLs (analyst report); servicing 350 per client per month, fixed hosting 6000, hosting 45 per client, R&D drag 9000 per month, all USD and estimates."
+    },
+    {
+      "id": "H8",
+      "date": "2026-09-30",
+      "statement": "Sales operations: Opportunity.Type is set by the deal owner; New Business, Renewal and Services mean what they say; Existing Business covers add-ons and expansions and needs a per-deal reading."
+    },
+    {
+      "id": "H9",
+      "date": "2026-09-30",
+      "statement": "Finance: Usage - Estimate lines are quoted volumes for planning, not contracted minimums."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "RULE-commercial-deal-type",
+      "entryType": "rule",
+      "topic": "commercialClassification",
+      "class": "inferredInterpretation",
+      "tier": "D",
+      "datasets": [
+        "12"
+      ],
+      "requiredForTier": false,
+      "appliesWhen": "Opportunity.Type is a key of valueMap. Existing Business, or any value not in the map, is not covered: each such deal needs its own decision (see DEC-commercial-a004-existing-business).",
+      "covers": [
+        "salesforce:006EX000000A001AAA",
+        "salesforce:006EX000000A002AAA",
+        "salesforce:006EX000000A003AAA",
+        "salesforce:006EX000000A005AAA",
+        "salesforce:006EX000000A006AAA",
+        "salesforce:006EX000000A007AAA",
+        "salesforce:006EX000000A008AAA",
+        "salesforce:006EX000000A009AAA",
+        "salesforce:006EX000000A010AAA",
+        "salesforce:006EX000000A011AAA"
+      ],
+      "affects": [
+        {
+          "ref": "manifest:Q7",
+          "fields": [
+            "deal type"
+          ]
+        },
+        {
+          "ref": "salesforce:006EX000000A006AAA",
+          "fields": [
+            "Type"
+          ]
+        },
+        {
+          "ref": "salesforce:006EX000000A007AAA",
+          "fields": [
+            "Type"
+          ]
+        },
+        {
+          "ref": "salesforce:006EX000000A010AAA",
+          "fields": [
+            "Type"
+          ]
+        }
+      ],
+      "seedTarget": null,
+      "proposedValue": {
+        "sourceField": "Opportunity.Type",
+        "valueMap": {
+          "New Business": "newLogo",
+          "Renewal": "renewal",
+          "Services": "services"
+        },
+        "modelTarget": {
+          "newLogo": "opportunity (WinRate)",
+          "renewal": "excluded, kept with reason",
+          "services": "excluded, kept with reason"
+        }
+      },
+      "evidence": [
+        {
+          "ref": "human:H8",
+          "note": "Sales operations: Type is set by the deal owner; Renewal and Services are used as named."
+        },
+        {
+          "ref": "salesforce:006EX000000A007AAA",
+          "note": "Type Renewal, LeadSource Existing Customer."
+        },
+        {
+          "ref": "salesforce:006EX000000A010AAA",
+          "note": "Type Services; the only contract lines are one-time services."
+        },
+        {
+          "ref": "manifest:Q7",
+          "note": "How StageName and Amount map to outcomes."
+        }
+      ],
+      "sourceDate": "2026-09-30",
+      "effectiveDate": null,
+      "independentObservations": null,
+      "extractionConfidence": 1.0,
+      "modelUncertainty": {
+        "level": "low",
+        "statement": "Type is a picklist the owner sets; sales operations confirmed its use."
+      },
+      "alternatives": [
+        {
+          "value": "Treat every Closed Won as a new-logo win",
+          "why": "Counts renewals and services as wins and inflates the fitted win rate."
+        }
+      ],
+      "rationale": "A renewal or a services engagement is not a competitive new-client decision, so it must not count in a win rate. New Business is the only Type that is one.",
+      "missingEvidence": "none",
+      "outsideEvidenceQuantity": null,
+      "domainMapping": null,
+      "question": null,
+      "reviewState": "accepted",
+      "exclusionReason": null,
+      "appliedRule": null,
+      "accepted": {
+        "by": "user",
+        "on": "2026-09-30",
+        "decision": "Accepted as proposed.",
+        "material": {
+          "value": {
+            "sourceField": "Opportunity.Type",
+            "valueMap": {
+              "New Business": "newLogo",
+              "Renewal": "renewal",
+              "Services": "services"
+            },
+            "modelTarget": {
+              "newLogo": "opportunity (WinRate)",
+              "renewal": "excluded, kept with reason",
+              "services": "excluded, kept with reason"
+            }
+          },
+          "affects": [
+            {
+              "ref": "manifest:Q7",
+              "fields": [
+                "deal type"
+              ]
+            },
+            {
+              "ref": "salesforce:006EX000000A006AAA",
+              "fields": [
+                "Type"
+              ]
+            },
+            {
+              "ref": "salesforce:006EX000000A007AAA",
+              "fields": [
+                "Type"
+              ]
+            },
+            {
+              "ref": "salesforce:006EX000000A010AAA",
+              "fields": [
+                "Type"
+              ]
+            }
+          ],
+          "evidence": [
+            "human:H8",
+            "salesforce:006EX000000A007AAA",
+            "salesforce:006EX000000A010AAA",
+            "manifest:Q7"
+          ]
+        }
+      }
+    },
+    {
+      "key": "RULE-commercial-outcome",
+      "entryType": "rule",
+      "topic": "commercialClassification",
+      "class": "inferredInterpretation",
+      "tier": "D",
+      "datasets": [
+        "12"
+      ],
+      "requiredForTier": false,
+      "appliesWhen": "StageName is a key of stageMap, or is Closed Lost with a Loss_Reason__c that is a key of lossReasonMap. A blank or unlisted loss reason is not covered and stays unresolved.",
+      "covers": [
+        "salesforce:006EX000000A001AAA",
+        "salesforce:006EX000000A002AAA",
+        "salesforce:006EX000000A003AAA",
+        "salesforce:006EX000000A004AAA",
+        "salesforce:006EX000000A005AAA",
+        "salesforce:006EX000000A006AAA",
+        "salesforce:006EX000000A007AAA",
+        "salesforce:006EX000000A008AAA",
+        "salesforce:006EX000000A009AAA",
+        "salesforce:006EX000000A010AAA",
+        "salesforce:006EX000000A011AAA"
+      ],
+      "affects": [
+        {
+          "ref": "manifest:Q7",
+          "fields": [
+            "outcome"
+          ]
+        },
+        {
+          "ref": "salesforce:006EX000000A002AAA",
+          "fields": [
+            "outcome",
+            "winningProductName"
+          ]
+        },
+        {
+          "ref": "salesforce:006EX000000A011AAA",
+          "fields": [
+            "outcome"
+          ]
+        },
+        {
+          "ref": "salesforce:006EX000000A009AAA",
+          "fields": [
+            "outcome"
+          ]
+        }
+      ],
+      "seedTarget": null,
+      "proposedValue": {
+        "sourceFields": [
+          "Opportunity.StageName",
+          "Opportunity.Loss_Reason__c",
+          "Opportunity.Competitor__c"
+        ],
+        "stageMap": {
+          "Closed Won": "Won",
+          "Prospecting": "Open",
+          "Qualification": "Open",
+          "Negotiation": "Open"
+        },
+        "lossReasonMap": {
+          "Lost to Competitor": "Lost",
+          "No Decision": "NoDecision",
+          "(blank)": "unresolved"
+        },
+        "noDecisionNeeds": "Opportunity.Loss_Notes__c states the non-purchase",
+        "competitorProductMap": {
+          "Palletto": "Palletto Cloud"
+        }
+      },
+      "evidence": [
+        {
+          "ref": "manifest:Q7",
+          "note": "Closed Won to Won, Closed Lost to Lost, open stages to open (candidate answers accepted, with the loss-reason refinement)."
+        },
+        {
+          "ref": "salesforce:006EX000000A002AAA",
+          "note": "Lost to Competitor, Competitor Palletto."
+        },
+        {
+          "ref": "salesforce:006EX000000A011AAA",
+          "note": "No Decision with a note that the evaluation paused."
+        },
+        {
+          "ref": "salesforce:006EX000000A009AAA",
+          "note": "Closed Lost with a blank Loss_Reason__c."
+        }
+      ],
+      "sourceDate": "2026-09-30",
+      "effectiveDate": null,
+      "independentObservations": null,
+      "extractionConfidence": 1.0,
+      "modelUncertainty": {
+        "level": "low",
+        "statement": "A mapping over a small, fully read population."
+      },
+      "alternatives": [
+        {
+          "value": "Closed Lost with a blank reason as NoDecision",
+          "why": "Drops a possible real loss from the denominator and inflates the win rate."
+        }
+      ],
+      "rationale": "A named competitor win is a loss; only an evidenced non-purchase is NoDecision (dropped from the win-rate denominator); a loss with no reason could be either, so it is not loaded. An unknown competitor stays unknown: no winning product is invented.",
+      "missingEvidence": "none",
+      "outsideEvidenceQuantity": null,
+      "domainMapping": null,
+      "question": null,
+      "reviewState": "accepted",
+      "exclusionReason": null,
+      "appliedRule": null,
+      "accepted": {
+        "by": "user",
+        "on": "2026-09-30",
+        "decision": "Accepted as proposed.",
+        "material": {
+          "value": {
+            "sourceFields": [
+              "Opportunity.StageName",
+              "Opportunity.Loss_Reason__c",
+              "Opportunity.Competitor__c"
+            ],
+            "stageMap": {
+              "Closed Won": "Won",
+              "Prospecting": "Open",
+              "Qualification": "Open",
+              "Negotiation": "Open"
+            },
+            "lossReasonMap": {
+              "Lost to Competitor": "Lost",
+              "No Decision": "NoDecision",
+              "(blank)": "unresolved"
+            },
+            "noDecisionNeeds": "Opportunity.Loss_Notes__c states the non-purchase",
+            "competitorProductMap": {
+              "Palletto": "Palletto Cloud"
+            }
+          },
+          "affects": [
+            {
+              "ref": "manifest:Q7",
+              "fields": [
+                "outcome"
+              ]
+            },
+            {
+              "ref": "salesforce:006EX000000A002AAA",
+              "fields": [
+                "outcome",
+                "winningProductName"
+              ]
+            },
+            {
+              "ref": "salesforce:006EX000000A011AAA",
+              "fields": [
+                "outcome"
+              ]
+            },
+            {
+              "ref": "salesforce:006EX000000A009AAA",
+              "fields": [
+                "outcome"
+              ]
+            }
+          ],
+          "evidence": [
+            "manifest:Q7",
+            "salesforce:006EX000000A002AAA",
+            "salesforce:006EX000000A011AAA",
+            "salesforce:006EX000000A009AAA"
+          ]
+        }
+      }
+    },
+    {
+      "key": "RULE-commercial-dates",
+      "entryType": "rule",
+      "topic": "commercialClassification",
+      "class": "inferredInterpretation",
+      "tier": "D",
+      "datasets": [
+        "12"
+      ],
+      "requiredForTier": false,
+      "appliesWhen": "Every opportunity in the extract.",
+      "covers": [
+        "salesforce:006EX000000A001AAA",
+        "salesforce:006EX000000A002AAA",
+        "salesforce:006EX000000A003AAA",
+        "salesforce:006EX000000A004AAA",
+        "salesforce:006EX000000A005AAA",
+        "salesforce:006EX000000A006AAA",
+        "salesforce:006EX000000A007AAA",
+        "salesforce:006EX000000A008AAA",
+        "salesforce:006EX000000A009AAA",
+        "salesforce:006EX000000A010AAA",
+        "salesforce:006EX000000A011AAA"
+      ],
+      "affects": [
+        {
+          "ref": "manifest:Q2",
+          "fields": [
+            "recorded dates"
+          ]
+        },
+        {
+          "ref": "salesforce:006EX000000A001AAA",
+          "fields": [
+            "openedDate",
+            "qualifiedDate",
+            "decidedDate",
+            "recordedDate"
+          ]
+        },
+        {
+          "ref": "salesforce:006EX000000A005AAA",
+          "fields": [
+            "decidedDate"
+          ]
+        }
+      ],
+      "seedTarget": null,
+      "proposedValue": {
+        "opened": "first OpportunityHistory row (Prospecting), else CreatedDate (UTC date)",
+        "qualified": "first OpportunityHistory row with StageName Qualification, else omitted",
+        "decided": "first OpportunityHistory row with a Closed stage, else CloseDate of a Closed deal",
+        "recorded": "the decided transition's date when history has it, else omitted (import time)",
+        "open": "CloseDate of an open deal is expectedClose and never a decision date",
+        "neverUsed": [
+          "LastModifiedDate",
+          "CreatedDate as a decision date"
+        ]
+      },
+      "evidence": [
+        {
+          "ref": "salesforce:006EX000000A001AAA",
+          "note": "Three history rows: Prospecting 2025-01-13, Qualification 2025-02-10, Closed Won 2025-04-28."
+        },
+        {
+          "ref": "salesforce:006EX000000A005AAA",
+          "note": "Open, CloseDate 2026-11-30 is a forecast."
+        },
+        {
+          "ref": "manifest:Q2",
+          "note": "History objects are not all readable; recorded dates are only backdated where a readable transition proves them."
+        }
+      ],
+      "sourceDate": "2026-09-30",
+      "effectiveDate": null,
+      "independentObservations": null,
+      "extractionConfidence": 1.0,
+      "modelUncertainty": {
+        "level": "low",
+        "statement": "A mapping over a small, fully read population."
+      },
+      "alternatives": [
+        {
+          "value": "Use LastModifiedDate as the decision date",
+          "why": "Later edits (A001 was edited on 2026-08-14) would move every decision."
+        }
+      ],
+      "rationale": "The date a fact was true (decided) and the date it entered the ledger (recorded) are different; only a transition row proves the second. LastModifiedDate moves with every later edit.",
+      "missingEvidence": "none",
+      "outsideEvidenceQuantity": null,
+      "domainMapping": null,
+      "question": null,
+      "reviewState": "accepted",
+      "exclusionReason": null,
+      "appliedRule": null,
+      "accepted": {
+        "by": "user",
+        "on": "2026-09-30",
+        "decision": "Accepted as proposed.",
+        "material": {
+          "value": {
+            "opened": "first OpportunityHistory row (Prospecting), else CreatedDate (UTC date)",
+            "qualified": "first OpportunityHistory row with StageName Qualification, else omitted",
+            "decided": "first OpportunityHistory row with a Closed stage, else CloseDate of a Closed deal",
+            "recorded": "the decided transition's date when history has it, else omitted (import time)",
+            "open": "CloseDate of an open deal is expectedClose and never a decision date",
+            "neverUsed": [
+              "LastModifiedDate",
+              "CreatedDate as a decision date"
+            ]
+          },
+          "affects": [
+            {
+              "ref": "manifest:Q2",
+              "fields": [
+                "recorded dates"
+              ]
+            },
+            {
+              "ref": "salesforce:006EX000000A001AAA",
+              "fields": [
+                "openedDate",
+                "qualifiedDate",
+                "decidedDate",
+                "recordedDate"
+              ]
+            },
+            {
+              "ref": "salesforce:006EX000000A005AAA",
+              "fields": [
+                "decidedDate"
+              ]
+            }
+          ],
+          "evidence": [
+            "salesforce:006EX000000A001AAA",
+            "salesforce:006EX000000A005AAA",
+            "manifest:Q2"
+          ]
+        }
+      }
+    },
+    {
+      "key": "RULE-commercial-identity",
+      "entryType": "rule",
+      "topic": "identityMerge",
+      "class": "inferredInterpretation",
+      "tier": "D",
+      "datasets": [
+        "11",
+        "12"
+      ],
+      "requiredForTier": false,
+      "appliesWhen": "Two Accounts have the same Website host and BillingCountry. A name-only similarity is not covered: it only proposes.",
+      "covers": [
+        "salesforce:001EX000000B001AAA",
+        "salesforce:001EX000000B007AAA"
+      ],
+      "affects": [
+        {
+          "ref": "salesforce:001EX000000B001AAA",
+          "fields": [
+            "identity"
+          ]
+        },
+        {
+          "ref": "salesforce:001EX000000B007AAA",
+          "fields": [
+            "identity"
+          ]
+        }
+      ],
+      "seedTarget": null,
+      "proposedValue": {
+        "matchKey": [
+          "Account.Website host, lowercase, without www",
+          "Account.BillingCountry"
+        ],
+        "survivor": "the Account that carries contract records, else the oldest",
+        "duplicateDisposition": "excluded, kept with the survivor id"
+      },
+      "evidence": [
+        {
+          "ref": "salesforce:001EX000000B001AAA",
+          "note": "Bluewater Logistics, Customer, with contracts."
+        },
+        {
+          "ref": "salesforce:001EX000000B007AAA",
+          "note": "Bluewater Logistics Inc, Prospect, same Website host and BillingCountry."
+        }
+      ],
+      "sourceDate": "2026-09-30",
+      "effectiveDate": null,
+      "independentObservations": null,
+      "extractionConfidence": 1.0,
+      "modelUncertainty": {
+        "level": "low",
+        "statement": "A mapping over a small, fully read population."
+      },
+      "alternatives": [
+        {
+          "value": "Keep both as firms",
+          "why": "Counts one firm twice in the roster and splits its deals."
+        }
+      ],
+      "rationale": "One billing firm per contracting Account; a duplicate created by a sales rep for a quote is not a second firm.",
+      "missingEvidence": "none",
+      "outsideEvidenceQuantity": null,
+      "domainMapping": null,
+      "question": null,
+      "reviewState": "accepted",
+      "exclusionReason": null,
+      "appliedRule": null,
+      "accepted": {
+        "by": "user",
+        "on": "2026-09-30",
+        "decision": "Accepted as proposed.",
+        "material": {
+          "value": {
+            "matchKey": [
+              "Account.Website host, lowercase, without www",
+              "Account.BillingCountry"
+            ],
+            "survivor": "the Account that carries contract records, else the oldest",
+            "duplicateDisposition": "excluded, kept with the survivor id"
+          },
+          "affects": [
+            {
+              "ref": "salesforce:001EX000000B001AAA",
+              "fields": [
+                "identity"
+              ]
+            },
+            {
+              "ref": "salesforce:001EX000000B007AAA",
+              "fields": [
+                "identity"
+              ]
+            }
+          ],
+          "evidence": [
+            "salesforce:001EX000000B001AAA",
+            "salesforce:001EX000000B007AAA"
+          ]
+        }
+      }
+    },
+    {
+      "key": "RULE-commercial-active-relationship",
+      "entryType": "rule",
+      "topic": "commercialClassification",
+      "class": "inferredInterpretation",
+      "tier": "D",
+      "datasets": [
+        "11",
+        "12"
+      ],
+      "requiredForTier": false,
+      "appliesWhen": "Every Contract in the extract.",
+      "covers": [
+        "salesforce:800EX000000C001AAA",
+        "salesforce:800EX000000C002AAA",
+        "salesforce:800EX000000C003AAA",
+        "salesforce:800EX000000C004AAA",
+        "salesforce:800EX000000C005AAA",
+        "salesforce:800EX000000C006AAA"
+      ],
+      "affects": [
+        {
+          "ref": "salesforce:001EX000000B005AAA",
+          "fields": [
+            "status"
+          ]
+        },
+        {
+          "ref": "salesforce:800EX000000C004AAA",
+          "fields": [
+            "Status",
+            "Terminated_Date__c"
+          ]
+        }
+      ],
+      "seedTarget": null,
+      "proposedValue": {
+        "activeWhen": "Contract.Status = Activated and StartDate <= asOf <= EndDate and Terminated_Date__c is null or after asOf",
+        "edge": "one per (firm, product), bound to its Subscription__c recurring line(s); a renewal chain is one edge listing every line",
+        "acquisitionDate": "StartDate of the earliest contract in the chain",
+        "endDate": "Terminated_Date__c, else EndDate of the last contract when it is in the past and no later contract exists",
+        "churnEvidenceLevel": "logo",
+        "oldWonDealIsNotCustomer": true
+      },
+      "evidence": [
+        {
+          "ref": "salesforce:001EX000000B005AAA",
+          "note": "Account Type is still Customer."
+        },
+        {
+          "ref": "salesforce:800EX000000C004AAA",
+          "note": "Status Terminated on 2026-06-30."
+        },
+        {
+          "ref": "manifest:Q2",
+          "note": "ContractHistory is unreadable: start-date edits cannot be checked."
+        }
+      ],
+      "sourceDate": "2026-09-30",
+      "effectiveDate": null,
+      "independentObservations": null,
+      "extractionConfidence": 1.0,
+      "modelUncertainty": {
+        "level": "low",
+        "statement": "A mapping over a small, fully read population."
+      },
+      "alternatives": [
+        {
+          "value": "Treat Account.Type = Customer as active",
+          "why": "Tidewater is still Customer in the CRM but its contract ended."
+        }
+      ],
+      "rationale": "Activity comes from contract evidence, not from an old won deal or the CRM Type. Churn is recorded at logo level because each churned firm here held one edge.",
+      "missingEvidence": "none",
+      "outsideEvidenceQuantity": null,
+      "domainMapping": null,
+      "question": null,
+      "reviewState": "accepted",
+      "exclusionReason": null,
+      "appliedRule": null,
+      "accepted": {
+        "by": "user",
+        "on": "2026-09-30",
+        "decision": "Accepted as proposed.",
+        "material": {
+          "value": {
+            "activeWhen": "Contract.Status = Activated and StartDate <= asOf <= EndDate and Terminated_Date__c is null or after asOf",
+            "edge": "one per (firm, product), bound to its Subscription__c recurring line(s); a renewal chain is one edge listing every line",
+            "acquisitionDate": "StartDate of the earliest contract in the chain",
+            "endDate": "Terminated_Date__c, else EndDate of the last contract when it is in the past and no later contract exists",
+            "churnEvidenceLevel": "logo",
+            "oldWonDealIsNotCustomer": true
+          },
+          "affects": [
+            {
+              "ref": "salesforce:001EX000000B005AAA",
+              "fields": [
+                "status"
+              ]
+            },
+            {
+              "ref": "salesforce:800EX000000C004AAA",
+              "fields": [
+                "Status",
+                "Terminated_Date__c"
+              ]
+            }
+          ],
+          "evidence": [
+            "salesforce:001EX000000B005AAA",
+            "salesforce:800EX000000C004AAA",
+            "manifest:Q2"
+          ]
+        }
+      }
+    },
+    {
+      "key": "RULE-commercial-recurring",
+      "entryType": "rule",
+      "topic": "commercialClassification",
+      "class": "inferredInterpretation",
+      "tier": "D",
+      "datasets": [
+        "06",
+        "11"
+      ],
+      "requiredForTier": false,
+      "appliesWhen": "Every Subscription__c line.",
+      "covers": [
+        "salesforce:a1BEX000000S001AAA",
+        "salesforce:a1BEX000000S002AAA",
+        "salesforce:a1BEX000000S003AAA",
+        "salesforce:a1BEX000000S004AAA",
+        "salesforce:a1BEX000000S005AAA",
+        "salesforce:a1BEX000000S006AAA",
+        "salesforce:a1BEX000000S007AAA",
+        "salesforce:a1BEX000000S008AAA",
+        "salesforce:a1BEX000000S009AAA",
+        "salesforce:a1BEX000000S010AAA",
+        "salesforce:a1BEX000000S011AAA",
+        "salesforce:a1BEX000000S012AAA"
+      ],
+      "affects": [
+        {
+          "ref": "salesforce:800EX000000C001AAA",
+          "fields": [
+            "term",
+            "lines"
+          ]
+        },
+        {
+          "ref": "salesforce:a1BEX000000S004AAA",
+          "fields": [
+            "Component__c"
+          ]
+        }
+      ],
+      "seedTarget": null,
+      "proposedValue": {
+        "componentMap": {
+          "Recurring - Base": "recurringBase",
+          "Recurring - Module": "recurringModule",
+          "One-time - Implementation": "implementation",
+          "One-time - Services": "services",
+          "Usage - Estimate": "usageEstimate"
+        },
+        "termMonths": "whole months from StartDate to EndDate plus one day",
+        "recurring": "Quantity x UnitPrice over the line term, divided by termMonths",
+        "importedComponents": [
+          "recurringBase",
+          "recurringModule",
+          "implementation"
+        ],
+        "excludedComponents": [
+          "services",
+          "usageEstimate"
+        ],
+        "listPrice": "dataset 02 price row for the product and segment"
+      },
+      "evidence": [
+        {
+          "ref": "salesforce:800EX000000C001AAA",
+          "note": "Three-year contract: base, implementation, services and a usage estimate on one Amount."
+        },
+        {
+          "ref": "human:H9",
+          "note": "Finance: Usage - Estimate lines are quoted volumes, not committed fees."
+        }
+      ],
+      "sourceDate": "2026-09-30",
+      "effectiveDate": null,
+      "independentObservations": null,
+      "extractionConfidence": 1.0,
+      "modelUncertainty": {
+        "level": "low",
+        "statement": "A mapping over a small, fully read population."
+      },
+      "alternatives": [
+        {
+          "value": "Amount / 12",
+          "why": "Overstates a three-year contract's ARR threefold and mixes in fees."
+        }
+      ],
+      "rationale": "Recurring revenue is what is contracted per month over the actual term; one-time fees, services and unsupported usage estimates are not ARR.",
+      "missingEvidence": "none",
+      "outsideEvidenceQuantity": null,
+      "domainMapping": null,
+      "question": null,
+      "reviewState": "accepted",
+      "exclusionReason": null,
+      "appliedRule": null,
+      "accepted": {
+        "by": "user",
+        "on": "2026-09-30",
+        "decision": "Accepted as proposed.",
+        "material": {
+          "value": {
+            "componentMap": {
+              "Recurring - Base": "recurringBase",
+              "Recurring - Module": "recurringModule",
+              "One-time - Implementation": "implementation",
+              "One-time - Services": "services",
+              "Usage - Estimate": "usageEstimate"
+            },
+            "termMonths": "whole months from StartDate to EndDate plus one day",
+            "recurring": "Quantity x UnitPrice over the line term, divided by termMonths",
+            "importedComponents": [
+              "recurringBase",
+              "recurringModule",
+              "implementation"
+            ],
+            "excludedComponents": [
+              "services",
+              "usageEstimate"
+            ],
+            "listPrice": "dataset 02 price row for the product and segment"
+          },
+          "affects": [
+            {
+              "ref": "salesforce:800EX000000C001AAA",
+              "fields": [
+                "term",
+                "lines"
+              ]
+            },
+            {
+              "ref": "salesforce:a1BEX000000S004AAA",
+              "fields": [
+                "Component__c"
+              ]
+            }
+          ],
+          "evidence": [
+            "salesforce:800EX000000C001AAA",
+            "human:H9"
+          ]
+        }
+      }
+    },
+    {
+      "key": "RULE-commercial-currency",
+      "entryType": "rule",
+      "topic": "commercialClassification",
+      "class": "sourceFact",
+      "tier": "D",
+      "datasets": [
+        "06",
+        "11"
+      ],
+      "requiredForTier": false,
+      "appliesWhen": "An amount is in a currency other than the reporting currency and the rate table has its rate.",
+      "covers": [
+        "salesforce:800EX000000C005AAA",
+        "salesforce:006EX000000A008AAA"
+      ],
+      "affects": [
+        {
+          "ref": "salesforce:800EX000000C005AAA",
+          "fields": [
+            "CurrencyIsoCode"
+          ]
+        },
+        {
+          "ref": "salesforce:006EX000000A008AAA",
+          "fields": [
+            "CurrencyIsoCode"
+          ]
+        }
+      ],
+      "seedTarget": null,
+      "proposedValue": {
+        "reportingCurrency": "USD",
+        "rates": [
+          {
+            "from": "EUR",
+            "to": "USD",
+            "rate": 1.08,
+            "rateDate": "2026-09-30"
+          }
+        ],
+        "rateSource": "Finance treasury rate table FX-2026-09 (fictional)",
+        "applyTo": "every EUR amount, at the single rate date",
+        "convertedWhere": "in the normalization artifact, never in the engine"
+      },
+      "evidence": [
+        {
+          "ref": "human:H6",
+          "note": "Finance supplied the rate table and approved its use for the import."
+        },
+        {
+          "ref": "salesforce:800EX000000C005AAA",
+          "note": "EUR contract."
+        }
+      ],
+      "sourceDate": "2026-09-30",
+      "effectiveDate": null,
+      "independentObservations": null,
+      "extractionConfidence": 1.0,
+      "modelUncertainty": {
+        "level": "low",
+        "statement": "A mapping over a small, fully read population."
+      },
+      "alternatives": [
+        {
+          "value": "Defer: keep the EUR population separate",
+          "why": "Safe, but leaves the Alpenhaus relationship and its deal out of every total."
+        }
+      ],
+      "rationale": "The engine never converts, so one currency must be chosen and the rate and date recorded. Not accepting the rule leaves the EUR records unresolved.",
+      "missingEvidence": "none",
+      "outsideEvidenceQuantity": null,
+      "domainMapping": null,
+      "question": null,
+      "reviewState": "accepted",
+      "exclusionReason": null,
+      "appliedRule": null,
+      "accepted": {
+        "by": "user",
+        "on": "2026-09-30",
+        "decision": "Accepted as proposed.",
+        "material": {
+          "value": {
+            "reportingCurrency": "USD",
+            "rates": [
+              {
+                "from": "EUR",
+                "to": "USD",
+                "rate": 1.08,
+                "rateDate": "2026-09-30"
+              }
+            ],
+            "rateSource": "Finance treasury rate table FX-2026-09 (fictional)",
+            "applyTo": "every EUR amount, at the single rate date",
+            "convertedWhere": "in the normalization artifact, never in the engine"
+          },
+          "affects": [
+            {
+              "ref": "salesforce:800EX000000C005AAA",
+              "fields": [
+                "CurrencyIsoCode"
+              ]
+            },
+            {
+              "ref": "salesforce:006EX000000A008AAA",
+              "fields": [
+                "CurrencyIsoCode"
+              ]
+            }
+          ],
+          "evidence": [
+            "human:H6",
+            "salesforce:800EX000000C005AAA"
+          ]
+        }
+      }
+    },
+    {
+      "key": "DEC-assumption-prospect-pool-regional-3pl",
+      "entryType": "decision",
+      "topic": "simulationAssumption",
+      "class": "assumption",
+      "tier": "D",
+      "datasets": [
+        "06"
+      ],
+      "requiredForTier": false,
+      "affects": [
+        {
+          "ref": "seed:segmentStockState:Regional 3PLs",
+          "fields": [
+            "initialProspectPool"
+          ]
+        }
+      ],
+      "seedTarget": {
+        "fragment": "06-segment-economics.json",
+        "collection": "marketDynamics.segmentStockStates",
+        "match": {
+          "segmentName": "Regional 3PLs"
+        }
+      },
+      "proposedValue": {
+        "initialProspectPool": 420
+      },
+      "evidence": [
+        {
+          "ref": "human:H7",
+          "note": "Strategy lead: about 420 addressable regional 3PLs from an analyst report; the CRM knows only a few of them."
+        },
+        {
+          "ref": "manifest:gap:market-wide totals",
+          "note": "No accessible system holds the prospect pool."
+        }
+      ],
+      "sourceDate": "2026-09-30",
+      "effectiveDate": null,
+      "independentObservations": null,
+      "extractionConfidence": null,
+      "modelUncertainty": {
+        "level": "high",
+        "statement": "An analyst estimate, not an observation."
+      },
+      "alternatives": [
+        {
+          "value": "CRM prospect count",
+          "why": "One Account is a prospect; that is the CRM's reach, not the market."
+        }
+      ],
+      "rationale": "The CRM account list is not the market; the pool is a reviewed assumption.",
+      "missingEvidence": "an accessible market-wide count",
+      "outsideEvidenceQuantity": "marketPopulation",
+      "domainMapping": null,
+      "question": null,
+      "reviewState": "accepted",
+      "exclusionReason": null,
+      "appliedRule": null,
+      "accepted": {
+        "by": "user",
+        "on": "2026-09-30",
+        "decision": "Accepted as proposed.",
+        "material": {
+          "value": {
+            "initialProspectPool": 420
+          },
+          "affects": [
+            {
+              "ref": "seed:segmentStockState:Regional 3PLs",
+              "fields": [
+                "initialProspectPool"
+              ]
+            }
+          ],
+          "evidence": [
+            "human:H7",
+            "manifest:gap:market-wide totals"
+          ]
+        }
+      }
+    },
+    {
+      "key": "DEC-assumption-operating-costs-regional-3pl",
+      "entryType": "decision",
+      "topic": "simulationAssumption",
+      "class": "assumption",
+      "tier": "D",
+      "datasets": [
+        "06"
+      ],
+      "requiredForTier": false,
+      "affects": [
+        {
+          "ref": "seed:segmentStockState:Regional 3PLs",
+          "fields": [
+            "servicingCostPerClient",
+            "infraFixedCostPerMonth",
+            "infraCostPerClient",
+            "rdDragPerMonth"
+          ]
+        }
+      ],
+      "seedTarget": {
+        "fragment": "06-segment-economics.json",
+        "collection": "marketDynamics.segmentStockStates",
+        "match": {
+          "segmentName": "Regional 3PLs"
+        }
+      },
+      "proposedValue": {
+        "servicingCostPerClient": 350,
+        "infraFixedCostPerMonth": 6000,
+        "infraCostPerClient": 45,
+        "rdDragPerMonth": 9000
+      },
+      "evidence": [
+        {
+          "ref": "human:H7",
+          "note": "Finance controller estimates, monthly, USD."
+        },
+        {
+          "ref": "manifest:gap:finance costs",
+          "note": "No accessible system holds cost lines."
+        }
+      ],
+      "sourceDate": "2026-09-30",
+      "effectiveDate": null,
+      "independentObservations": null,
+      "extractionConfidence": null,
+      "modelUncertainty": {
+        "level": "high",
+        "statement": "Estimates supplied by one person."
+      },
+      "alternatives": [
+        {
+          "value": "Leave the segment out",
+          "why": "The row (and its module penetration) cannot load without all eight numbers."
+        }
+      ],
+      "rationale": "The stock state has no slot for an unknown cost: a missing field is stored as 0. A reviewed number is the only safe way to load the row.",
+      "missingEvidence": "a finance export by segment",
+      "outsideEvidenceQuantity": "operatingCosts",
+      "domainMapping": null,
+      "question": null,
+      "reviewState": "accepted",
+      "exclusionReason": null,
+      "appliedRule": null,
+      "accepted": {
+        "by": "user",
+        "on": "2026-09-30",
+        "decision": "Accepted as proposed.",
+        "material": {
+          "value": {
+            "servicingCostPerClient": 350,
+            "infraFixedCostPerMonth": 6000,
+            "infraCostPerClient": 45,
+            "rdDragPerMonth": 9000
+          },
+          "affects": [
+            {
+              "ref": "seed:segmentStockState:Regional 3PLs",
+              "fields": [
+                "servicingCostPerClient",
+                "infraFixedCostPerMonth",
+                "infraCostPerClient",
+                "rdDragPerMonth"
+              ]
+            }
+          ],
+          "evidence": [
+            "human:H7",
+            "manifest:gap:finance costs"
+          ]
+        }
+      }
+    },
+    {
+      "key": "DEC-commercial-northgate-a009-loss-reason",
+      "entryType": "decision",
+      "topic": "commercialClassification",
+      "class": "inferredInterpretation",
+      "tier": "D",
+      "datasets": [
+        "12"
+      ],
+      "requiredForTier": false,
+      "affects": [
+        {
+          "ref": "salesforce:006EX000000A009AAA",
+          "fields": [
+            "Loss_Reason__c",
+            "outcome"
+          ]
+        }
+      ],
+      "seedTarget": null,
+      "proposedValue": {
+        "outcome": "unresolved"
+      },
+      "evidence": [
+        {
+          "ref": "salesforce:006EX000000A009AAA",
+          "note": "Closed Lost 2026-03-31, Loss_Reason__c blank, no competitor, no notes."
+        }
+      ],
+      "sourceDate": "2026-09-30",
+      "effectiveDate": "2026-03-31",
+      "independentObservations": null,
+      "extractionConfidence": 1.0,
+      "modelUncertainty": {
+        "level": "high",
+        "statement": "Could be a lost competitive deal or a no-decision."
+      },
+      "alternatives": [
+        {
+          "value": "Lost",
+          "why": "Needs a named competitor; none is recorded."
+        },
+        {
+          "value": "NoDecision",
+          "why": "Needs evidence of a non-purchase; none is recorded."
+        }
+      ],
+      "rationale": "RULE-commercial-outcome does not cover a blank loss reason.",
+      "missingEvidence": "the loss reason from the deal owner",
+      "outsideEvidenceQuantity": null,
+      "domainMapping": null,
+      "question": "Why was Northgate Freight's first evaluation (006EX000000A009AAA) closed lost: to a named competitor, or nobody chosen?",
+      "reviewState": "proposed",
+      "exclusionReason": "Unanswered. The deal stays out of dataset 12 and is counted as unresolved.",
+      "appliedRule": null,
+      "accepted": null
+    }
+  ]
+}

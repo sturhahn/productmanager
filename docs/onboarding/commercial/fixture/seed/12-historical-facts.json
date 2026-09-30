@@ -1,0 +1,73 @@
+{
+  "marketDynamics": {
+    "marketName": "Mid-market 3PL warehouse software",
+    "sourceDefaults": { "sourceSystem": "salesforce", "sourceInstance": "00DEX000000HRBLAAA" },
+    "opportunities": [
+      {
+        "firmSource": { "objectKind": "Account", "sourceRecordId": "001EX000000B001AAA" },
+        "source": { "objectKind": "Opportunity", "sourceRecordId": "006EX000000A001AAA" },
+        "openedDate": "2025-01-13",
+        "qualifiedDate": "2025-02-10",
+        "decidedDate": "2025-04-28",
+        "outcome": "Won",
+        "winningProductName": "Harborline WMS",
+        "notes": "New logo. Dates from OpportunityHistory. Scope and channel are not in the source and are left out.",
+        "recordedDate": "2025-04-28"
+      },
+      {
+        "firmSource": { "objectKind": "Account", "sourceRecordId": "001EX000000B002AAA" },
+        "source": { "objectKind": "Opportunity", "sourceRecordId": "006EX000000A002AAA" },
+        "openedDate": "2025-03-04",
+        "qualifiedDate": "2025-04-02",
+        "decidedDate": "2025-07-15",
+        "outcome": "Lost",
+        "winningProductName": "Palletto Cloud",
+        "notes": "Lost to a named competitor (Competitor__c Palletto, mapped by RULE-commercial-outcome).",
+        "recordedDate": "2025-07-15"
+      },
+      {
+        "firmSource": { "objectKind": "Account", "sourceRecordId": "001EX000000B004AAA" },
+        "source": { "objectKind": "Opportunity", "sourceRecordId": "006EX000000A005AAA" },
+        "openedDate": "2026-06-15",
+        "notes": "Open. The CloseDate 2026-11-30 is a forecast, not a decision; Amount is null and not loaded."
+      },
+      {
+        "firmSource": { "objectKind": "Account", "sourceRecordId": "001EX000000B005AAA" },
+        "source": { "objectKind": "Opportunity", "sourceRecordId": "006EX000000A006AAA" },
+        "openedDate": "2025-01-20",
+        "decidedDate": "2025-02-20",
+        "outcome": "Won",
+        "winningProductName": "Harborline WMS",
+        "notes": "New logo. No stage history: decided date is the CloseDate of a Closed Won deal and recordedDate is omitted (import time)."
+      },
+      {
+        "firmSource": { "objectKind": "Account", "sourceRecordId": "001EX000000B006AAA" },
+        "source": { "objectKind": "Opportunity", "sourceRecordId": "006EX000000A008AAA" },
+        "openedDate": "2025-06-16",
+        "decidedDate": "2025-09-10",
+        "outcome": "Won",
+        "winningProductName": "Harborline WMS",
+        "notes": "New logo, EUR contract. No stage history: recordedDate omitted."
+      },
+      {
+        "firmSource": { "objectKind": "Account", "sourceRecordId": "001EX000000B006AAA" },
+        "source": { "objectKind": "Opportunity", "sourceRecordId": "006EX000000A011AAA" },
+        "openedDate": "2025-01-20",
+        "decidedDate": "2025-04-15",
+        "outcome": "NoDecision",
+        "notes": "Evidenced non-purchase: Loss_Reason__c No Decision, evaluation paused after a reorganisation. No winner."
+      }
+    ],
+    "churnEvents": [
+      {
+        "segmentName": "Regional 3PLs",
+        "effectiveDate": "2026-06-30",
+        "source": { "objectKind": "Contract", "sourceRecordId": "800EX000000C004AAA" },
+        "firmSource": { "objectKind": "Account", "sourceRecordId": "001EX000000B005AAA" },
+        "productName": "Harborline WMS",
+        "sourceRelationshipRef": "a1BEX000000S009AAA",
+        "notes": "Logo-level churn: contract terminated 2026-06-30 (Terminated_Date__c). recordedDate omitted: ContractHistory is unreadable."
+      }
+    ]
+  }
+}

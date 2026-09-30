@@ -37,7 +37,8 @@
   strictly into `SeedFile`, enum spellings and ISO dates are exact, headings and links are
   intact, and `example-seed.json` resolves its by-name references; also the discovery manifest
   and fixture (PRD3), the portfolio mapping, fixture and seed fragments (PRD4), and the decision register,
-  review walkthrough and accepted-only seed fragments (PRD5).
+  review walkthrough and accepted-only seed fragments (PRD5), and the commercial normalization artifact,
+  Salesforce extract and seed fragments, whose figures it recomputes from the raw records (PRD7).
 - `ChoiceParameterKeysTests.cs` — CLI's mirror of the API's choice-model parameter key scheme.
 - `NameIndexTests.cs` — name-matching rules for idempotent seed loading.
 - `ParameterKeyHelperTests.cs` — engine-vs-free-form parameter key validation logic.

@@ -5,9 +5,10 @@ who has data somewhere (spreadsheets, a CRM, Jira, a finance system) and end wit
 instance loaded with that human's data.
 
 Read this file end to end before you start. Do not read the dataset files under `datasets/` - each
-one is read by the subagent you spawn for it. (Discovery, section 6, and portfolio selection, section 8,
-are the exceptions: they read a requested dataset's tier, data-requirements and units sections only to
-map evidence and shape the mapping.) The review procedure (section 9) reads no dataset file.
+one is read by the subagent you spawn for it. (Discovery, section 6, portfolio selection, section 8, and
+commercial normalization, section 9, are the exceptions: they read a requested dataset's tier,
+data-requirements and units sections only to map evidence and shape the mapping.) The review procedure
+(section 10) reads no dataset file.
 
 Shorthand used below: `pm` means `dotnet run --project src/ProductManager.Cli --`. There is no
 installed `pm` binary. Every command is run from the repository root.
@@ -25,7 +26,7 @@ spec - the *why* behind every dataset).
 
 | Role | Reads | Does |
 |---|---|---|
-| Orchestrator (you) | this file, plus [`discovery/README.md`](discovery/README.md) when sources are connected, [`portfolio/README.md`](portfolio/README.md) when Aha! or Jira are connected and [`review/README.md`](review/README.md) before anything consequential loads | environment checks, stack up, source discovery, consolidated interview, portfolio selection, consequential-decision review, spawns subagents, assembles and loads, verifies |
+| Orchestrator (you) | this file, plus [`discovery/README.md`](discovery/README.md) when sources are connected, [`portfolio/README.md`](portfolio/README.md) when Aha! or Jira are connected and [`commercial/README.md`](commercial/README.md) when Salesforce is connected and tier C or D is requested, [`review/README.md`](review/README.md) before anything consequential loads | environment checks, stack up, source discovery, consolidated interview, portfolio selection, commercial normalization, consequential-decision review, spawns subagents, assembles and loads, verifies |
 | Dataset subagent | one file under `datasets/` | asks its dataset's questions, converts the human's source data, emits a seed JSON fragment (accepted decisions only), loads it, reports |
 
 This is progressive disclosure on purpose: the 12 dataset files together are far too long for one
@@ -66,6 +67,11 @@ If given, take every initiative, project, feature, team and business process nam
 decision and every effort or capacity unit from it. Never coin your own name, merge or split records,
 or include a record the mapping holds out or excludes; a name you think is wrong goes in your report
 for the orchestrator. Prepare the fragment only from the mapping's selected records.
+
+Commercial normalization: <absolute path to commercial-normalization.json, or "none - no commercial source, or a tier below C">
+If given, take deal types, outcomes, dates, amounts, currency conversions, firm segments, relationships,
+churn events and totals from its `normalized` rows and `segmentTotals`; never recompute them, and never
+take an excluded or unresolved record. Every row you write carries the `source` of the record it came from.
 
 Decision register: <absolute path to decision-register.json, or "none - nothing consequential to review">
 If given, take every consequential value from the entries whose acceptance is in force (accepted, and
@@ -344,9 +350,9 @@ Procedure - the detail and every field is in [`discovery/README.md`](discovery/R
 Hard rules:
 
 - Discovery is read-only and creates nothing: no ProductManager entities, no writes to any source
-  system, no database access. Loading stays API-only and later, exactly as sections 10 and 11 describe.
+  system, no database access. Loading stays API-only and later, exactly as sections 11 and 12 describe.
 - It precedes all per-dataset preparation and any real-data load. Environment checks, authentication,
-  load order and verification (sections 2, 3, 10, 11) are unchanged.
+  load order and verification (sections 2, 3, 11, 12) are unchanged.
 - Store no credentials, tokens or connection strings in any artifact.
 - Finance costs and market-wide totals stay gaps when no accessible system holds them; a Jira Done
   status is not customer availability; a sales commitment is not a delivery date.
@@ -392,10 +398,10 @@ per-dataset questions belong to the subagents - do not pre-empt them.
    dataset file's bracketed default and the subagent lists them in its report. *Consequential* choices
    (segments, identity merges, capability scopes, coverage tiers and deltas, planning dates, commercial
    classifications, simulation assumptions) are decided by the human before the record loads, through the
-   decision register (section 9). Tell the human up front that nothing consequential loads unseen; a default
+   decision register (section 10). Tell the human up front that nothing consequential loads unseen; a default
    never stands in for that decision.
 
-Write the answers down. You will paste the relevant slice of them into each subagent brief. With Aha! or Jira connected, section 8 comes next; then section 9 for everything that needs a decision.
+Write the answers down. You will paste the relevant slice of them into each subagent brief. With Aha! or Jira connected, section 8 comes next; with Salesforce and tier C or D, section 9; then section 10 for everything that needs a decision.
 
 ---
 
@@ -437,13 +443,54 @@ Hard rules:
 - Store no credentials, tokens or connection strings in the mapping.
 
 Before any fragment is loaded, the mapping's inclusion decisions, exceptions and date conflicts go through
-the consequential-decision review (section 9).
+the consequential-decision review (section 10).
 
 ---
 
-## 9. Consequential-decision review (before any consequential record loads)
+## 9. Commercial normalization (Salesforce connected, tier C or D, before the review)
 
-**When:** after discovery and portfolio selection (sections 6 and 8, when they ran) and the interview
+**When:** a commercial source (Salesforce) was discovered (section 6) and tier C or D is requested (datasets
+06, 11, 12), after the interview (section 7) and portfolio selection (section 8, when it ran) and before the
+consequential-decision review. **Skip it** for tier A or B alone and on the spreadsheet-only path; the brief's
+"Commercial normalization" slot is then `none`.
+
+**Why:** a CRM mixes new-logo sales, renewals, expansions, services and lost evaluations. Account creation is
+not firm formation, contract value is not ARR, and Closed Lost does not say who won. A mechanically valid
+import biases the economics and the calibration.
+
+Procedure - the detail, formulas and every field is in [`commercial/README.md`](commercial/README.md):
+
+1. Classify every opportunity by deal type (new logo, renewal, cross-sell, same-product expansion, services,
+   unknown) from the organization's own fields. Propose the map as a rule; map to model behavior only where
+   the semantics agree.
+2. Fix the calibration-eligible population and observation period. Keep excluded records with reasons:
+   competitive losses stay Lost, evidenced non-purchases become NoDecision, an unknown loss reason stays
+   unresolved, and an unknown competitor stays unknown.
+3. Date by meaning (opened, qualified, decided, recorded). An expected close date is not a decision; prefer
+   stage history; omit `recordedDate` when history cannot prove it.
+4. Fix the firm unit, deduplicate, derive active relationships from contract evidence, and turn an ended
+   subscription into an end date and a churn event.
+5. Normalize recurring amounts by actual term and quantity, separating base, modules, implementation,
+   services and usage, in one reporting currency with the rate and its date recorded.
+6. Measure module penetration by unique active firms, record whether churn evidence is logo or product level,
+   and keep CRM counts apart from the market.
+7. Write the artifact ([`commercial/commercial-normalization.example.json`](commercial/commercial-normalization.example.json))
+   outside the repo with the source counts reconciled, propose register entries for every interpretation no
+   accepted rule covers, and put the artifact's path in the brief for datasets 06, 11 and 12.
+
+Hard rules:
+
+- Read-only and creating nothing: no new connector, no helper code in the repository, no ProductManager
+  entities. The step proposes; the review (section 10) accepts; only then are fragments prepared.
+- An unresolved value is left out, never written as 0. The seed cannot say "unknown" for a number, so the
+  safe encoding is the missing row ([`commercial/README.md`](commercial/README.md#11-unresolved-is-never-zero)).
+- Store no credentials, tokens or connection strings in the artifact.
+
+---
+
+## 10. Consequential-decision review (before any consequential record loads)
+
+**When:** after discovery, portfolio selection and commercial normalization (sections 6, 8 and 9, when they ran) and the interview
 (section 7), before you spawn a subagent that would put an interpretation into a fragment. It applies to
 every onboarding; on the spreadsheet-only path the register just cites the human's statements.
 
@@ -474,19 +521,22 @@ Worked example: [`review/decision-register.example.json`](review/decision-regist
 Hard rules:
 
 - The review adds no ProductManager entities, no seed keys and no API: the register is a local artifact kept
-  with the import package (section 10). Loading stays API-only.
+  with the import package (section 11). Loading stays API-only.
 - Quantities with no source in Salesforce, Aha! or Jira (market population, competitor installed base, channel
   reach, operating costs, price sensitivity, switching costs, covariate elasticities, event effects) may load
   only as reviewed assumptions with provenance `Asserted` (or `Default`) and a rationale; never relabel them
   observed or calibrated.
 - Dataset subagents never default a consequential choice into a fragment; see the brief's "Decision register" slot.
+- The proposals of section 9 - commercial classifications and conversion rules - arrive as register entries:
+  rules for deal type, outcome, dates, identity, recurring components and currency, and a decision for every
+  record a rule leaves uncovered. Cite the artifact by key; do not copy it.
 
 ---
 
-## 10. Assembling and loading
+## 11. Assembling and loading
 
 **Only what the review allows loads.** Assemble each fragment from records that are mechanical, covered
-by an accepted rule, or the value of an accepted decision whose acceptance still holds (section 9). Drop
+by an accepted rule, or the value of an accepted decision whose acceptance still holds (section 10). Drop
 every record of a proposed, rejected, deferred or reopened entry and say which and why in your report;
 a required entry that is not accepted defers its tier, so its datasets are not loaded. Do not fill a gap
 with a default: a subagent's independent default for a consequential choice is a proposal for the
@@ -630,7 +680,7 @@ appears in the tally at all.
 
 ---
 
-## 11. Verification checklist
+## 12. Verification checklist
 
 Run this after every dataset load, and again at the end.
 
@@ -700,7 +750,7 @@ table means calibration found no facts to fit, which usually means dataset 12 di
 
 ---
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|

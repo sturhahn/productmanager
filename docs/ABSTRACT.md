@@ -6,5 +6,7 @@ own data into a fresh instance (guide plus one requirements file per dataset), i
 read-only source-discovery step (`onboarding/discovery/`) that assesses connected Aha!, Jira and
 Salesforce sources before any data is prepared, and a portfolio-reconciliation step
 (`onboarding/portfolio/`) that turns them into one approved, traceable mapping every dataset agent uses, and
+a commercial-normalization step (`onboarding/commercial/`) that classifies CRM deals, normalizes contract
+amounts and states the calibration population before any commercial row is prepared, and
 a consequential-decision review (`onboarding/review/`) that keeps interpretations out of the seed until the
 human has accepted them.

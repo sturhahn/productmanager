@@ -1,0 +1,17 @@
+{
+  "request": "GET /services/data/v62.0/query?q=SELECT Id, Name, Type, Segment__c, Website, BillingCountry FROM Account WHERE Type IN ('Customer','Prospect') ORDER BY Name",
+  "httpStatus": 200,
+  "response": {
+    "totalSize": 7,
+    "done": true,
+    "records": [
+      { "attributes": { "type": "Account", "url": "/services/data/v62.0/sobjects/Account/001EX000000B006AAA" }, "Id": "001EX000000B006AAA", "Name": "Alpenhaus Logistik GmbH", "Type": "Customer", "Segment__c": "Regional 3PL", "Website": "https://www.alpenhaus-logistik.example", "BillingCountry": "DE" },
+      { "attributes": { "type": "Account", "url": "/services/data/v62.0/sobjects/Account/001EX000000B001AAA" }, "Id": "001EX000000B001AAA", "Name": "Bluewater Logistics", "Type": "Customer", "Segment__c": "Regional 3PL", "Website": "https://www.bluewater-logistics.example", "BillingCountry": "US" },
+      { "attributes": { "type": "Account", "url": "/services/data/v62.0/sobjects/Account/001EX000000B007AAA" }, "Id": "001EX000000B007AAA", "Name": "Bluewater Logistics Inc", "Type": "Prospect", "Segment__c": null, "Website": "http://bluewater-logistics.example/", "BillingCountry": "US" },
+      { "attributes": { "type": "Account", "url": "/services/data/v62.0/sobjects/Account/001EX000000B002AAA" }, "Id": "001EX000000B002AAA", "Name": "Cargo Nine", "Type": "Prospect", "Segment__c": "E-commerce Fulfillment", "Website": "https://cargonine.example", "BillingCountry": "US" },
+      { "attributes": { "type": "Account", "url": "/services/data/v62.0/sobjects/Account/001EX000000B003AAA" }, "Id": "001EX000000B003AAA", "Name": "Meridian Fulfillment", "Type": "Customer", "Segment__c": null, "Website": "https://meridian-fulfillment.example", "BillingCountry": "US" },
+      { "attributes": { "type": "Account", "url": "/services/data/v62.0/sobjects/Account/001EX000000B004AAA" }, "Id": "001EX000000B004AAA", "Name": "Northgate Freight", "Type": "Prospect", "Segment__c": "Regional 3PL", "Website": "https://northgate-freight.example", "BillingCountry": "US" },
+      { "attributes": { "type": "Account", "url": "/services/data/v62.0/sobjects/Account/001EX000000B005AAA" }, "Id": "001EX000000B005AAA", "Name": "Tidewater Cargo", "Type": "Customer", "Segment__c": "Regional 3PL", "Website": "https://tidewater-cargo.example", "BillingCountry": "US" }
+    ]
+  }
+}

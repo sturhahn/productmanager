@@ -100,7 +100,8 @@ public class OnboardingDocsTests
         new[]
         {
             RootReadmePath, GuidePath, DiscoveryReadmePath, AssessmentPath, FixtureReadmePath,
-            PortfolioReadmePath, PortfolioFixtureReadmePath, ReviewReadmePath, ReviewExamplePath
+            PortfolioReadmePath, PortfolioFixtureReadmePath, ReviewReadmePath, ReviewExamplePath,
+            CommercialReadmePath, CommercialFixtureReadmePath
         }
             .Concat(DatasetFileNames.Select(name => $"{DatasetDirectory}/{name}"))
             .Select(path => new object[] { path });
@@ -1472,9 +1473,9 @@ public class OnboardingDocsTests
         var guide = ReadRepoFile(GuidePath);
         var interview = guide.IndexOf("## 7. Interviewing the human", StringComparison.Ordinal);
         var portfolio = guide.IndexOf("## 8. Portfolio selection", StringComparison.Ordinal);
-        var loading = guide.IndexOf("## 10. Assembling and loading", StringComparison.Ordinal);
+        var loading = guide.IndexOf("## 11. Assembling and loading", StringComparison.Ordinal);
         Assert.True(interview >= 0 && portfolio > interview && loading > portfolio,
-            "Portfolio selection must be section 8, after the interview and before assembling and loading (section 10).");
+            "Portfolio selection must be section 8, after the interview and before assembling and loading (section 11).");
 
         var linked = RelativeLinkTargets(guide, GuidePath).Select(t => t.ResolvedPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
         Assert.Contains(Path.GetFullPath(RepoPath(PortfolioReadmePath)), linked);
@@ -1482,7 +1483,7 @@ public class OnboardingDocsTests
 
         Assert.Contains("Portfolio mapping:", guide);
         Assert.Contains("never coin", guide);
-        Assert.DoesNotContain("<!-- PRD5", guide); // the hook is now guide section 9 (PRD5 tests below)
+        Assert.DoesNotContain("<!-- PRD5", guide); // the hook is now guide section 10 (PRD5 tests below)
 
         var readme = ReadRepoFile(PortfolioReadmePath);
         foreach (var meaning in DateMeanings) Assert.Contains(meaning, readme);
@@ -2052,10 +2053,10 @@ public class OnboardingDocsTests
     {
         var guide = ReadRepoFile(GuidePath);
         var portfolio = guide.IndexOf("## 8. Portfolio selection", StringComparison.Ordinal);
-        var review = guide.IndexOf("## 9. Consequential-decision review", StringComparison.Ordinal);
-        var loading = guide.IndexOf("## 10. Assembling and loading", StringComparison.Ordinal);
+        var review = guide.IndexOf("## 10. Consequential-decision review", StringComparison.Ordinal);
+        var loading = guide.IndexOf("## 11. Assembling and loading", StringComparison.Ordinal);
         Assert.True(portfolio >= 0 && review > portfolio && loading > review,
-            "The review must be section 9, after portfolio selection and before assembling and loading.");
+            "The review must be section 10, after portfolio selection and commercial normalization and before assembling and loading.");
 
         var linked = RelativeLinkTargets(guide, GuidePath).Select(t => t.ResolvedPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var path in new[] { ReviewReadmePath, RegisterTemplatePath, RegisterExamplePath })
@@ -2104,4 +2105,757 @@ public class OnboardingDocsTests
     }
 
     // ---------- PRD5: append new tests above this line ----------
+
+    // ---------- PRD7: commercial normalization ----------
+    // docs/onboarding/commercial/: the normalization artifact for Harborline, the register excerpt it
+    // cites, the Salesforce extract it was derived from and the seed fragments generated from its
+    // normalized rows. The arithmetic is recomputed here from the RAW fixture records with the
+    // documented formulas, so a wrong formula or a row that does not reconcile fails the build.
+
+    private const string CommercialDirectory = "docs/onboarding/commercial";
+    private const string CommercialReadmePath = CommercialDirectory + "/README.md";
+    private const string CommercialArtifactPath = CommercialDirectory + "/commercial-normalization.example.json";
+    private const string CommercialRegisterPath = CommercialDirectory + "/commercial-register-excerpt.example.json";
+    private const string CommercialFixtureReadmePath = CommercialDirectory + "/fixture/README.md";
+    private const string CommercialSeedDirectory = CommercialDirectory + "/fixture/seed";
+    private static readonly DateOnly CommercialAsOf = new(2026, 9, 30);
+
+    private static readonly Dictionary<string, string> CommercialRawFiles = new()
+    {
+        ["Account"] = "accounts.json",
+        ["Opportunity"] = "opportunities.json",
+        ["Contract"] = "contracts.json",
+        ["Subscription__c"] = "subscription-lines.json"
+    };
+
+    private static readonly (string List, string ObjectType)[] CommercialLists =
+    [
+        ("firms", "Account"), ("deals", "Opportunity"), ("contracts", "Contract"), ("lines", "Subscription__c")
+    ];
+
+    private static readonly string[] CommercialDealTypes =
+        ["newLogo", "renewal", "crossSell", "sameProductExpansion", "services", "unknown"];
+
+    private static readonly string[] CommercialFormulaKeys =
+    [
+        "F1-term-months", "F2-recurring-monthly", "F3-annual", "F4-currency", "F5-base-arpu",
+        "F6-module-arpu", "F7-penetration", "F8-implementation-fee", "F9-price-level", "F10-reconcile"
+    ];
+
+    private static readonly Regex DecisionKeyRegex = new(@"^(RULE|DEC)-[a-z0-9-]+$");
+
+    private static JsonNode Commercial() => ReadJson(CommercialArtifactPath);
+
+    private static JsonNode CommercialRegister() => ReadJson(CommercialRegisterPath);
+
+    private static Dictionary<string, JsonNode> RawRecords(string objectType) =>
+        Nodes(ReadJson($"{CommercialDirectory}/fixture/salesforce/{CommercialRawFiles[objectType]}")["response"]!["records"])
+            .ToDictionary(r => Text(r["Id"]), r => r, StringComparer.Ordinal);
+
+    private static List<JsonNode> Rows(JsonNode artifact, string list) => Nodes(artifact["normalized"]![list]).ToList();
+
+    private static Dictionary<string, JsonNode> RowsById(JsonNode artifact, string list) =>
+        Rows(artifact, list).ToDictionary(r => Text(r["sourceId"]), r => r, StringComparer.Ordinal);
+
+    private static decimal Dec(JsonNode? node) =>
+        node is null ? throw new Xunit.Sdk.XunitException("Expected a number, found null.") : node.GetValue<decimal>();
+
+    private static void AssertMoney(decimal expected, JsonNode? actual, string where) =>
+        Assert.True(actual is not null && Math.Abs(expected - Dec(actual)) <= 0.005m,
+            $"{where}: recomputed {expected}, artifact says {actual?.ToJsonString() ?? "null"}.");
+
+    private static DateOnly Day(JsonNode? node) =>
+        DateOnly.ParseExact(Text(node), "yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    /// <summary>F1: whole calendar months from the start date to the day after the (inclusive) end date.</summary>
+    private static int WholeMonths(DateOnly start, DateOnly endInclusive)
+    {
+        var end = endInclusive.AddDays(1);
+        return (end.Year - start.Year) * 12 + end.Month - start.Month;
+    }
+
+    private static List<(string ObjectType, string Id, string Disposition)> CommercialDispositions(JsonNode artifact)
+    {
+        var all = new List<(string, string, string)>();
+        foreach (var (list, type) in CommercialLists)
+            foreach (var row in Rows(artifact, list))
+            {
+                Assert.Equal(type, Text(row["objectType"]));
+                all.Add((type, Text(row["sourceId"]), "imported"));
+            }
+
+        foreach (var row in Nodes(artifact["excluded"])) all.Add((Text(row["objectType"]), Text(row["sourceId"]), "excluded"));
+        foreach (var row in Nodes(artifact["unresolved"])) all.Add((Text(row["objectType"]), Text(row["sourceId"]), "unresolved"));
+        return all;
+    }
+
+    private static SeedFile CommercialSeed(string fileName) =>
+        ParseSeedFile(ReadRepoFile($"{CommercialSeedDirectory}/{fileName}"), fileName);
+
+    private static SeedMarketDynamics CommercialDynamics(string fileName) =>
+        CommercialSeed(fileName).MarketDynamics ?? throw new Xunit.Sdk.XunitException($"{fileName} has no marketDynamics.");
+
+    private static void CollectDecisionKeys(JsonNode? node, HashSet<string> into)
+    {
+        switch (node)
+        {
+            case JsonObject obj: foreach (var (_, child) in obj) CollectDecisionKeys(child, into); break;
+            case JsonArray array: foreach (var child in array) CollectDecisionKeys(child, into); break;
+            case JsonValue value when value.TryGetValue<string>(out var text) && DecisionKeyRegex.IsMatch(text): into.Add(text); break;
+        }
+    }
+
+    private static HashSet<string> KnownDecisionKeys() =>
+        Decisions(Register()).Concat(Decisions(CommercialRegister())).Select(d => Text(d["key"])).ToHashSet(StringComparer.Ordinal);
+
+    private static JsonNode CommercialRule(string key) => Decision(CommercialRegister(), key);
+
+    /// <summary>The opportunity history rows of one deal, oldest first (empty when the extract has none).</summary>
+    private static List<JsonNode> DealHistory(string opportunityId) =>
+        Nodes(ReadJson($"{CommercialDirectory}/fixture/salesforce/opportunity-history.json")["response"]!["records"])
+            .Where(h => Text(h["OpportunityId"]) == opportunityId)
+            .OrderBy(h => Text(h["CreatedDate"]), StringComparer.Ordinal).ToList();
+
+    private static string DatePart(string timestamp) => timestamp[..10];
+
+    [Fact]
+    public void The_commercial_artifact_references_the_manifest_and_register_and_carries_the_stable_keys()
+    {
+        var artifact = Commercial();
+        Assert.Equal(1, artifact["normalizationVersion"]!.GetValue<int>());
+        foreach (var key in new[]
+                 {
+                     "manifest", "register", "extract", "mappingRules", "currency", "formulas", "normalized", "excluded",
+                     "unresolved", "sourceCounts", "calibrationPopulation", "segmentTotals", "gaps"
+                 })
+            Assert.NotNull(artifact[key]);
+        foreach (var list in new[] { "firms", "deals", "contracts", "lines", "relationships", "churnEvents" })
+            Assert.NotNull(artifact["normalized"]![list]);
+
+        var manifest = ReadJson(ManifestPath);
+        Assert.Equal(Text(manifest["discovery"]!["runId"]), Text(artifact["manifest"]!["runId"]));
+        Assert.Contains(Sources(manifest), s => Text(s!["sourceId"]) == Text(artifact["manifest"]!["sourceId"]));
+        foreach (var file in new[] { Text(artifact["manifest"]!["file"]), Text(artifact["register"]!["file"]) })
+            Assert.True(File.Exists(Path.GetFullPath(Path.Combine(RepoPath(CommercialDirectory), file))), $"{file} does not exist.");
+
+        // Instance identity lives in the manifest; the artifact refers to it by key and never copies it.
+        var text = ReadRepoFile(CommercialArtifactPath);
+        Assert.DoesNotContain("00DEX000000HRBLAAA", text);
+        Assert.DoesNotContain("my.salesforce.com", text);
+
+        var keys = Nodes(artifact["formulas"]).Select(f => Text(f["key"])).ToList();
+        foreach (var key in CommercialFormulaKeys) Assert.Contains(key, keys);
+        foreach (var formula in Nodes(artifact["formulas"])) Assert.False(string.IsNullOrWhiteSpace(Text(formula["expression"])));
+    }
+
+    [Fact]
+    public void Every_normalized_excluded_and_unresolved_record_exists_in_the_extract_and_carries_a_classification_or_reason()
+    {
+        var artifact = Commercial();
+        var raw = CommercialRawFiles.Keys.ToDictionary(k => k, RawRecords);
+
+        foreach (var (list, type) in CommercialLists)
+            foreach (var row in Rows(artifact, list))
+            {
+                Assert.True(raw[type].ContainsKey(Text(row["sourceId"])), $"{list}: {Text(row["sourceId"])} is not in the {type} extract.");
+                Assert.False(string.IsNullOrWhiteSpace(Text(row["classification"])), $"{list}: {Text(row["sourceId"])} has no classification.");
+            }
+
+        foreach (var row in Nodes(artifact["excluded"]).Concat(Nodes(artifact["unresolved"])))
+        {
+            var id = Text(row["sourceId"]);
+            Assert.True(raw[Text(row["objectType"])].ContainsKey(id), $"{id} is not in the {Text(row["objectType"])} extract.");
+            Assert.False(string.IsNullOrWhiteSpace(Text(row["reason"])), $"{id} has no reason.");
+        }
+
+        foreach (var row in Nodes(artifact["excluded"]))
+            Assert.False(string.IsNullOrWhiteSpace(Text(row["classification"])), $"excluded {Text(row["sourceId"])} has no classification.");
+        foreach (var row in Nodes(artifact["unresolved"]))
+            Assert.False(string.IsNullOrWhiteSpace(Text(row["question"])), $"unresolved {Text(row["sourceId"])} asks no question.");
+    }
+
+    [Fact]
+    public void Every_extract_record_is_imported_excluded_or_unresolved_exactly_once_and_the_source_counts_reconcile()
+    {
+        var artifact = Commercial();
+        var dispositions = CommercialDispositions(artifact);
+
+        foreach (var (type, file) in CommercialRawFiles)
+        {
+            var extract = RawRecords(type);
+            var mine = dispositions.Where(d => d.ObjectType == type).ToList();
+            Assert.Equal(extract.Count, mine.Count);
+            Assert.Equal(extract.Keys.Order(StringComparer.Ordinal), mine.Select(d => d.Id).Order(StringComparer.Ordinal));
+            Assert.Equal(mine.Count, mine.Select(d => d.Id).Distinct().Count());
+
+            var count = Nodes(artifact["sourceCounts"]).Single(c => Text(c["objectType"]) == type);
+            Assert.Equal(extract.Count, count["source"]!.GetValue<int>());
+            Assert.Equal(mine.Count(d => d.Disposition == "imported"), count["imported"]!.GetValue<int>());
+            Assert.Equal(mine.Count(d => d.Disposition == "excluded"), count["excluded"]!.GetValue<int>());
+            Assert.Equal(mine.Count(d => d.Disposition == "unresolved"), count["unresolved"]!.GetValue<int>());
+            Assert.Equal(count["source"]!.GetValue<int>(),
+                count["imported"]!.GetValue<int>() + count["excluded"]!.GetValue<int>() + count["unresolved"]!.GetValue<int>());
+            var declared = Nodes(artifact["extract"]!["objects"]).Single(o => Text(o["objectType"]) == type);
+            Assert.Equal(extract.Count, declared["rowCount"]!.GetValue<int>());
+        }
+    }
+
+    [Fact]
+    public void Every_decision_key_the_artifact_names_exists_in_the_review_register_or_the_commercial_excerpt()
+    {
+        var referenced = new HashSet<string>(StringComparer.Ordinal);
+        CollectDecisionKeys(Commercial(), referenced);
+        var known = KnownDecisionKeys();
+        Assert.NotEmpty(referenced);
+        foreach (var key in referenced) Assert.True(known.Contains(key), $"The artifact names {key}, which is in no register.");
+
+        var excerpt = CommercialRegister();
+        var review = Decisions(Register()).Select(d => Text(d["key"])).ToHashSet(StringComparer.Ordinal);
+        var raw = CommercialRawFiles.Keys.SelectMany(t => RawRecords(t).Keys).ToHashSet(StringComparer.Ordinal);
+        var manifest = ReadJson(ManifestPath);
+        foreach (var decision in Decisions(excerpt))
+        {
+            Assert.DoesNotContain(Text(decision["key"]), review); // an excerpt adds entries, never redefines PRD5's
+            foreach (var key in RequiredDecisionKeys) Assert.True(decision.AsObject().ContainsKey(key), $"{Text(decision["key"])} lacks '{key}'.");
+            Assert.Contains(Text(decision["reviewState"]), ReviewStates);
+            Assert.Contains(Text(decision["topic"]), DecisionTopics);
+            Assert.Contains(Text(decision["class"]), DecisionClasses);
+            if (Text(decision["reviewState"]) == "accepted")
+                Assert.Equal("accepted", EffectiveState(decision));
+            foreach (var evidence in Nodes(decision["evidence"]))
+            {
+                var reference = Text(evidence["ref"]);
+                var (kind, id) = (reference[..reference.IndexOf(':')], reference[(reference.IndexOf(':') + 1)..]);
+                Assert.True(kind switch
+                {
+                    "salesforce" => raw.Contains(id),
+                    "manifest" => id.StartsWith("gap:") || Nodes(manifest["openQuestions"]).Any(q => Text(q["id"]) == id),
+                    "human" => Nodes(excerpt["humanEvidence"]).Any(h => Text(h["id"]) == id),
+                    "register" => known.Contains(id),
+                    _ => false
+                }, $"{Text(decision["key"])}: evidence '{reference}' does not resolve.");
+            }
+        }
+    }
+
+    [Fact]
+    public void Recurring_amounts_are_normalized_by_actual_term_and_quantity_with_components_kept_apart()
+    {
+        var artifact = Commercial();
+        var contracts = RawRecords("Contract");
+        var rawLines = RawRecords("Subscription__c");
+        var componentMap = CommercialRule("RULE-commercial-recurring")["proposedValue"]!["componentMap"]!.AsObject();
+        var rates = Nodes(artifact["currency"]!["rates"]).ToDictionary(r => Text(r["from"]), r => Dec(r["rate"]));
+
+        foreach (var line in Rows(artifact, "lines"))
+        {
+            var id = Text(line["sourceId"]);
+            var source = rawLines[id];
+            var contract = contracts[Text(source["Contract__c"])];
+            Assert.Equal(Text(source["Contract__c"]), Text(line["contractId"]));
+            Assert.Equal(Text(componentMap[Text(source["Component__c"])]), Text(line["classification"]));
+
+            var quantity = Dec(source["Quantity__c"]);
+            Assert.Equal(quantity * Dec(source["UnitPrice__c"]), Dec(source["TotalPrice__c"]));   // F10 at line level
+            AssertMoney(Dec(source["TotalPrice__c"]), line["totalPrice"], id);
+
+            var rate = Text(source["CurrencyIsoCode"]) == "USD" ? 1m : rates[Text(source["CurrencyIsoCode"])];
+            AssertMoney(rate, line["rate"], $"{id} rate");
+            var reporting = line["reporting"]!;
+            if (Text(line["classification"]).StartsWith("recurring"))
+            {
+                // F1 from the contract dates, F2 and F3 from the line, F4 for the reporting currency.
+                var months = WholeMonths(Day(contract["StartDate"]), Day(contract["EndDate"]));
+                Assert.Equal(months, source["TermMonths__c"]!.GetValue<int>());
+                Assert.Equal(months, line["termMonths"]!.GetValue<int>());
+                var monthly = Dec(source["TotalPrice__c"]) / months;
+                AssertMoney(monthly, line["monthly"], $"{id} monthly");
+                AssertMoney(monthly * 12, line["annual"], $"{id} annual");
+                AssertMoney(Math.Round(monthly * rate, 2), reporting["monthly"], $"{id} reporting monthly");
+                Assert.Null(reporting["oneTime"]);
+            }
+            else
+            {
+                Assert.Null(reporting["monthly"]);
+                Assert.Null(line["monthly"]);
+                AssertMoney(Math.Round(Dec(source["TotalPrice__c"]) * rate, 2), reporting["oneTime"], $"{id} one-time");
+            }
+        }
+
+        // The three-year contract: 36 actual months, not a 12-month year, and the fee and services stay out of ARR.
+        var bluewater = contracts.Values.Single(c => Text(c["Id"]).EndsWith("C001AAA"));
+        Assert.Equal(36, WholeMonths(Day(bluewater["StartDate"]), Day(bluewater["EndDate"])));
+        var base1 = Rows(artifact, "lines").Where(l => Text(l["contractId"]) == Text(bluewater["Id"]) && Text(l["classification"]) == "recurringBase").Single();
+        AssertMoney(4500m, base1["monthly"], "three-year base monthly");
+        AssertMoney(54000m, base1["annual"], "three-year base ARR");
+        var naive = Dec(RawRecords("Opportunity")[Text(bluewater["Opportunity__c"])]["Amount"]) / 12m;
+        Assert.NotEqual(naive, Dec(base1["monthly"]));
+        var otherKinds = Rows(artifact, "lines").Where(l => Text(l["contractId"]) == Text(bluewater["Id"]) && l != base1)
+            .Select(l => Text(l["classification"]))
+            .Concat(Nodes(artifact["excluded"]).Where(e => Text(e["objectType"]) == "Subscription__c" && Text(rawLines[Text(e["sourceId"])]["Contract__c"]) == Text(bluewater["Id"]))
+                .Select(e => Text(e["classification"]))).ToHashSet();
+        Assert.True(otherKinds.SetEquals(["implementation", "services", "usageEstimate"]), string.Join(",", otherKinds));
+
+        // F10: the line totals of a contract add up to its opportunity's Amount (no line lost, none counted twice).
+        foreach (var contract in contracts.Values.Where(c => Text(c["Status"]) != "Draft"))
+        {
+            var total = rawLines.Values.Where(l => Text(l["Contract__c"]) == Text(contract["Id"])).Sum(l => Dec(l["TotalPrice__c"]));
+            Assert.Equal(Dec(RawRecords("Opportunity")[Text(contract["Opportunity__c"])]["Amount"]), total);
+        }
+    }
+
+    [Fact]
+    public void Currency_conversion_records_its_rate_source_and_date_and_raw_amounts_are_never_summed_across_currencies()
+    {
+        var artifact = Commercial();
+        var currency = artifact["currency"]!;
+        Assert.Equal("USD", Text(currency["reporting"]));
+        var rate = Nodes(currency["rates"]).Single(r => Text(r["from"]) == "EUR");
+        Assert.Equal("USD", Text(rate["to"]));
+        Assert.Equal(1.08m, Dec(rate["rate"]));
+        Assert.Equal("2026-09-30", Text(rate["rateDate"]));
+        Assert.False(string.IsNullOrWhiteSpace(Text(rate["source"])));
+        Assert.Equal("accepted", EffectiveState(CommercialRule(Text(rate["decisionKey"]))));
+
+        // One record is EUR; every total is a sum of reporting-currency values, never of raw source amounts.
+        var eur = Rows(artifact, "lines").Where(l => Text(l["currency"]) == "EUR").ToList();
+        Assert.Equal(2, eur.Count);   // the EUR base and implementation lines of the one converted contract
+        var totals = Nodes(artifact["segmentTotals"]).Single(t => Text(t["segment"]) == "Regional 3PLs");
+        var lineRows = RowsById(artifact, "lines");
+        var rawSum = Rows(artifact, "relationships").Where(r => Text(r["kind"]) == "base" && r["active"]!.GetValue<bool>())
+            .Sum(r => Dec(lineRows[Text(r["currentLineId"])]["monthly"]));
+        Assert.NotEqual(rawSum, Dec(totals["baseMonthly"]));   // 4500 + 3600 raw would be wrong; 4500 + 3888 is right
+
+        // The deferred alternative: without the rule the EUR population is unresolved and reported apart.
+        var deferred = currency["deferredAlternative"]!;
+        var alpenhaus = RowsById(artifact, "firms").Values.Single(f => Text(f["name"]).StartsWith("Alpenhaus"));
+        Assert.Contains(Text(alpenhaus["sourceId"]), Strings(deferred["movesToUnresolved"]));
+        var usd = deferred["segmentTotalsReportingOnly"]!["Regional 3PLs"]!;
+        Assert.Equal(1, usd["activeCustomers"]!.GetValue<int>());
+        AssertMoney(54000m, usd["baseArr"], "deferred USD-only ARR");
+        AssertMoney(18500m, usd["implementationFee"], "deferred USD-only fee");
+        var separate = deferred["segmentTotalsReportingOnly"]!["Regional 3PLs"]!["separatePopulations"]!["EUR"]!;
+        Assert.Equal(1, separate["activeCustomers"]!.GetValue<int>());
+        AssertMoney(43200m, separate["baseArr"], "deferred EUR-only ARR (source currency)");
+    }
+
+    /// <summary>Which firms hold an active edge and what it pays, recomputed from the raw contracts and lines.</summary>
+    private static List<(string FirmId, string Kind, string Product, decimal Monthly, string LineId)> ActiveEdgesFromRaw(JsonNode artifact)
+    {
+        var contracts = RawRecords("Contract");
+        var lines = RawRecords("Subscription__c");
+        var rate = Nodes(artifact["currency"]!["rates"]).ToDictionary(r => Text(r["from"]), r => Dec(r["rate"]));
+        var edges = new List<(string, string, string, decimal, string)>();
+        foreach (var contract in contracts.Values)
+        {
+            var terminated = contract["Terminated_Date__c"] is null ? (DateOnly?)null : Day(contract["Terminated_Date__c"]);
+            var active = Text(contract["Status"]) == "Activated" && Day(contract["StartDate"]) <= CommercialAsOf
+                         && Day(contract["EndDate"]) >= CommercialAsOf && (terminated is null || terminated > CommercialAsOf);
+            if (!active) continue;
+            foreach (var line in lines.Values.Where(l => Text(l["Contract__c"]) == Text(contract["Id"]) && Text(l["Component__c"]).StartsWith("Recurring")))
+            {
+                var currency = Text(line["CurrencyIsoCode"]);
+                var monthly = Math.Round(Dec(line["TotalPrice__c"]) / line["TermMonths__c"]!.GetValue<int>() * (currency == "USD" ? 1m : rate[currency]), 2);
+                edges.Add((Text(contract["AccountId"]), Text(line["Component__c"]) == "Recurring - Base" ? "base" : "module",
+                    Text(line["Product__c"]), monthly, Text(line["Id"])));
+            }
+        }
+
+        return edges;
+    }
+
+    [Fact]
+    public void Segment_totals_are_reproducible_and_a_churned_account_is_not_an_active_customer()
+    {
+        var artifact = Commercial();
+        var firms = RowsById(artifact, "firms");
+        var lines = RowsById(artifact, "lines");
+        var fromRaw = ActiveEdgesFromRaw(artifact);
+
+        var total = Nodes(artifact["segmentTotals"]).Single(t => Text(t["segment"]) == "Regional 3PLs");
+        Assert.Equal("resolved", Text(total["status"]));
+        var segmentEdges = fromRaw.Where(e => Text(firms[e.FirmId]["segment"]!["name"]) == "Regional 3PLs").ToList();
+        var baseEdges = segmentEdges.Where(e => e.Kind == "base").ToList();
+        Assert.Equal(baseEdges.Select(e => e.FirmId).Distinct().Order().ToList(), Strings(total["activeFirmSourceIds"]).Order().ToList());
+        Assert.Equal(baseEdges.Count, total["activeCustomers"]!.GetValue<int>());
+        AssertMoney(baseEdges.Sum(e => e.Monthly), total["baseMonthly"], "base monthly");
+        AssertMoney(baseEdges.Sum(e => e.Monthly) * 12, total["baseArr"], "base ARR");
+        AssertMoney(baseEdges.Sum(e => e.Monthly) / baseEdges.Count, total["baseArpuPerMonth"], "base ARPU");
+
+        // No double counting: base ARPU excludes module revenue; the naive figure is recorded and differs.
+        var moduleMonthly = segmentEdges.Where(e => e.Kind == "module").Sum(e => e.Monthly);
+        Assert.True(moduleMonthly > 0);
+        AssertMoney((baseEdges.Sum(e => e.Monthly) + moduleMonthly) / baseEdges.Count, total["doubleCountCheck"]!["naiveArpuIfModulesIncluded"], "naive ARPU");
+        Assert.NotEqual(Dec(total["baseArpuPerMonth"]), Dec(total["doubleCountCheck"]!["naiveArpuIfModulesIncluded"]));
+
+        var module = Nodes(total["modules"]).Single();
+        var holders = segmentEdges.Where(e => e.Kind == "module" && e.Product == Text(module["product"])).Select(e => e.FirmId).Distinct().ToList();
+        Assert.Equal(holders.Count, module["holders"]!.GetValue<int>());
+        AssertMoney((decimal)holders.Count / baseEdges.Count, module["penetration"], "penetration (unique firms / active firms)");
+        AssertMoney(moduleMonthly / holders.Count, module["arpuPerHolderPerMonth"], "module ARPU per holder");
+        AssertMoney(moduleMonthly * 12, module["arr"], "module ARR");
+
+        // F8: mean one-time implementation over the segment's imported implementation lines, reporting currency.
+        var fees = lines.Values.Where(l => Text(l["classification"]) == "implementation"
+                                           && Text(firms[Text(RawRecords("Contract")[Text(l["contractId"])]["AccountId"])]["segment"]!["name"]) == "Regional 3PLs")
+            .Select(l => Dec(l["reporting"]!["oneTime"])).ToList();
+        AssertMoney(fees.Sum() / fees.Count, total["implementationFee"]!["value"], "implementation fee");
+
+        // The churned account: CRM still says Customer, contract evidence says ended; history retained.
+        var tidewater = firms.Values.Single(f => Text(f["name"]).StartsWith("Tidewater"));
+        Assert.Equal("Customer", Text(RawRecords("Account")[Text(tidewater["sourceId"])]["Type"]));
+        Assert.Equal("former-customer", Text(tidewater["status"]));
+        Assert.DoesNotContain(Text(tidewater["sourceId"]), Strings(total["activeFirmSourceIds"]));
+        Assert.Contains(Text(tidewater["sourceId"]), Strings(total["endedInObservationPeriod"]));
+
+        var firmsFragment = CommercialDynamics("11-firms-and-relationships.json").Firms.Single(f => f.Name.StartsWith("Tidewater"));
+        var edge = Assert.Single(firmsFragment.Relationships);
+        Assert.Equal("2026-06-30", edge.EndDate);
+        Assert.Equal("2025-03-01", edge.AcquisitionDate);
+        var opportunities = CommercialDynamics("12-historical-facts.json").Opportunities;
+        Assert.Contains(opportunities, o => o.FirmSource!.SourceRecordId == Text(tidewater["sourceId"]) && o.Outcome == "Won");
+
+        // The unresolved segment keeps its total unresolved instead of loading a zero.
+        var pending = Nodes(artifact["segmentTotals"]).Single(t => Text(t["segment"]) == "E-commerce Fulfillment");
+        Assert.Equal("unresolved", Text(pending["status"]));
+        Assert.Null(pending["activeCustomers"]);
+    }
+
+    [Fact]
+    public void Renewals_and_services_never_become_calibration_wins_and_the_win_population_matches_the_fragment()
+    {
+        var artifact = Commercial();
+        var opportunities = RawRecords("Opportunity");
+        var facts = CommercialDynamics("12-historical-facts.json").Opportunities;
+        var factIds = facts.Select(o => o.Source!.SourceRecordId).ToHashSet();
+
+        foreach (var row in Nodes(artifact["excluded"]).Where(e => Text(e["objectType"]) == "Opportunity"))
+        {
+            Assert.DoesNotContain(Text(row["sourceId"]), factIds);
+            Assert.Contains(Text(row["classification"]), CommercialDealTypes);
+            Assert.NotEqual("newLogo", Text(row["classification"]));
+        }
+
+        Assert.Contains(Nodes(artifact["excluded"]), e => Text(e["classification"]) == "renewal" && Text(opportunities[Text(e["sourceId"])]["Type"]) == "Renewal");
+        Assert.Contains(Nodes(artifact["excluded"]), e => Text(e["classification"]) == "services" && Text(opportunities[Text(e["sourceId"])]["Type"]) == "Services");
+
+        // Wins in the fragment are exactly the new-logo Closed Won deals; none is a cross-sell (that decision is still open).
+        var wonInFragment = facts.Where(o => o.Outcome == "Won").Select(o => o.Source!.SourceRecordId).Order().ToList();
+        var newLogoWon = Rows(artifact, "deals").Where(d => Text(d["classification"]) == "newLogo" && Text(d["outcome"]) == "Won")
+            .Select(d => Text(d["sourceId"])).Order().ToList();
+        Assert.Equal(newLogoWon, wonInFragment);
+        Assert.All(facts, o => Assert.Null(o.CrossSellModuleProductName));
+        var population = artifact["calibrationPopulation"]!["winRate"]!;
+        Assert.Equal(wonInFragment.Count, Nodes(population["Regional 3PLs"]!["won"]).Count() + Nodes(population["E-commerce Fulfillment"]!["won"]).Count());
+    }
+
+    [Fact]
+    public void Open_deals_stay_open_losses_stay_lost_and_a_blank_loss_reason_is_unresolved_never_no_decision()
+    {
+        var artifact = Commercial();
+        var opportunities = RawRecords("Opportunity");
+        var map = CommercialRule("RULE-commercial-outcome")["proposedValue"]!["competitorProductMap"]!.AsObject();
+        var facts = CommercialDynamics("12-historical-facts.json").Opportunities.ToDictionary(o => o.Source!.SourceRecordId);
+
+        foreach (var deal in Rows(artifact, "deals"))
+        {
+            var id = Text(deal["sourceId"]);
+            var raw = opportunities[id];
+            var fact = facts[id];
+            switch (Text(deal["outcome"]))
+            {
+                case "Open":
+                    Assert.False(raw["IsClosed"]!.GetValue<bool>());
+                    Assert.Null(fact.DecidedDate);
+                    Assert.Null(fact.Outcome);
+                    Assert.Null(fact.RecordedDate);
+                    Assert.Equal(Text(raw["CloseDate"]), Text(deal["dates"]!["expectedClose"]!["value"]));
+                    Assert.True(Day(raw["CloseDate"]) > CommercialAsOf, "the open deal's CloseDate is a forecast in the future");
+                    break;
+                case "Lost":
+                    Assert.Equal("Lost", fact.Outcome);
+                    Assert.Equal("Lost to Competitor", Text(raw["Loss_Reason__c"]));
+                    Assert.Equal(Text(map[Text(raw["Competitor__c"])]), fact.WinningProductName);
+                    break;
+                case "NoDecision":
+                    Assert.Equal("NoDecision", fact.Outcome);
+                    Assert.Equal("No Decision", Text(raw["Loss_Reason__c"]));
+                    Assert.False(string.IsNullOrWhiteSpace(Text(raw["Loss_Notes__c"])), "NoDecision needs evidence of a non-purchase");
+                    Assert.False(string.IsNullOrWhiteSpace(Text(deal["noDecisionEvidence"])));
+                    Assert.Null(fact.WinningProductName);
+                    break;
+                case "Won":
+                    Assert.Equal("Won", fact.Outcome);
+                    Assert.False(string.IsNullOrWhiteSpace(fact.WinningProductName));
+                    break;
+                default:
+                    Assert.Fail($"{id}: unexpected outcome {Text(deal["outcome"])}.");
+                    break;
+            }
+
+            // A competitor is never invented: no competitor value in the source means no winner on a lost deal.
+            if (fact.Outcome == "Lost" && raw["Competitor__c"] is null) Assert.Null(fact.WinningProductName);
+        }
+
+        var blank = opportunities.Values.Where(o => o["IsClosed"]!.GetValue<bool>() && !o["IsWon"]!.GetValue<bool>() && o["Loss_Reason__c"] is null).ToList();
+        Assert.NotEmpty(blank);
+        foreach (var raw in blank)
+        {
+            var id = Text(raw["Id"]);
+            Assert.DoesNotContain(id, facts.Keys);
+            var unresolved = Nodes(artifact["unresolved"]).Single(u => Text(u["sourceId"]) == id);
+            Assert.Contains("loss reason", Text(unresolved["reason"]), StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void Deal_dates_follow_their_documented_meaning_and_no_recorded_date_is_invented()
+    {
+        var artifact = Commercial();
+        var opportunities = RawRecords("Opportunity");
+        var facts = CommercialDynamics("12-historical-facts.json").Opportunities.ToDictionary(o => o.Source!.SourceRecordId);
+
+        foreach (var deal in Rows(artifact, "deals"))
+        {
+            var id = Text(deal["sourceId"]);
+            var raw = opportunities[id];
+            var fact = facts[id];
+            var history = DealHistory(id);
+            var opened = history.FirstOrDefault(h => Text(h["StageName"]) == "Prospecting");
+            var qualified = history.FirstOrDefault(h => Text(h["StageName"]) == "Qualification");
+            var terminal = history.FirstOrDefault(h => Text(h["StageName"]).StartsWith("Closed"));
+
+            Assert.Equal(DatePart(opened is null ? Text(raw["CreatedDate"]) : Text(opened["CreatedDate"])), fact.OpenedDate);
+            Assert.Equal(qualified is null ? null : DatePart(Text(qualified["CreatedDate"])), fact.QualifiedDate);
+            if (Text(deal["outcome"]) != "Open")
+            {
+                Assert.Equal(terminal is null ? Text(raw["CloseDate"]) : DatePart(Text(terminal["CreatedDate"])), fact.DecidedDate);
+                // Recorded date: the transition date when history proves it, otherwise omitted (import time).
+                Assert.Equal(terminal is null ? null : DatePart(Text(terminal["CreatedDate"])), fact.RecordedDate);
+                // Neither the last modification nor the creation of the record is a decision date.
+                Assert.NotEqual(DatePart(Text(raw["LastModifiedDate"])), fact.DecidedDate);
+                Assert.NotEqual(DatePart(Text(raw["CreatedDate"])), fact.DecidedDate);
+            }
+
+            Assert.Equal(fact.OpenedDate, Text(deal["dates"]!["opened"]!["value"]));
+            Assert.False(string.IsNullOrWhiteSpace(Text(deal["dates"]!["opened"]!["basis"])));
+        }
+
+        Assert.Contains(Rows(artifact, "deals"), d => DealHistory(Text(d["sourceId"])).Count > 0);
+        Assert.Contains(Rows(artifact, "deals"), d => Text(d["outcome"]) != "Open" && DealHistory(Text(d["sourceId"])).Count == 0);
+    }
+
+    [Fact]
+    public void Seed_fragments_parse_strictly_bind_only_extract_records_and_never_turn_an_unresolved_value_into_a_zero()
+    {
+        var artifact = Commercial();
+        var manifest = ReadJson(ManifestPath);
+        var salesforce = Sources(manifest).Single(s => Text(s!["sourceId"]) == "salesforce")!;
+        var raw = CommercialRawFiles.Keys.ToDictionary(k => k, RawRecords);
+        var unresolvedIds = Nodes(artifact["unresolved"]).Select(u => Text(u["sourceId"])).ToHashSet();
+
+        foreach (var file in new[] { "06-segment-economics.json", "11-firms-and-relationships.json", "12-historical-facts.json" })
+        {
+            var seed = CommercialSeed(file);
+            Assert.True(HasAnyTopLevelKey(seed));
+            AssertEnumsAreExactMemberNames(seed, file);
+            AssertDatesAreIsoAndRecordedDatesArePast(seed, file);
+            if (file.StartsWith("06")) continue;   // stock states carry no source identity
+            Assert.Equal(Text(salesforce["sourceId"]), seed.MarketDynamics!.SourceDefaults?.SourceSystem ?? "");
+            Assert.Equal(Text(salesforce["instance"]!["orgId"]), seed.MarketDynamics.SourceDefaults?.SourceInstance ?? "");
+        }
+
+        var sources = new List<SeedSourceRef?>();
+        var dynamics11 = CommercialDynamics("11-firms-and-relationships.json");
+        foreach (var firm in dynamics11.Firms)
+        {
+            sources.Add(firm.Source);
+            sources.AddRange(firm.Relationships.SelectMany(r => r.Sources));
+        }
+
+        var dynamics12 = CommercialDynamics("12-historical-facts.json");
+        foreach (var opportunity in dynamics12.Opportunities)
+        {
+            sources.Add(opportunity.Source);
+            sources.Add(opportunity.FirmSource);
+        }
+
+        foreach (var churn in dynamics12.ChurnEvents) { sources.Add(churn.Source); sources.Add(churn.FirmSource); }
+        Assert.NotEmpty(sources);
+        foreach (var source in sources)
+        {
+            Assert.NotNull(source);
+            Assert.True(raw.TryGetValue(source!.ObjectKind, out var records), $"objectKind {source.ObjectKind} is not an extract object.");
+            Assert.True(records.ContainsKey(source.SourceRecordId), $"{source.ObjectKind} {source.SourceRecordId} is not in the extract.");
+            Assert.DoesNotContain(source.SourceRecordId, unresolvedIds);
+        }
+
+        // A source record is bound by exactly one row per (object kind, id) of a file, and a churn never reuses an edge's record.
+        var bound = dynamics11.Firms.Select(f => f.Source!).Concat(dynamics11.Firms.SelectMany(f => f.Relationships.SelectMany(r => r.Sources)))
+            .Select(s => (s.ObjectKind, s.SourceRecordId)).ToList();
+        Assert.Equal(bound.Count, bound.Distinct().Count());
+        var churnRecords = dynamics12.ChurnEvents.Select(c => (c.Source!.ObjectKind, c.Source.SourceRecordId));
+        Assert.Empty(churnRecords.Intersect(bound));
+
+        // Unresolved values are left out, never written as observed zeros.
+        var stocks = CommercialDynamics("06-segment-economics.json").SegmentStockStates;
+        Assert.DoesNotContain(stocks, s => s.SegmentName == "E-commerce Fulfillment");
+        foreach (var stock in stocks)
+        {
+            foreach (var value in new[] { stock.InitialProspectPool, stock.InitialClientCount, stock.ArpuPerMonth, stock.ImplementationFee,
+                         stock.ServicingCostPerClient, stock.InfraFixedCostPerMonth, stock.InfraCostPerClient, stock.RdDragPerMonth })
+                Assert.True(value > 0, $"{stock.SegmentName}: a stock-state number is 0; an unresolved value must leave the whole row out.");
+            Assert.All(stock.ModulePenetrations, m => Assert.True(m.Penetration > 0 && m.ArpuPerMonth > 0));
+        }
+
+        Assert.Empty(dynamics12.ArrivalCounts);   // CRM record creation is not a firm birth (requirement 8)
+        Assert.DoesNotContain(dynamics11.Firms, f => f.Source!.SourceRecordId == "001EX000000B003AAA");   // unresolved segment
+        Assert.DoesNotContain(dynamics11.Firms, f => f.Source!.SourceRecordId == "001EX000000B007AAA");   // merged duplicate
+    }
+
+    [Fact]
+    public void Fragments_carry_exactly_the_normalized_rows_and_relationships_reconcile_with_churn()
+    {
+        var artifact = Commercial();
+        var firms = CommercialDynamics("11-firms-and-relationships.json").Firms.ToDictionary(f => f.Source!.SourceRecordId);
+        var facts = CommercialDynamics("12-historical-facts.json");
+        var normalizedFirms = Rows(artifact, "firms");
+        Assert.Equal(normalizedFirms.Count, firms.Count);
+
+        foreach (var row in normalizedFirms)
+        {
+            var fragment = firms[Text(row["sourceId"])];
+            Assert.Equal(Text(row["name"]), fragment.Name);
+            Assert.Equal(Text(row["segment"]!["name"]), fragment.SegmentName);
+            var edges = Rows(artifact, "relationships").Where(r => Text(r["firmSourceId"]) == Text(row["sourceId"])).ToList();
+            Assert.Equal(edges.Count, fragment.Relationships.Count);
+            foreach (var edge in edges)
+            {
+                var seed = fragment.Relationships.Single(r => r.ProductName == Text(edge["product"]));
+                Assert.Equal(Text(edge["acquisitionDate"]), seed.AcquisitionDate);
+                Assert.Equal(edge["endDate"] is null ? null : Text(edge["endDate"]), seed.EndDate);
+                Assert.Equal(Strings(edge["sourceIds"]).Order(), seed.Sources.Select(s => s.SourceRecordId).Order());
+                Assert.True(Math.Abs((decimal)seed.PriceLevel!.Value - Dec(edge["priceLevel"])) <= 0.0001m);
+                Assert.InRange(seed.PriceLevel!.Value, 0.5, 1.2);   // the dataset 11 sanity band
+                // F9: contracted monthly (reporting currency) over the list price row.
+                AssertMoney(Math.Round(Dec(edge["contractedMonthlyReporting"]) / Dec(edge["listMonthly"]), 4), edge["priceLevel"], "price level");
+            }
+        }
+
+        // Ended relationships and churn events reconcile in both directions, and one evidence level is used throughout.
+        var churnRows = Rows(artifact, "churnEvents");
+        Assert.NotEmpty(churnRows);
+        Assert.Single(churnRows.Select(c => Text(c["level"])).Distinct());
+        Assert.Contains(Text(churnRows[0]["level"]), new[] { "logo", "product" });
+        var ended = Rows(artifact, "relationships").Where(r => r["endDate"] is not null).ToList();
+        Assert.Equal(ended.Count, churnRows.Count);
+        foreach (var churn in churnRows)
+        {
+            var edge = ended.Single(r => Text(r["firmSourceId"]) == Text(churn["firmSourceId"]));
+            Assert.Equal(Text(edge["endDate"]), Text(churn["effectiveDate"]));
+            var seed = facts.ChurnEvents.Single(c => c.FirmSource!.SourceRecordId == Text(churn["firmSourceId"]));
+            Assert.Equal(Text(churn["effectiveDate"]), seed.EffectiveDate);
+            Assert.Equal(Text(churn["segment"]), seed.SegmentName);
+            Assert.Equal(Text(churn["sourceId"]), seed.Source!.SourceRecordId);
+            Assert.Null(seed.RecordedDate);   // ContractHistory is unreadable: nothing honest to backdate to
+        }
+
+        foreach (var deal in Rows(artifact, "deals"))
+            Assert.Equal(Text(deal["accountId"]), facts.Opportunities.Single(o => o.Source!.SourceRecordId == Text(deal["sourceId"])).FirmSource!.SourceRecordId);
+    }
+
+    [Fact]
+    public void CRM_population_growth_and_missing_market_exposure_stay_labelled_gaps_or_reviewed_assumptions()
+    {
+        var artifact = Commercial();
+        var gaps = Nodes(artifact["gaps"]).ToDictionary(g => Text(g["key"]));
+        foreach (var key in new[]
+                 {
+                     "firmBirthsFromCrmCreation", "prospectPoolIsNotCrmList", "marketWideConversionExposure",
+                     "channelReachAndAttribution", "competitorAffinity", "contractHistory"
+                 })
+        {
+            Assert.True(gaps.ContainsKey(key), $"gaps lacks '{key}'.");
+            Assert.Contains(Text(gaps[key]["status"]), new[] { "gap", "assumption" });
+            Assert.False(string.IsNullOrWhiteSpace(Text(gaps[key]["reason"])));
+        }
+
+        Assert.False(artifact["calibrationPopulation"]!["arrivals"]!["loaded"]!.GetValue<bool>());
+        Assert.Empty(CommercialDynamics("12-historical-facts.json").ArrivalCounts);
+
+        // The prospect pool in the stock state is a reviewed assumption, not the CRM's account count.
+        var pool = CommercialRule("DEC-assumption-prospect-pool-regional-3pl");
+        Assert.Equal("assumption", Text(pool["class"]));
+        Assert.Equal("marketPopulation", Text(pool["outsideEvidenceQuantity"]));
+        Assert.Equal("accepted", EffectiveState(pool));
+        var stock = Assert.Single(CommercialDynamics("06-segment-economics.json").SegmentStockStates);
+        Assert.Equal(pool["proposedValue"]!["initialProspectPool"]!.GetValue<double>(), stock.InitialProspectPool);
+        var costs = CommercialRule("DEC-assumption-operating-costs-regional-3pl");
+        Assert.Equal("operatingCosts", Text(costs["outsideEvidenceQuantity"]));
+        Assert.Equal(costs["proposedValue"]!["servicingCostPerClient"]!.GetValue<double>(), stock.ServicingCostPerClient);
+        Assert.Equal(costs["proposedValue"]!["rdDragPerMonth"]!.GetValue<double>(), stock.RdDragPerMonth);
+        var crmProspects = RawRecords("Account").Values.Count(a => Text(a["Type"]) == "Prospect");
+        Assert.NotEqual((double)crmProspects, stock.InitialProspectPool);
+
+        // Every quantity with no source in the connected systems is one of the PRD5 outside-evidence quantities.
+        foreach (var gap in gaps.Values.Where(g => g["quantity"] is not null))
+            Assert.Contains(Text(gap["quantity"]), OutsideEvidenceQuantities);
+    }
+
+    [Fact]
+    public void The_guide_places_commercial_normalization_between_portfolio_selection_and_the_review_and_the_brief_has_the_slot()
+    {
+        var guide = ReadRepoFile(GuidePath);
+        var portfolio = guide.IndexOf("## 8. Portfolio selection", StringComparison.Ordinal);
+        var commercial = guide.IndexOf("## 9. Commercial normalization", StringComparison.Ordinal);
+        var review = guide.IndexOf("## 10. Consequential-decision review", StringComparison.Ordinal);
+        var loading = guide.IndexOf("## 11. Assembling and loading", StringComparison.Ordinal);
+        Assert.True(portfolio >= 0 && commercial > portfolio && review > commercial && loading > review,
+            "Commercial normalization must be section 9: after portfolio selection, before the review (10) and loading (11).");
+
+        var linked = RelativeLinkTargets(guide, GuidePath).Select(t => t.ResolvedPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in new[] { CommercialReadmePath, CommercialArtifactPath })
+            Assert.Contains(Path.GetFullPath(RepoPath(path)), linked);
+
+        var section = guide[commercial..review];
+        Assert.Contains("tier C or D", section);
+        Assert.Contains("Skip it", section);
+        Assert.Contains("register entries", section);
+        Assert.Contains("Commercial normalization:", guide[..portfolio]);           // the brief slot
+        Assert.Contains("commercial classifications and conversion rules", guide[review..loading]);
+    }
+
+    [Theory]
+    [InlineData("06-segment-economics.md")]
+    [InlineData("11-firms-and-relationships.md")]
+    [InlineData("12-historical-facts.md")]
+    public void The_commercial_datasets_point_at_the_normalization_procedure(string fileName)
+    {
+        var content = ReadRepoFile(DatasetPath(fileName));
+        Assert.Contains("](../commercial/README.md)", content);
+        Assert.Contains("normalized", content);
+    }
+
+    [Fact]
+    public void The_commercial_procedure_documents_every_deal_type_formula_output_and_stable_key()
+    {
+        var readme = ReadRepoFile(CommercialReadmePath);
+        foreach (var name in CommercialDealTypes.Concat(CommercialFormulaKeys).Concat(new[]
+                 {
+                     "NoDecision", "unresolved", "sourceCounts", "segmentTotals", "calibrationPopulation", "normalized",
+                     "excluded", "gaps", "currency", "crossSellModuleProductName", "recordedDate", "logo", "product",
+                     "priceLevel", "sourceRecordId", "Subscription__c", "expectedClose"
+                 }))
+            Assert.Contains(name, readme);
+        foreach (var key in CommercialRegister()["decisions"]!.AsArray().Select(d => Text(d!["key"])).Where(k => k.StartsWith("RULE-")))
+            Assert.Contains(key, readme);
+        Assert.Contains("stable", readme, StringComparison.OrdinalIgnoreCase);
+
+        var fixture = ReadRepoFile(CommercialFixtureReadmePath);
+        foreach (var name in new[] { "ContractHistory", "renewal", "services", "three-year", "EUR", "Tidewater", "sourceCounts", "duplicate" })
+            Assert.Contains(name, fixture, StringComparison.OrdinalIgnoreCase);
+        for (var i = 1; i <= 7; i++) Assert.Contains($"| {i}.", fixture);
+    }
+
+    // ---------- PRD7: append new tests above this line ----------
 }

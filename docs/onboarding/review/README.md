@@ -1,6 +1,6 @@
 # Evidence and consequential-decision review (orchestrator detail)
 
-Read by the orchestrator agent when [`../README.md`](../README.md) section 9 sends you here. It covers
+Read by the orchestrator agent when [`../README.md`](../README.md) section 10 sends you here. It covers
 requirements 1-7 of [PRD5](../../../PRDs/PRD5-EvidenceReview.md); the orchestrator guide holds the
 ordering and the hard rules. Worked example: [`decision-register.example.json`](decision-register.example.json)
 and its human-facing review [`review.example.md`](review.example.md), built on the Harborline

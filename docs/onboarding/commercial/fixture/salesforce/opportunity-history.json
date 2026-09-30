@@ -1,0 +1,17 @@
+{
+  "request": "GET /services/data/v62.0/query?q=SELECT OpportunityId, StageName, Amount, CloseDate, CreatedDate FROM OpportunityHistory WHERE OpportunityId IN (SELECT Id FROM Opportunity WHERE CloseDate >= 2024-10-01) ORDER BY OpportunityId, CreatedDate",
+  "httpStatus": 200,
+  "note": "Stage transitions exist for the two oldest deals only; the other opportunities have no OpportunityHistory rows in this org (a read that succeeded and found nothing).",
+  "response": {
+    "totalSize": 6,
+    "done": true,
+    "records": [
+      { "attributes": { "type": "OpportunityHistory" }, "OpportunityId": "006EX000000A001AAA", "StageName": "Prospecting", "Amount": 240000, "CloseDate": "2025-05-30", "CreatedDate": "2025-01-13T15:20:00.000+0000" },
+      { "attributes": { "type": "OpportunityHistory" }, "OpportunityId": "006EX000000A001AAA", "StageName": "Qualification", "Amount": 240000, "CloseDate": "2025-05-30", "CreatedDate": "2025-02-10T10:05:00.000+0000" },
+      { "attributes": { "type": "OpportunityHistory" }, "OpportunityId": "006EX000000A001AAA", "StageName": "Closed Won", "Amount": 240000, "CloseDate": "2025-04-28", "CreatedDate": "2025-04-28T14:50:00.000+0000" },
+      { "attributes": { "type": "OpportunityHistory" }, "OpportunityId": "006EX000000A002AAA", "StageName": "Prospecting", "Amount": 90000, "CloseDate": "2025-08-01", "CreatedDate": "2025-03-04T09:05:00.000+0000" },
+      { "attributes": { "type": "OpportunityHistory" }, "OpportunityId": "006EX000000A002AAA", "StageName": "Qualification", "Amount": 90000, "CloseDate": "2025-08-01", "CreatedDate": "2025-04-02T13:30:00.000+0000" },
+      { "attributes": { "type": "OpportunityHistory" }, "OpportunityId": "006EX000000A002AAA", "StageName": "Closed Lost", "Amount": 90000, "CloseDate": "2025-07-15", "CreatedDate": "2025-07-15T16:20:00.000+0000" }
+    ]
+  }
+}

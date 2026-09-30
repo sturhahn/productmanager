@@ -51,7 +51,11 @@ integration tests on CRUD/API. Light touch on UI.")
   `docs/onboarding/review/` (the decision register template and example, the review walkthrough and the
   seed fragments generated from accepted decisions: required fields, enum labels, evidence references,
   exclusion of unresolved decisions, invalidation of materially changed acceptances); edit the register,
-  review text and fragments together.
+  review text and fragments together. It also guards `docs/onboarding/commercial/` (the normalization
+  artifact, its register excerpt, the Salesforce extract and the seed fragments generated from it: the
+  fixture's term, quantity, currency, ARPU, penetration and count arithmetic is recomputed from the raw
+  records with the documented formulas, every source record is imported, excluded or unresolved exactly
+  once, and no unresolved value is a zero); edit the artifact, extract, fragments and walkthrough together.
 
 ---
 Update this trio (`ABSTRACT.md` / `INDEX.md` / `CLAUDE.md`) whenever you add, remove, or
