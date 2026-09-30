@@ -1,6 +1,6 @@
 # Onboarding PRD index
 
-All six PRDs are drafts dated 2026-09-30. They extend [PRD2](../docs/PRD2-Onboarding.md)
+All six PRDs are dated 2026-09-30 and implemented on branch `onboarding-prds-3-8`. They extend [PRD2](../docs/PRD2-Onboarding.md)
 and preserve the [authoritative product spec](../docs/PRDs/product_requirements.md).
 
 | PRD | Outcome | Dependencies |

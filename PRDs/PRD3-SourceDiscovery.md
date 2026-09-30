@@ -1,6 +1,6 @@
 # PRD3 — Source discovery and onboarding scope
 
-Status: Draft · 2026-09-30
+Status: Implemented · 2026-09-30 (branch onboarding-prds-3-8)
 
 ## Problem and outcome
 
