@@ -1,0 +1,12 @@
+{
+  "request": "GET /services/data/v62.0/query/01gEX0000000001AAA-3",
+  "httpStatus": 200,
+  "response": {
+    "totalSize": 5,
+    "done": true,
+    "records": [
+      { "attributes": { "type": "Opportunity", "url": "/services/data/v62.0/sobjects/Opportunity/006EX000000A004AAA" }, "Id": "006EX000000A004AAA", "Name": "Bluewater Logistics - Carrier Connect add-on", "AccountId": "001EX000000B001AAA", "StageName": "Closed Won", "CreatedDate": "2026-03-02T10:00:00.000+0000", "CloseDate": "2026-05-29", "Amount": 36000, "LeadSource": "Existing Customer", "IsWon": true, "IsClosed": true, "Type": "Existing Business" },
+      { "attributes": { "type": "Opportunity", "url": "/services/data/v62.0/sobjects/Opportunity/006EX000000A005AAA" }, "Id": "006EX000000A005AAA", "Name": "Northgate Freight - WMS", "AccountId": "001EX000000B004AAA", "StageName": "Negotiation", "CreatedDate": "2026-06-15T16:30:00.000+0000", "CloseDate": "2026-11-30", "Amount": null, "LeadSource": "Direct", "IsWon": false, "IsClosed": false, "Type": "New Business" }
+    ]
+  }
+}

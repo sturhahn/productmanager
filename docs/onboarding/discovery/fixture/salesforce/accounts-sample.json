@@ -1,0 +1,13 @@
+{
+  "request": "GET /services/data/v62.0/query?q=SELECT Id, Name, Type, Industry, NumberOfEmployees, AnnualRevenue, BillingCountry, Segment__c FROM Account WHERE Type IN ('Customer','Prospect') ORDER BY Name LIMIT 3",
+  "httpStatus": 200,
+  "response": {
+    "totalSize": 3,
+    "done": true,
+    "records": [
+      { "attributes": { "type": "Account", "url": "/services/data/v62.0/sobjects/Account/001EX000000B001AAA" }, "Id": "001EX000000B001AAA", "Name": "Bluewater Logistics", "Type": "Customer", "Industry": "Transportation & Logistics", "NumberOfEmployees": 420, "AnnualRevenue": null, "BillingCountry": "US", "Segment__c": "Regional 3PL" },
+      { "attributes": { "type": "Account", "url": "/services/data/v62.0/sobjects/Account/001EX000000B002AAA" }, "Id": "001EX000000B002AAA", "Name": "Cargo Nine", "Type": "Prospect", "Industry": "Transportation & Logistics", "NumberOfEmployees": 85, "AnnualRevenue": null, "BillingCountry": "US", "Segment__c": "E-commerce Fulfillment" },
+      { "attributes": { "type": "Account", "url": "/services/data/v62.0/sobjects/Account/001EX000000B003AAA" }, "Id": "001EX000000B003AAA", "Name": "Meridian Fulfillment", "Type": "Customer", "Industry": "Transportation & Logistics", "NumberOfEmployees": 60, "AnnualRevenue": null, "BillingCountry": "US", "Segment__c": null }
+    ]
+  }
+}

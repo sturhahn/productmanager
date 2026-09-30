@@ -1,0 +1,12 @@
+{
+  "request": "GET /api/v1/products/HWMS/features?fields=name,workflow_status,release,initiative,start_date,due_date,score,original_estimate",
+  "httpStatus": 200,
+  "response": {
+    "features": [
+      { "id": "7000000000001", "reference_num": "HWMS-1", "name": "Carrier Connect v1", "workflow_status": { "name": "In development" }, "release": { "reference_num": "HWMS-R-4", "name": "2026.4", "release_date": "2026-10-31" }, "initiative": { "reference_num": "HWMS-S-1", "name": "Carrier connectivity parity" }, "start_date": "2026-09-01", "due_date": "2026-10-31", "url": "https://harborline-example.aha.io/features/HWMS-1" },
+      { "id": "7000000000002", "reference_num": "HWMS-2", "name": "Wave picking engine", "workflow_status": { "name": "Planned" }, "release": { "reference_num": "HWMS-R-5", "name": "2026.5", "release_date": "2026-12-31" }, "initiative": { "reference_num": "HWMS-S-2", "name": "Win e-commerce fulfillment" }, "start_date": "2026-11-01", "due_date": "2026-12-31", "url": "https://harborline-example.aha.io/features/HWMS-2" },
+      { "id": "7000000000003", "reference_num": "HWMS-3", "name": "Cycle count workflows", "workflow_status": { "name": "Ready to release" }, "release": { "reference_num": "HWMS-R-4", "name": "2026.4", "release_date": "2026-11-30" }, "initiative": { "reference_num": "HWMS-S-2", "name": "Win e-commerce fulfillment" }, "start_date": "2026-10-01", "due_date": "2026-11-30", "url": "https://harborline-example.aha.io/features/HWMS-3" }
+    ],
+    "pagination": { "total_records": 3, "total_pages": 1, "current_page": 1, "per_page": 30 }
+  }
+}

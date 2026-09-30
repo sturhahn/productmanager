@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using ProductManager.Cli.Client;
@@ -22,6 +23,11 @@ public class OnboardingDocsTests
     private const string GuidePath = "docs/onboarding/README.md";
     private const string ExampleSeedPath = "docs/onboarding/example-seed.json";
     private const string DatasetDirectory = "docs/onboarding/datasets";
+    private const string DiscoveryDirectory = "docs/onboarding/discovery";
+    private const string DiscoveryReadmePath = DiscoveryDirectory + "/README.md";
+    private const string ManifestPath = DiscoveryDirectory + "/source-manifest.example.json";
+    private const string AssessmentPath = DiscoveryDirectory + "/source-assessment.example.md";
+    private const string FixtureReadmePath = DiscoveryDirectory + "/fixture/README.md";
 
     /// <summary>Today is 2026-09-01 (see docs/onboarding house rules) - a fact cannot be recorded
     /// in the future, and the API refuses a future recordedAt.</summary>
@@ -79,9 +85,9 @@ public class OnboardingDocsTests
     public static IEnumerable<object[]> DatasetFiles =>
         DatasetFileNames.Select(name => new object[] { name });
 
-    /// <summary>Every markdown file the docs own: both READMEs plus the 12 dataset files.</summary>
+    /// <summary>Every markdown file the docs own: the READMEs, the discovery docs, and the 12 dataset files.</summary>
     public static IEnumerable<object[]> MarkdownFiles =>
-        new[] { RootReadmePath, GuidePath }
+        new[] { RootReadmePath, GuidePath, DiscoveryReadmePath, AssessmentPath, FixtureReadmePath }
             .Concat(DatasetFileNames.Select(name => $"{DatasetDirectory}/{name}"))
             .Select(path => new object[] { path });
 
@@ -294,6 +300,290 @@ public class OnboardingDocsTests
         seed.Roadmap is not null ||
         seed.Market is not null ||
         seed.MarketDynamics is not null;
+
+    // ---------- 9: source discovery (PRD3) ----------
+
+    private static readonly string[] AllowedReadiness =
+    [
+        "ready", "requires a mapping decision", "requires another source", "intentionally deferred"
+    ];
+
+    private static readonly string[] RequiredSourceKeys =
+    [
+        "system", "instance", "extractedAt", "filters", "observationPeriod", "objects",
+        "availableHistory", "completeness", "absentData", "accessLimitations"
+    ];
+
+    private static readonly string[] RequiredObjectKeys =
+        ["objectType", "fields", "sourceIds", "sourceLinks", "rowCount", "pagesFetched"];
+
+    private static readonly Regex CredentialKeyRegex = new(
+        "token|password|passwd|secret|api[_-]?key|authorization|bearer|credential|client[_-]?secret",
+        RegexOptions.IgnoreCase);
+
+    private static readonly Regex CredentialValueRegex = new(
+        @"bearer\s+\S+|password\s*[:=]|secret\s*[:=]|api[_-]?key\s*[:=]|(access|refresh)[_-]?token|\bsk-[A-Za-z0-9]{8,}|00D\w{12,15}![A-Za-z0-9._]{20,}",
+        RegexOptions.IgnoreCase);
+
+    private static JsonNode ReadJson(string relativePath) =>
+        JsonNode.Parse(ReadRepoFile(relativePath))
+        ?? throw new Xunit.Sdk.XunitException($"{relativePath} parsed to null.");
+
+    private static JsonArray Sources(JsonNode manifest) => manifest["sources"]!.AsArray();
+
+    [Fact]
+    public void The_guide_links_to_the_discovery_procedure()
+    {
+        var linked = RelativeLinkTargets(ReadRepoFile(GuidePath), GuidePath)
+            .Select(target => target.ResolvedPath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        Assert.Contains(Path.GetFullPath(RepoPath(DiscoveryReadmePath)), linked);
+        Assert.Contains(Path.GetFullPath(RepoPath(ManifestPath)), linked);
+    }
+
+    [Fact]
+    public void The_source_manifest_carries_the_required_keys_for_every_source_and_object()
+    {
+        var manifest = ReadJson(ManifestPath);
+
+        foreach (var key in new[] { "manifestVersion", "discovery", "scope", "sources", "authorityByConcept", "datasetReadiness", "openQuestions" })
+            Assert.True(manifest[key] is not null, $"{ManifestPath} is missing top-level key '{key}'.");
+
+        var scope = manifest["scope"]!;
+        foreach (var key in new[] { "requestedOutcome", "planningHorizon", "commercialObservationPeriod", "containers" })
+            Assert.True(scope[key] is not null, $"{ManifestPath} scope is missing '{key}'.");
+
+        var systems = Sources(manifest).Select(s => s!["system"]!.GetValue<string>()).ToList();
+        Assert.Contains("Salesforce", systems);
+        Assert.Contains("Aha!", systems);
+        Assert.Contains("Jira", systems);
+
+        foreach (var source in Sources(manifest))
+        {
+            var system = source!["system"]!.GetValue<string>();
+            foreach (var key in RequiredSourceKeys)
+                Assert.True(source[key] is not null, $"{ManifestPath}: source '{system}' is missing '{key}'.");
+
+            Assert.True(source["instance"]!.AsObject().Count > 0, $"{system}: instance identity is empty.");
+            Assert.True(DateTimeOffset.TryParse(source["extractedAt"]!.GetValue<string>(), out _),
+                $"{system}: extractedAt is not a timestamp.");
+            Assert.NotEmpty(source["filters"]!.AsArray());
+
+            foreach (var obj in source["objects"]!.AsArray())
+            foreach (var key in RequiredObjectKeys)
+                Assert.True(obj![key] is not null,
+                    $"{ManifestPath}: {system} object '{obj["objectType"]}' is missing '{key}'.");
+        }
+    }
+
+    /// <summary>
+    /// Acceptance criterion 3: counts include all pages. Every object's rowCount, ID list and page
+    /// count must agree with the raw response files in the fixture it was derived from.
+    /// </summary>
+    [Fact]
+    public void Manifest_row_counts_equal_the_records_summed_across_the_fixture_page_files()
+    {
+        var manifest = ReadJson(ManifestPath);
+        var paginatedSeen = false;
+
+        foreach (var source in Sources(manifest))
+        foreach (var obj in source!["objects"]!.AsArray())
+        {
+            var label = $"{source["system"]} {obj!["objectType"]}";
+            var files = obj["rawResponseFiles"]!.AsArray().Select(f => f!.GetValue<string>()).ToList();
+            var total = files.Sum(file => CountRecords(ReadJson($"{DiscoveryDirectory}/{file}")["response"]!));
+
+            Assert.Equal(total, obj["rowCount"]!.GetValue<int>());
+            Assert.Equal(total, obj["sourceIds"]!.AsArray().Count);
+            Assert.Equal(total, obj["sourceLinks"]!.AsArray().Count);
+            Assert.True(files.Count == obj["pagesFetched"]!.GetValue<int>(), $"{label}: pagesFetched != page files.");
+            if (files.Count > 1) paginatedSeen = true;
+
+            if (obj["extractionMode"]!.GetValue<string>() == "full")
+                Assert.True(obj["populationSize"]!.GetValue<int>() == total,
+                    $"{label}: a full extraction must equal the population size.");
+        }
+
+        Assert.True(paginatedSeen, "The fixture must include a multi-page source response.");
+
+        var opportunity = Sources(manifest)
+            .SelectMany(s => s!["objects"]!.AsArray())
+            .Single(o => o!["objectType"]!.GetValue<string>() == "Opportunity")!;
+        Assert.True(opportunity["pagesFetched"]!.GetValue<int>() >= 2);
+        Assert.True(opportunity["rawResponseFiles"]!.AsArray().Count >= 2);
+    }
+
+    private static int CountRecords(JsonNode response)
+    {
+        foreach (var name in new[] { "records", "features", "issues" })
+            if (response is JsonObject o && o[name] is JsonArray array)
+                return array.Count;
+
+        throw new Xunit.Sdk.XunitException("A fixture response has no records/features/issues array.");
+    }
+
+    [Fact]
+    public void The_source_manifest_and_fixture_contain_no_credentials()
+    {
+        var files = new[] { ManifestPath }
+            .Concat(Directory.GetFiles(RepoPath($"{DiscoveryDirectory}/fixture"), "*.json", SearchOption.AllDirectories)
+                .Select(f => Path.GetRelativePath(FindRepoRoot(), f).Replace('\\', '/')));
+
+        foreach (var file in files)
+            AssertNoCredentials(ReadJson(file), file);
+
+        void AssertNoCredentials(JsonNode? node, string where)
+        {
+            switch (node)
+            {
+                case JsonObject obj:
+                    foreach (var (key, child) in obj)
+                    {
+                        Assert.False(CredentialKeyRegex.IsMatch(key), $"{where}: key '{key}' looks like a credential.");
+                        AssertNoCredentials(child, where);
+                    }
+                    break;
+                case JsonArray array:
+                    foreach (var child in array) AssertNoCredentials(child, where);
+                    break;
+                case JsonValue value when value.TryGetValue<string>(out var text):
+                    Assert.False(CredentialValueRegex.IsMatch(text), $"{where}: value '{text}' looks like a credential.");
+                    break;
+            }
+        }
+    }
+
+    [Fact]
+    public void Discovery_declares_it_created_no_entities_and_changed_no_source_records()
+    {
+        var discovery = ReadJson(ManifestPath)["discovery"]!;
+
+        Assert.True(discovery["readOnly"]!.GetValue<bool>());
+        Assert.Equal(0, discovery["productManagerEntitiesCreated"]!.GetValue<int>());
+        Assert.Equal(0, discovery["sourceRecordsChanged"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public void Every_dataset_is_classified_with_one_of_the_four_readiness_values()
+    {
+        var readiness = ReadJson(ManifestPath)["datasetReadiness"]!.AsArray();
+
+        Assert.Equal(
+            Enumerable.Range(1, 12).Select(i => i.ToString("00")),
+            readiness.Select(r => r!["datasetId"]!.GetValue<string>()));
+
+        foreach (var entry in readiness)
+        {
+            var id = entry!["datasetId"]!.GetValue<string>();
+            Assert.Contains(entry["classification"]!.GetValue<string>(), AllowedReadiness);
+            var fileName = DatasetFileNames.Single(n => n.StartsWith(id + "-", StringComparison.Ordinal));
+            Assert.Equal($"datasets/{fileName}", entry["file"]!.GetValue<string>());
+            foreach (var key in new[] { "observed", "proposedAssumptions", "gaps" })
+                Assert.True(entry[key] is JsonArray, $"dataset {id}: '{key}' must be an array.");
+        }
+
+        // The fixture exercises every classification, so a doc edit cannot silently drop one.
+        Assert.Equal(AllowedReadiness.Order(),
+            readiness.Select(r => r!["classification"]!.GetValue<string>()).Distinct().Order());
+    }
+
+    /// <summary>Acceptance criterion 2: unreadable history is an access limitation, never absent data.</summary>
+    [Fact]
+    public void Inaccessible_contract_history_is_an_access_limitation_with_affected_fields_and_not_absent_data()
+    {
+        var salesforce = Sources(ReadJson(ManifestPath))
+            .Single(s => s!["system"]!.GetValue<string>() == "Salesforce")!;
+
+        var limitation = salesforce["accessLimitations"]!.AsArray()
+            .Single(l => l!["object"]!.GetValue<string>() == "ContractHistory")!;
+        Assert.Equal("accessLimitation", limitation["kind"]!.GetValue<string>());
+        Assert.Equal(403, limitation["httpStatus"]!.GetValue<int>());
+        Assert.NotEmpty(limitation["affectedFields"]!.AsArray());
+        Assert.Contains("acquisitionDate", limitation["affectedFields"]!.ToJsonString());
+        Assert.Contains("churnEvents", limitation["affectedFields"]!.ToJsonString());
+
+        Assert.DoesNotContain(salesforce["absentData"]!.AsArray(),
+            a => a!["object"]!.GetValue<string>() == "ContractHistory");
+
+        var history = salesforce["availableHistory"]!.AsArray()
+            .Single(h => h!["object"]!.GetValue<string>() == "ContractHistory")!;
+        Assert.Equal("not readable", history["status"]!.GetValue<string>());
+
+        var denied = ReadJson($"{DiscoveryDirectory}/fixture/salesforce/contract-history-denied.json");
+        Assert.Equal(403, denied["httpStatus"]!.GetValue<int>());
+    }
+
+    /// <summary>Acceptance criterion 4: commercial gaps must not block a roadmap-only (tier A) onboarding.</summary>
+    [Fact]
+    public void Tier_A_is_completable_and_no_commercial_gap_touches_a_tier_A_dataset()
+    {
+        var manifest = ReadJson(ManifestPath);
+        var tierA = manifest["tierReadiness"]!["A"]!;
+        var tierADatasets = tierA["datasets"]!.AsArray().Select(d => d!.GetValue<string>()).ToList();
+
+        Assert.Equal(new[] { "01", "03", "04" }, tierADatasets);
+        Assert.Equal("completable", tierA["status"]!.GetValue<string>());
+        Assert.False(tierA["blockedByCommercialGaps"]!.GetValue<bool>());
+
+        foreach (var gap in manifest["gaps"]!.AsArray())
+        {
+            Assert.Equal("gap", gap!["status"]!.GetValue<string>());
+            Assert.Empty(gap["affectsDatasets"]!.AsArray().Select(d => d!.GetValue<string>()).Intersect(tierADatasets));
+        }
+
+        var gapConcepts = manifest["gaps"]!.ToJsonString();
+        Assert.Contains("finance costs", gapConcepts);
+        Assert.Contains("market-wide totals", gapConcepts);
+
+        foreach (var entry in manifest["datasetReadiness"]!.AsArray()
+                     .Where(r => tierADatasets.Contains(r!["datasetId"]!.GetValue<string>())))
+            Assert.NotEqual("requires another source", entry!["classification"]!.GetValue<string>());
+    }
+
+    /// <summary>Acceptance criterion 1: segmentation candidates are proposed, not a manual export request.</summary>
+    [Fact]
+    public void Segmentation_candidates_are_proposed_and_the_top_ranked_question_asks_which_is_authoritative()
+    {
+        var manifest = ReadJson(ManifestPath);
+        var account = Sources(manifest)
+            .SelectMany(s => s!["objects"]!.AsArray())
+            .Single(o => o!["objectType"]!.GetValue<string>() == "Account")!;
+
+        Assert.True(account["segmentationCandidates"]!.AsArray().Count >= 2);
+
+        var q1 = manifest["openQuestions"]!.AsArray().Single(q => q!["rank"]!.GetValue<int>() == 1)!;
+        Assert.Contains("authoritative", q1["question"]!.GetValue<string>());
+        Assert.Contains("Segment__c", q1["candidateAnswers"]!.ToJsonString());
+        Assert.DoesNotContain("export", q1["candidateAnswers"]!.ToJsonString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Open_questions_are_ranked_contiguously_carry_candidates_and_appear_in_the_assessment()
+    {
+        var questions = ReadJson(ManifestPath)["openQuestions"]!.AsArray();
+        var assessment = ReadRepoFile(AssessmentPath);
+
+        Assert.Equal(Enumerable.Range(1, questions.Count), questions.Select(q => q!["rank"]!.GetValue<int>()));
+
+        foreach (var q in questions)
+        {
+            var id = q!["id"]!.GetValue<string>();
+            Assert.NotEmpty(q["candidateAnswers"]!.AsArray());
+            Assert.NotEmpty(q["affectsDatasets"]!.AsArray());
+            Assert.Contains(id, assessment);
+            Assert.Contains(q["question"]!.GetValue<string>(), assessment);
+        }
+    }
+
+    [Fact]
+    public void The_brief_template_carries_the_manifest_and_agreed_answers_slot()
+    {
+        var guide = ReadRepoFile(GuidePath);
+
+        Assert.Contains("Source manifest:", guide);
+        Assert.Contains("Answers already agreed", guide);
+    }
 
     // ---------- 8: the shared example seed file ----------
 

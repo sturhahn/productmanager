@@ -1,0 +1,14 @@
+{
+  "request": "GET /services/data/v62.0/query?q=SELECT Id, Name, AccountId, StageName, CreatedDate, CloseDate, Amount, LeadSource, IsWon, IsClosed, Type FROM Opportunity WHERE CloseDate >= 2024-10-01 AND (IsClosed = false OR CloseDate <= 2026-09-30) AND Account.Type IN ('Customer','Prospect') ORDER BY CreatedDate",
+  "httpStatus": 200,
+  "response": {
+    "totalSize": 5,
+    "done": false,
+    "nextRecordsUrl": "/services/data/v62.0/query/01gEX0000000001AAA-3",
+    "records": [
+      { "attributes": { "type": "Opportunity", "url": "/services/data/v62.0/sobjects/Opportunity/006EX000000A001AAA" }, "Id": "006EX000000A001AAA", "Name": "Bluewater Logistics - WMS rollout", "AccountId": "001EX000000B001AAA", "StageName": "Closed Won", "CreatedDate": "2025-01-13T15:20:00.000+0000", "CloseDate": "2025-04-28", "Amount": 240000, "LeadSource": "Direct", "IsWon": true, "IsClosed": true, "Type": "New Business" },
+      { "attributes": { "type": "Opportunity", "url": "/services/data/v62.0/sobjects/Opportunity/006EX000000A002AAA" }, "Id": "006EX000000A002AAA", "Name": "Cargo Nine - Carrier integration", "AccountId": "001EX000000B002AAA", "StageName": "Closed Lost", "CreatedDate": "2025-03-04T09:05:00.000+0000", "CloseDate": "2025-07-15", "Amount": 90000, "LeadSource": "Partner - Consultant", "IsWon": false, "IsClosed": true, "Type": "New Business" },
+      { "attributes": { "type": "Opportunity", "url": "/services/data/v62.0/sobjects/Opportunity/006EX000000A003AAA" }, "Id": "006EX000000A003AAA", "Name": "Meridian Fulfillment - WMS", "AccountId": "001EX000000B003AAA", "StageName": "Closed Won", "CreatedDate": "2025-09-08T13:40:00.000+0000", "CloseDate": "2026-01-20", "Amount": 120000, "LeadSource": "Inbound Web", "IsWon": true, "IsClosed": true, "Type": "New Business" }
+    ]
+  }
+}

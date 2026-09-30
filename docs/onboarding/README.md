@@ -5,7 +5,8 @@ who has data somewhere (spreadsheets, a CRM, Jira, a finance system) and end wit
 instance loaded with that human's data.
 
 Read this file end to end before you start. Do not read the dataset files under `datasets/` - each
-one is read by the subagent you spawn for it.
+one is read by the subagent you spawn for it. (Discovery, section 6, is the one exception: it reads
+each requested dataset's tier and data-requirements sections only to map evidence.)
 
 Shorthand used below: `pm` means `dotnet run --project src/ProductManager.Cli --`. There is no
 installed `pm` binary. Every command is run from the repository root.
@@ -23,7 +24,7 @@ spec - the *why* behind every dataset).
 
 | Role | Reads | Does |
 |---|---|---|
-| Orchestrator (you) | this file only | environment checks, stack up, tier-level interview, spawns subagents, assembles and loads, verifies |
+| Orchestrator (you) | this file, plus [`discovery/README.md`](discovery/README.md) when sources are connected | environment checks, stack up, source discovery, consolidated interview, spawns subagents, assembles and loads, verifies |
 | Dataset subagent | one file under `datasets/` | asks its dataset's questions, converts the human's source data, emits a seed JSON fragment, loads it, reports |
 
 This is progressive disclosure on purpose: the 12 dataset files together are far too long for one
@@ -49,6 +50,15 @@ eight sections in order. Do not read the other dataset files.
 
 The human has already answered this dataset's questions:
 <paste the human's answers to the "Questions to ask the user" section, verbatim>
+
+Answers already agreed in the consolidated interview (section 7) - reuse them, do not re-ask:
+<paste the agreed answers that affect this dataset, e.g. "Q1: segments come from Account.Segment__c";
+"none" when there was no discovery>
+
+Source manifest: <absolute path to source-manifest.json, or "none - no connected sources">
+If given, read this dataset's `datasetReadiness` entry and the objects it cites; use the source IDs
+and `rawResponseFiles` instead of re-querying. Only ask the human about what the manifest and the
+agreed answers leave open. Discovery is read-only: do not re-run it or widen its scope.
 
 Source data location:
 <path to spreadsheet / export / API, plus any credentials handling the human specified>
@@ -289,12 +299,62 @@ building tier C parameter sets for someone who only wanted a roadmap.
 
 ---
 
-## 6. Interviewing the human
+## 6. Source discovery (before the interview and any dataset work)
 
-Ask these tier-level questions yourself, before spawning anything. The per-dataset questions belong
-to the subagents - do not pre-empt them.
+**When:** the human has connected sources you can read (Aha!, Jira, Salesforce, via connectors or
+APIs you already have). **Skip it** when the only sources are spreadsheets or exports the human hands
+you; go straight to section 7, which then covers those files.
 
-1. **Which tiers do you want?** Recommended default: start at A, add B if you want the market and
+**Why:** questions about data that is already reachable waste the human's time, and unbounded
+extraction imports irrelevant records.
+
+Procedure - the detail and every field is in [`discovery/README.md`](discovery/README.md):
+
+1. Agree scope boundaries first: outcome and tier, planning horizon, commercial observation period,
+   and the source containers (Aha! workspace, Jira projects, Salesforce org and account/opportunity
+   filters). An unspecified boundary is a question, never permission to crawl.
+2. Inspect definitions, statuses, relationships and bounded samples; then extract only the agreed
+   population, following pagination to its end.
+3. Record missing access (`accessLimitations`) separately from absent data (`absentData`).
+4. Propose authority by concept (Salesforce commercial, Aha! product intent, Jira execution) and ask
+   for exceptions.
+5. Map datasets 01-12 to evidence with one of four classifications: ready, requires a mapping
+   decision, requires another source, intentionally deferred. Keep observed values apart from
+   proposed assumptions.
+6. Write the manifest ([`discovery/source-manifest.example.json`](discovery/source-manifest.example.json))
+   and a short assessment ([`discovery/source-assessment.example.md`](discovery/source-assessment.example.md))
+   outside the repo, and carry both into section 7.
+
+Hard rules:
+
+- Discovery is read-only and creates nothing: no ProductManager entities, no writes to any source
+  system, no database access. Loading stays API-only and later, exactly as sections 8 and 9 describe.
+- It precedes all per-dataset preparation and any real-data load. Environment checks, authentication,
+  load order and verification (sections 2, 3, 8, 9) are unchanged.
+- Store no credentials, tokens or connection strings in any artifact.
+- Finance costs and market-wide totals stay gaps when no accessible system holds them; a Jira Done
+  status is not customer availability; a sales commitment is not a delivery date.
+
+---
+
+## 7. Interviewing the human
+
+With connected sources, run discovery (section 6) first. The interview is then **one consolidated
+question list**, ranked by consequence (how many datasets and tiers change with the answer), taken
+from the manifest's `openQuestions` and ordered highest first. Give every question candidate answers
+found in the sources, so the human picks or corrects instead of supplying data. Ask each question
+once and record the answers; they are pasted into every subagent brief (the "Answers already agreed"
+slot) so no dataset agent re-asks them.
+
+If the evidence cannot support the tier the human asked for, say so and offer the narrower tier from
+`tierReadiness.offer` (for example: "A now, B once you supply a coverage grid"). Commercial gaps never
+block tier A. Let the human choose.
+
+Without connected sources the same list applies with no candidates: ask the questions below and get a
+concrete file for each. Ask the tier-level questions yourself before spawning anything; the
+per-dataset questions belong to the subagents - do not pre-empt them.
+
+1. **Which tiers do you want?** (With discovery: already stated as the requested tier; confirm.) Recommended default: start at A, add B if you want the market and
    coverage view, and only go to C or D if you actually want simulation or calibration.
 2. **What is this workspace called?** Default: the company or product-line name. This renames the
    bootstrap workspace, it does not create a second one.
@@ -307,8 +367,8 @@ to the subagents - do not pre-empt them.
 5. **How many teams, initiatives and projects, roughly?** Default assumption: fewer than 10 teams
    and fewer than 50 projects. If any dataset runs to thousands of rows, tell the subagent to
    script the conversion rather than hand-write JSON.
-6. **What is the planning horizon?** Default: the next 12 to 18 months, aligned to whole months.
-7. **Where does each dataset live?** Get a concrete path or export for each tier you agreed on -
+6. **What is the planning horizon?** (With discovery: agreed in scope; do not re-ask.) Default: the next 12 to 18 months, aligned to whole months.
+7. **Where does each dataset live?** (With discovery: the manifest already answers this for connected sources; ask only for what the sources cannot hold.) Get a concrete path or export for each tier you agreed on -
    spreadsheet, CSV export, CRM report, Jira query, finance system extract. A subagent with no
    source cannot invent one.
 8. **Who decides when the data is ambiguous?** Default: the subagent picks a documented default and
@@ -318,7 +378,7 @@ Write the answers down. You will paste the relevant slice of them into each suba
 
 ---
 
-## 7. Assembling and loading
+## 8. Assembling and loading
 
 Both strategies use the same command:
 
@@ -414,7 +474,7 @@ appears in the tally at all.
 
 ---
 
-## 8. Verification checklist
+## 9. Verification checklist
 
 Run this after every dataset load, and again at the end.
 
@@ -484,7 +544,7 @@ table means calibration found no facts to fit, which usually means dataset 12 di
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|

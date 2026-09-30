@@ -1,0 +1,314 @@
+{
+  "manifestVersion": 1,
+  "purpose": "Agent-readable output of the source discovery step (docs/onboarding/discovery/README.md). Derived from the fixture in ./fixture; Harborline is fictional. Contains no credentials.",
+  "discovery": {
+    "runId": "harborline-discovery-2026-09-30",
+    "startedAt": "2026-09-30T14:00:00Z",
+    "completedAt": "2026-09-30T14:20:00Z",
+    "readOnly": true,
+    "productManagerEntitiesCreated": 0,
+    "sourceRecordsChanged": 0
+  },
+  "scope": {
+    "requestedOutcome": "Load the Harborline 2026 roadmap and, if the evidence supports it, a calibrated firm-level simulation.",
+    "requestedTier": "D",
+    "planningHorizon": { "start": "2026-10-01", "end": "2027-09-30" },
+    "commercialObservationPeriod": { "start": "2024-10-01", "end": "2026-09-30" },
+    "containers": {
+      "aha": ["product HWMS (Harborline WMS)"],
+      "jira": ["HCORE", "HINT", "HWEB"],
+      "salesforce": ["Account where Type in (Customer, Prospect)", "Opportunity for those accounts"]
+    },
+    "boundariesConfirmedBy": "user, in the scope question round before any extraction",
+    "unspecifiedBoundaries": []
+  },
+  "sources": [
+    {
+      "sourceId": "salesforce",
+      "system": "Salesforce",
+      "instance": {
+        "orgId": "00DEX000000HRBLAAA",
+        "orgName": "Harborline Software",
+        "instanceUrl": "https://harborline-example.my.salesforce.com",
+        "apiVersion": "62.0",
+        "isSandbox": false,
+        "identityEvidence": "fixture/salesforce/org-identity.json"
+      },
+      "extractedAt": "2026-09-30T14:05:00Z",
+      "filters": [
+        "Account: Type IN ('Customer','Prospect')",
+        "Opportunity: CloseDate >= 2024-10-01 AND (IsClosed = false OR CloseDate <= 2026-09-30) AND Account.Type IN ('Customer','Prospect')"
+      ],
+      "observationPeriod": { "start": "2024-10-01", "end": "2026-09-30" },
+      "objects": [
+        {
+          "objectType": "Account",
+          "extractionMode": "sample",
+          "populationSize": 7,
+          "rowCount": 3,
+          "pagesFetched": 1,
+          "fields": ["Id", "Name", "Type", "Industry", "NumberOfEmployees", "AnnualRevenue", "BillingCountry", "Segment__c"],
+          "sourceIds": ["001EX000000B001AAA", "001EX000000B002AAA", "001EX000000B003AAA"],
+          "sourceLinks": ["/services/data/v62.0/sobjects/Account/001EX000000B001AAA", "/services/data/v62.0/sobjects/Account/001EX000000B002AAA", "/services/data/v62.0/sobjects/Account/001EX000000B003AAA"],
+          "rawResponseFiles": ["fixture/salesforce/accounts-sample.json"],
+          "definitionFiles": ["fixture/salesforce/account-describe.json"],
+          "segmentationCandidates": [
+            { "field": "Segment__c", "kind": "picklist", "populatedInSample": 2, "sampleSize": 3, "distinctValuesInSample": ["Regional 3PL", "E-commerce Fulfillment"] },
+            { "field": "Industry", "kind": "picklist", "populatedInSample": 3, "sampleSize": 3, "distinctValuesInSample": ["Transportation & Logistics"] },
+            { "field": "NumberOfEmployees", "kind": "int", "populatedInSample": 3, "sampleSize": 3, "distinctValuesInSample": ["60", "85", "420"] }
+          ],
+          "note": "Bounded sample only. The full account population (7) is extracted after the segmentation question (Q1) is answered."
+        },
+        {
+          "objectType": "Opportunity",
+          "extractionMode": "full",
+          "populationSize": 5,
+          "rowCount": 5,
+          "pagesFetched": 2,
+          "fields": ["Id", "Name", "AccountId", "StageName", "CreatedDate", "CloseDate", "Amount", "LeadSource", "IsWon", "IsClosed", "Type"],
+          "sourceIds": ["006EX000000A001AAA", "006EX000000A002AAA", "006EX000000A003AAA", "006EX000000A004AAA", "006EX000000A005AAA"],
+          "sourceLinks": ["/services/data/v62.0/sobjects/Opportunity/006EX000000A001AAA", "/services/data/v62.0/sobjects/Opportunity/006EX000000A002AAA", "/services/data/v62.0/sobjects/Opportunity/006EX000000A003AAA", "/services/data/v62.0/sobjects/Opportunity/006EX000000A004AAA", "/services/data/v62.0/sobjects/Opportunity/006EX000000A005AAA"],
+          "rawResponseFiles": ["fixture/salesforce/opportunities-page-1.json", "fixture/salesforce/opportunities-page-2.json"],
+          "definitionFiles": []
+        }
+      ],
+      "availableHistory": [
+        { "object": "Opportunity", "earliestRecord": "2025-01-13", "latestRecord": "2026-06-15", "status": "readable", "note": "Created dates of the records returned inside the observation period." },
+        { "object": "ContractHistory", "earliestRecord": null, "latestRecord": null, "status": "not readable", "note": "Not readable with the discovery credentials. The extent of history is unknown, not zero." }
+      ],
+      "completeness": [
+        { "check": "last page reports done=true", "object": "Opportunity", "result": "pass", "detail": "Page 2 of 2 has done=true and no nextRecordsUrl." },
+        { "check": "sum of records across pages equals totalSize", "object": "Opportunity", "result": "pass", "detail": "3 + 2 = 5 = totalSize on both pages." },
+        { "check": "source IDs listed equal rowCount", "object": "Opportunity", "result": "pass", "detail": "5 IDs." },
+        { "check": "extracted rows are the full agreed population", "object": "Account", "result": "not-applicable", "detail": "Sample by design (3 of 7); full extraction is gated on Q1." }
+      ],
+      "absentData": [
+        { "object": "Account", "field": "AnnualRevenue", "observation": "Field is readable but null in every sampled record (3 of 3)." },
+        { "object": "Account", "field": "Segment__c", "observation": "Readable but null for Meridian Fulfillment (1 of 3 sampled)." },
+        { "object": "Opportunity", "field": "Amount", "observation": "Readable but null for 006EX000000A005AAA (an open opportunity)." },
+        { "object": "Opportunity", "field": "Channel__c", "observation": "No such field in the object definition; LeadSource is the only channel-like field." },
+        { "object": "Opportunity", "field": "records created 2024-10-01 to 2025-01-12", "observation": "The query is readable and fully paginated and returned no records created before 2025-01-13." }
+      ],
+      "accessLimitations": [
+        {
+          "object": "ContractHistory",
+          "kind": "accessLimitation",
+          "httpStatus": 403,
+          "errorCode": "INSUFFICIENT_ACCESS",
+          "evidence": "fixture/salesforce/contract-history-denied.json",
+          "conclusion": "History may exist; it could not be read. Do not conclude that no contract history exists.",
+          "affectedFields": [
+            "marketDynamics.firms[].relationships[].acquisitionDate (dataset 11)",
+            "marketDynamics.churnEvents[].effectiveDate (dataset 12)",
+            "calibration exposure for churn and relationship-age flows (dataset 12)"
+          ],
+          "resolution": "Q2: grant read access to ContractHistory, or supply a Contract export."
+        }
+      ]
+    },
+    {
+      "sourceId": "aha",
+      "system": "Aha!",
+      "instance": {
+        "accountSubdomain": "harborline-example",
+        "baseUrl": "https://harborline-example.aha.io",
+        "productPrefix": "HWMS",
+        "productName": "Harborline WMS",
+        "identityEvidence": "the request base URL in fixture/aha/features.json"
+      },
+      "extractedAt": "2026-09-30T14:10:00Z",
+      "filters": ["product HWMS", "features with any workflow status"],
+      "observationPeriod": { "start": "2026-10-01", "end": "2027-09-30" },
+      "objects": [
+        {
+          "objectType": "Feature",
+          "extractionMode": "full",
+          "populationSize": 3,
+          "rowCount": 3,
+          "pagesFetched": 1,
+          "fields": ["id", "reference_num", "name", "workflow_status", "release", "initiative", "start_date", "due_date", "url"],
+          "sourceIds": ["7000000000001", "7000000000002", "7000000000003"],
+          "sourceLinks": ["https://harborline-example.aha.io/features/HWMS-1", "https://harborline-example.aha.io/features/HWMS-2", "https://harborline-example.aha.io/features/HWMS-3"],
+          "rawResponseFiles": ["fixture/aha/features.json"],
+          "definitionFiles": []
+        }
+      ],
+      "availableHistory": [
+        { "object": "Feature", "earliestRecord": null, "latestRecord": null, "status": "not requested", "note": "Status history was not requested; only current status was extracted." }
+      ],
+      "completeness": [
+        { "check": "pagination.current_page equals pagination.total_pages", "object": "Feature", "result": "pass", "detail": "1 of 1 pages; total_records 3 equals rows extracted." }
+      ],
+      "absentData": [
+        { "object": "Feature", "field": "score", "observation": "Requested; not returned for any of the 3 features (unset in Aha!)." },
+        { "object": "Feature", "field": "original_estimate", "observation": "Requested; not returned for any of the 3 features (unset in Aha!)." }
+      ],
+      "accessLimitations": []
+    },
+    {
+      "sourceId": "jira",
+      "system": "Jira",
+      "instance": {
+        "siteUrl": "https://harborline-example.atlassian.net",
+        "projectKeys": ["HCORE", "HINT", "HWEB"],
+        "identityEvidence": "the self links in fixture/jira/epics.json"
+      },
+      "extractedAt": "2026-09-30T14:15:00Z",
+      "filters": ["project in (HCORE, HINT, HWEB) AND issuetype = Epic AND updated >= 2025-10-01"],
+      "observationPeriod": { "start": "2025-10-01", "end": "2026-09-30" },
+      "objects": [
+        {
+          "objectType": "Epic",
+          "extractionMode": "full",
+          "populationSize": 3,
+          "rowCount": 3,
+          "pagesFetched": 1,
+          "fields": ["key", "summary", "project", "status", "resolutiondate", "customfield_10200", "customfield_10016"],
+          "sourceIds": ["HINT-12", "HCORE-7", "HWEB-3"],
+          "sourceLinks": ["https://harborline-example.atlassian.net/rest/api/3/issue/10012", "https://harborline-example.atlassian.net/rest/api/3/issue/10007", "https://harborline-example.atlassian.net/rest/api/3/issue/10003"],
+          "rawResponseFiles": ["fixture/jira/epics.json"],
+          "definitionFiles": []
+        }
+      ],
+      "availableHistory": [
+        { "object": "Epic", "earliestRecord": null, "latestRecord": "2026-09-22", "status": "readable", "note": "Latest resolution date seen (HWEB-3). Changelog history was not requested." }
+      ],
+      "completeness": [
+        { "check": "startAt + issues returned reaches total", "object": "Epic", "result": "pass", "detail": "startAt 0, 3 issues returned, total 3." }
+      ],
+      "absentData": [
+        { "object": "Epic", "field": "customfield_10200 (Aha! reference)", "observation": "Readable but null for HCORE-7 (1 of 3)." }
+      ],
+      "accessLimitations": []
+    }
+  ],
+  "authorityByConcept": [
+    { "concept": "commercial records (accounts, opportunities, contracts)", "authoritativeSystem": "Salesforce", "status": "proposed", "exceptions": [] },
+    { "concept": "approved product intent (initiatives, features, planned releases)", "authoritativeSystem": "Aha!", "status": "proposed", "exceptions": [] },
+    { "concept": "execution evidence (epics, status, resolution dates)", "authoritativeSystem": "Jira", "status": "proposed", "exceptions": [] }
+  ],
+  "authorityRules": [
+    "Jira Done is execution evidence, not customer availability. Availability comes from the Aha! release and status, confirmed via Q4.",
+    "A Salesforce commitment or close date is a commercial fact, not a delivery date."
+  ],
+  "gaps": [
+    { "concept": "finance costs (servicing, infrastructure, R&D drag)", "status": "gap", "reason": "No accessible system holds cost lines.", "affectsDatasets": ["06"] },
+    { "concept": "market-wide totals (prospect pool beyond CRM accounts)", "status": "gap", "reason": "Salesforce holds only accounts known to Harborline.", "affectsDatasets": ["06"] },
+    { "concept": "product coverage of business processes", "status": "gap", "reason": "No accessible system holds a coverage grid.", "affectsDatasets": ["05"] }
+  ],
+  "datasetReadiness": [
+    {
+      "datasetId": "01", "file": "datasets/01-workspace-and-teams.md", "tier": "A",
+      "classification": "requires a mapping decision",
+      "observed": ["Jira project keys HCORE, HINT, HWEB"],
+      "proposedAssumptions": ["Teams: Core Platform, Integrations, Web, one per Jira project", "Capacity unit: story points per month"],
+      "gaps": ["Per-month capacity numbers are in no accessible system; they come from the human (Q5)."],
+      "dependsOnQuestions": ["Q5"]
+    },
+    {
+      "datasetId": "02", "file": "datasets/02-market-structure.md", "tier": "B",
+      "classification": "requires a mapping decision",
+      "observed": ["Account.Segment__c picklist: Regional 3PL, E-commerce Fulfillment, Enterprise Retail", "Aha! product Harborline WMS"],
+      "proposedAssumptions": ["Segments from Segment__c, pending Q1"],
+      "gaps": ["Competitors and business processes are in no accessible system."],
+      "dependsOnQuestions": ["Q1"]
+    },
+    {
+      "datasetId": "03", "file": "datasets/03-initiatives-projects-features.md", "tier": "A",
+      "classification": "ready",
+      "observed": ["Aha! initiatives and features HWMS-1..3", "Jira epics HINT-12, HCORE-7, HWEB-3"],
+      "proposedAssumptions": ["Jira epic to Aha! feature by the Aha! reference field; HCORE-7 has none, match by name (Wave picking engine)"],
+      "gaps": [],
+      "dependsOnQuestions": ["Q4"]
+    },
+    {
+      "datasetId": "04", "file": "datasets/04-roadmap.md", "tier": "A",
+      "classification": "ready",
+      "observed": ["Aha! start_date, due_date and release_date on HWMS-1..3"],
+      "proposedAssumptions": ["Roadmap item start/end from Aha! start_date/due_date"],
+      "gaps": [],
+      "dependsOnQuestions": []
+    },
+    {
+      "datasetId": "05", "file": "datasets/05-coverage-and-needs.md", "tier": "B",
+      "classification": "requires another source",
+      "observed": [],
+      "proposedAssumptions": [],
+      "gaps": ["Coverage tiers and buyer needs are judgments no connected system stores."],
+      "dependsOnQuestions": []
+    },
+    {
+      "datasetId": "06", "file": "datasets/06-segment-economics.md", "tier": "C",
+      "classification": "requires another source",
+      "observed": ["Closed-won Opportunity Amount: 240000, 120000, 36000", "Account counts by segmentation field, once Q1 is answered"],
+      "proposedAssumptions": ["ARPU derived from won Amount, only if the human confirms Amount is annual recurring value"],
+      "gaps": ["servicingCostPerClient, infraFixedCostPerMonth, infraCostPerClient, rdDragPerMonth, implementationFee", "initialProspectPool beyond known accounts"],
+      "dependsOnQuestions": ["Q1", "Q3"]
+    },
+    {
+      "datasetId": "07", "file": "datasets/07-covariates.md", "tier": "C",
+      "classification": "intentionally deferred",
+      "observed": [],
+      "proposedAssumptions": [],
+      "gaps": ["No external demand series was requested and none exists in the connected systems."],
+      "dependsOnQuestions": []
+    },
+    {
+      "datasetId": "08", "file": "datasets/08-assumption-sets.md", "tier": "C",
+      "classification": "requires a mapping decision",
+      "observed": ["Opportunity outcomes: 3 Closed Won, 1 Closed Lost, 1 open"],
+      "proposedAssumptions": ["Win-rate prior seeded from observed outcomes with provenance Asserted; five decided deals is too few to treat as calibrated"],
+      "gaps": ["Churn and arrival rates need Q2 and the full account population."],
+      "dependsOnQuestions": ["Q2", "Q3"]
+    },
+    {
+      "datasetId": "09", "file": "datasets/09-market-events.md", "tier": "C",
+      "classification": "intentionally deferred",
+      "observed": [],
+      "proposedAssumptions": [],
+      "gaps": ["No market events supplied; an event overlay is optional."],
+      "dependsOnQuestions": []
+    },
+    {
+      "datasetId": "10", "file": "datasets/10-channels-and-integrations.md", "tier": "D",
+      "classification": "requires a mapping decision",
+      "observed": ["Opportunity.LeadSource values: Direct, Partner - Consultant, Inbound Web, Existing Customer"],
+      "proposedAssumptions": ["Channels from LeadSource, pending Q6"],
+      "gaps": ["Channel reach per segment and product affinity are judgments, not source fields."],
+      "dependsOnQuestions": ["Q6"]
+    },
+    {
+      "datasetId": "11", "file": "datasets/11-firms-and-relationships.md", "tier": "D",
+      "classification": "requires a mapping decision",
+      "observed": ["Account rows (7 in scope, 3 sampled)"],
+      "proposedAssumptions": ["Firm segment from the field chosen in Q1", "Relationships from closed-won opportunities, acquisitionDate left null until Q2"],
+      "gaps": ["acquisitionDate: ContractHistory is not readable (access limitation)."],
+      "dependsOnQuestions": ["Q1", "Q2"]
+    },
+    {
+      "datasetId": "12", "file": "datasets/12-historical-facts.md", "tier": "D",
+      "classification": "requires another source",
+      "observed": ["5 opportunities across 2 pages: 3 Closed Won, 1 Closed Lost, 1 open (Negotiation)"],
+      "proposedAssumptions": ["StageName Closed Won to Won, Closed Lost to Lost, other stages to an open entry (Q7)"],
+      "gaps": ["churnEvents need contract end dates; ContractHistory is not readable (access limitation).", "arrivalCounts need the full account population."],
+      "dependsOnQuestions": ["Q2", "Q7"]
+    }
+  ],
+  "tierReadiness": {
+    "requested": "D",
+    "A": { "datasets": ["01", "03", "04"], "status": "completable", "blockedByCommercialGaps": false, "dependsOnQuestions": ["Q4", "Q5"] },
+    "B": { "datasets": ["02", "05"], "status": "needs another source", "blockedByCommercialGaps": false, "dependsOnQuestions": ["Q1"] },
+    "C": { "datasets": ["06", "08"], "status": "blocked", "blockedByCommercialGaps": true, "dependsOnQuestions": ["Q1", "Q3"] },
+    "D": { "datasets": ["10", "11", "12"], "status": "blocked", "blockedByCommercialGaps": true, "dependsOnQuestions": ["Q2", "Q6", "Q7"] },
+    "offer": "Tier A can complete now. Tier B follows once a coverage grid is supplied. C and D need finance costs and readable contract history."
+  },
+  "openQuestions": [
+    { "id": "Q1", "rank": 1, "question": "Which Account field is authoritative for segmentation?", "consequence": "Defines every segment and every firm's segment; affects datasets 02, 06, 11.", "candidateAnswers": ["Segment__c (populated in 2 of 3 sampled accounts)", "Industry (populated, but one distinct value in the sample)", "NumberOfEmployees banded into size tiers"], "affectsDatasets": ["02", "06", "11"] },
+    { "id": "Q2", "rank": 2, "question": "Can ContractHistory be made readable, or can you supply a Contract export?", "consequence": "Without it, relationship acquisition dates and churn events stay empty and calibration has no churn evidence.", "candidateAnswers": ["Grant the integration user read access to ContractHistory", "Supply a Contract export with start and end dates", "Accept a tier without churn calibration"], "affectsDatasets": ["08", "11", "12"] },
+    { "id": "Q3", "rank": 3, "question": "Where do cost lines and the wider prospect pool come from?", "consequence": "Tier C cannot run without them; no connected system holds them.", "candidateAnswers": ["A finance export by segment", "Human estimates recorded as Asserted", "Stop at tier A now, revisit later"], "affectsDatasets": ["06", "08"] },
+    { "id": "Q4", "rank": 4, "question": "Which signal marks a feature as available to customers?", "consequence": "Sets feature status and shippedDate; a wrong choice makes shipped features look available too early.", "candidateAnswers": ["Aha! release_date and status (proposed default)", "Jira resolutiondate (HWEB-3 is Done since 2026-09-22 but its Aha! release is 2026-11-30; not proposed)"], "affectsDatasets": ["03"] },
+    { "id": "Q5", "rank": 5, "question": "Are the three Jira projects your teams, and what is capacity measured in?", "consequence": "Team list and the unit shared by capacity and effort demand.", "candidateAnswers": ["HCORE, HINT, HWEB as Core Platform, Integrations, Web", "Story points per month (Jira customfield_10016 is populated on all 3 epics)"], "affectsDatasets": ["01", "03"] },
+    { "id": "Q6", "rank": 6, "question": "Is LeadSource the channel, and which values are channels?", "consequence": "Defines channels and per-deal attribution.", "candidateAnswers": ["Direct, Partner - Consultant, Inbound Web as channels; Existing Customer as a cross-sell marker", "Ignore LeadSource and use one direct channel"], "affectsDatasets": ["10", "12"] },
+    { "id": "Q7", "rank": 7, "question": "How do StageName and null Amount map to outcomes?", "consequence": "Which deals count as won, lost, or still open.", "candidateAnswers": ["Closed Won to Won, Closed Lost to Lost, Negotiation to open", "Treat null Amount as unknown, not zero"], "affectsDatasets": ["12"] }
+  ]
+}

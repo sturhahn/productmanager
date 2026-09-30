@@ -14,8 +14,17 @@
 - `PRD2-Onboarding.md` — the short PRD for agent-driven onboarding; implemented by
   `onboarding/`.
 - `onboarding/README.md` — the orchestrator agent's onboarding guide: environment checks,
-  running the stack, the mandatory/optional dataset task list, interview questions, load order,
-  verification. Hand this file to an agent onboarding a new instance.
+  running the stack, source discovery, the mandatory/optional dataset task list, the consolidated
+  interview, load order, verification. Hand this file to an agent onboarding a new instance.
+- `onboarding/discovery/README.md` - the detailed source-discovery procedure (PRD3): scope
+  boundaries, inspection, pagination, authority by concept, dataset-to-evidence mapping, manifest
+  field reference. Open when the human has connected sources.
+- `onboarding/discovery/source-manifest.example.json` - the agent-readable manifest example
+  (Harborline, fictional); guarded by tests.
+- `onboarding/discovery/source-assessment.example.md` - the short human-facing assessment, ending in
+  the consolidated ranked question list.
+- `onboarding/discovery/fixture/` - trimmed Salesforce/Aha!/Jira responses (multi-page, missing
+  fields, unreadable history) the examples are derived from; `fixture/README.md` walks through them.
 - `onboarding/datasets/NN-*.md` — one file per dataset (12, numbered in load order): data
   requirements, units and conversions, seed JSON shape, idempotency rule, verification. Each
   follows the same eight-heading skeleton; a subagent reads exactly one.

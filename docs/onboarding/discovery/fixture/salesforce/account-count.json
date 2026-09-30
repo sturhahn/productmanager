@@ -1,0 +1,5 @@
+{
+  "request": "GET /services/data/v62.0/query?q=SELECT COUNT() FROM Account WHERE Type IN ('Customer','Prospect')",
+  "httpStatus": 200,
+  "response": { "totalSize": 7, "done": true, "records": [] }
+}

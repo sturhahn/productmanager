@@ -1,0 +1,17 @@
+{
+  "request": "GET /services/data/v62.0/sobjects/Account/describe (trimmed to the fields discovery inspected)",
+  "httpStatus": 200,
+  "response": {
+    "name": "Account",
+    "fields": [
+      { "name": "Id", "label": "Account ID", "type": "id" },
+      { "name": "Name", "label": "Account Name", "type": "string" },
+      { "name": "Type", "label": "Account Type", "type": "picklist", "picklistValues": ["Prospect", "Customer", "Partner", "Former Customer"] },
+      { "name": "Industry", "label": "Industry", "type": "picklist", "picklistValues": ["Transportation & Logistics", "Retail", "Manufacturing", "Other"] },
+      { "name": "NumberOfEmployees", "label": "Employees", "type": "int" },
+      { "name": "AnnualRevenue", "label": "Annual Revenue", "type": "currency" },
+      { "name": "BillingCountry", "label": "Billing Country", "type": "string" },
+      { "name": "Segment__c", "label": "Harborline Segment", "type": "picklist", "picklistValues": ["Regional 3PL", "E-commerce Fulfillment", "Enterprise Retail"] }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "request": "GET /services/data/v62.0/query?q=SELECT Id, Name, InstanceName, IsSandbox FROM Organization",
+  "httpStatus": 200,
+  "response": {
+    "totalSize": 1,
+    "done": true,
+    "records": [
+      { "attributes": { "type": "Organization" }, "Id": "00DEX000000HRBLAAA", "Name": "Harborline Software", "InstanceName": "EX1", "IsSandbox": false }
+    ]
+  }
+}

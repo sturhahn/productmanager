@@ -1,0 +1,14 @@
+{
+  "request": "GET /rest/api/3/search?jql=project in (HCORE, HINT, HWEB) AND issuetype = Epic AND updated >= 2025-10-01&fields=summary,status,resolutiondate,project,customfield_10200,customfield_10016&startAt=0&maxResults=50",
+  "httpStatus": 200,
+  "response": {
+    "startAt": 0,
+    "maxResults": 50,
+    "total": 3,
+    "issues": [
+      { "id": "10012", "key": "HINT-12", "self": "https://harborline-example.atlassian.net/rest/api/3/issue/10012", "fields": { "summary": "Carrier Connect v1", "project": { "key": "HINT" }, "status": { "name": "In Progress", "statusCategory": { "key": "indeterminate" } }, "resolutiondate": null, "customfield_10200": "HWMS-1", "customfield_10016": 34 } },
+      { "id": "10007", "key": "HCORE-7", "self": "https://harborline-example.atlassian.net/rest/api/3/issue/10007", "fields": { "summary": "Wave picking engine", "project": { "key": "HCORE" }, "status": { "name": "In Progress", "statusCategory": { "key": "indeterminate" } }, "resolutiondate": null, "customfield_10200": null, "customfield_10016": 55 } },
+      { "id": "10003", "key": "HWEB-3", "self": "https://harborline-example.atlassian.net/rest/api/3/issue/10003", "fields": { "summary": "Cycle count workflows", "project": { "key": "HWEB" }, "status": { "name": "Done", "statusCategory": { "key": "done" } }, "resolutiondate": "2026-09-22T17:45:00.000+0000", "customfield_10200": "HWMS-3", "customfield_10016": 21 } }
+    ]
+  }
+}

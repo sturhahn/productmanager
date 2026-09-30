@@ -1,0 +1,7 @@
+{
+  "request": "GET /services/data/v62.0/query?q=SELECT ContractId, Field, OldValue, NewValue, CreatedDate FROM ContractHistory",
+  "httpStatus": 403,
+  "response": [
+    { "message": "The integration user profile has no read access to the ContractHistory object.", "errorCode": "INSUFFICIENT_ACCESS" }
+  ]
+}

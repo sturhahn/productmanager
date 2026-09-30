@@ -23,6 +23,14 @@
   seed schema (`src/ProductManager.Cli/Seed/SeedModels.cs`), update the affected dataset file
   and the example seed in the same change, then run
   `dotnet test tests/ProductManager.Cli.Tests --filter FullyQualifiedName~OnboardingDocsTests`.
+- **`onboarding/discovery/` is documentation plus examples only** (PRD3): no helper code, API,
+  database or seed-schema changes. The tests also check that `source-manifest.example.json` parses
+  and has the required keys, that its row counts equal the records summed across the fixture page
+  files, that it holds no credentials, that all 12 datasets carry one of the four readiness values,
+  and that unreadable history is an access limitation rather than absent data. Change the manifest,
+  fixture and assessment together. Source-specific field names (for example `StageName`) stay in
+  these mapping artifacts, never in the seed schema. The directory has no ABSTRACT/INDEX/CLAUDE
+  trio, matching `onboarding/` and `datasets/`.
 - Dataset files are written for an agent reader: state units only when verified in code, cite
   the file, keep the shared Harborline example world consistent across files, and never invent a
   `pm` verb or option.
