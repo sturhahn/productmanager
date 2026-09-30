@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ProductManager.Domain.Execution;
 using ProductManager.Domain.Facts;
+using ProductManager.Domain.Imports;
 using ProductManager.Domain.Simulation;
 
 namespace ProductManager.Api.Persistence.Configurations;
@@ -95,5 +96,25 @@ public class FactEventConfiguration : IEntityTypeConfiguration<FactEvent>
         b.HasIndex(x => x.RecordedDate);
         b.HasIndex(x => new { x.Kind, x.EffectiveDate });
         b.HasIndex(x => new { x.SubjectType, x.SubjectId });
+    }
+}
+
+public class SourceBindingConfiguration : IEntityTypeConfiguration<SourceBinding>
+{
+    public void Configure(EntityTypeBuilder<SourceBinding> b)
+    {
+        b.Property(x => x.SourceSystem).HasMaxLength(SourceBinding.MaxKeyPartLength);
+        b.Property(x => x.SourceInstance).HasMaxLength(SourceBinding.MaxKeyPartLength);
+        b.Property(x => x.ObjectKind).HasMaxLength(SourceBinding.MaxKeyPartLength);
+        b.Property(x => x.SourceRecordId).HasMaxLength(SourceBinding.MaxKeyPartLength);
+        b.Property(x => x.TargetType).HasMaxLength(100);
+        b.Property(x => x.ImportedValuesJson).HasColumnType("jsonb");
+        b.HasOne<Workspace>().WithMany().HasForeignKey(x => x.WorkspaceId).OnDelete(DeleteBehavior.Cascade);
+        // The identity rule itself: one source record, one target, per workspace. Workspace rather
+        // than market scope because opportunities, relationships and facts are bound too, and facts
+        // have no market. No FK on TargetId: it points at one of several tables.
+        b.HasIndex(x => new { x.WorkspaceId, x.SourceSystem, x.SourceInstance, x.ObjectKind, x.SourceRecordId })
+            .IsUnique();
+        b.HasIndex(x => x.TargetId);
     }
 }

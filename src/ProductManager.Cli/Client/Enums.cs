@@ -141,3 +141,12 @@ public enum SimulationEngineMode
     Aggregate,
     FirmLevel
 }
+
+/// <summary>What a bulk import did with one item (mirrors the API's ImportOutcome).</summary>
+public enum ImportOutcome
+{
+    Created,
+    Updated,
+    Unchanged,
+    Exception
+}

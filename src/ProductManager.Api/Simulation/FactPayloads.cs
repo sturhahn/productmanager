@@ -59,5 +59,16 @@ public sealed record SegmentArrivalFact(
 /// The payload of a <see cref="FactEventKind.Churn"/> ledger entry. The segment is carried in the
 /// payload for the same reason opportunity decisions carry theirs — a firm re-segmented later must
 /// not move a churn that already happened.
+///
+/// <para>
+/// <see cref="SourceCustomerRef"/> / <see cref="SourceRelationshipRef"/> are provenance only: the
+/// source system's ids of the customer and relationship that churned, so reconciliation can find
+/// the affected customer even when no domain firm was resolved. Calibration never reads them.
+/// </para>
 /// </summary>
-public sealed record ChurnFact(Guid ClientSegmentId, Guid? FirmId = null, Guid? ProductId = null);
+public sealed record ChurnFact(
+    Guid ClientSegmentId,
+    Guid? FirmId = null,
+    Guid? ProductId = null,
+    string? SourceCustomerRef = null,
+    string? SourceRelationshipRef = null);

@@ -35,14 +35,20 @@
   world) vs `RecordedDate` (when we learned it) — read this before touching anything
   calibration-adjacent.
 
+## Imports/ — import provenance
+- `SourceBinding.cs` — `SourceBinding`: one external source record (system, instance, object kind,
+  record id — free strings) bound to exactly one row, plus the source-owned values as last imported
+  (for local-edit conflict detection). Never read by the Engine or calibration.
+
 ## Market/ — market structure, demand/supply, dynamics
 - `Market.cs` — `Market` (competitive arena), `ClientSegment`, `Firm`, `Competitor`.
 - `Product.cs` — `Product` (a module is a Product with a parent Product), `ProductPrice`,
-  `FirmProductRelationship`, `Integration`.
+  `FirmProductRelationship` (`DescribesSameEpisode`: one episode per edge), `Integration`.
 - `Channel.cs` — `Channel`, `ChannelSegmentReach`, `ChannelProductAffinity`: routes to market.
 - `DemandSupply.cs` — `BusinessProcess` (hierarchical catalog), `Approach` (optional method
   dimension), `Need` (demand edge), `Coverage` (supply assessment → tier).
-- `Dynamics.cs` — `Opportunity` (the central hinge), `OpportunityScopeItem`, `MarketEvent`,
+- `Dynamics.cs` — `Opportunity` (the central hinge; `Qualify`/`Decide` return false for an identical
+  repeat, `IsSameDecision`), `OpportunityScopeItem`, `MarketEvent`,
   `MarketEventRateMultiplier`, `Covariate`.
 - `SegmentStockState.cs` — `SegmentStockState`, `SegmentModulePenetration`,
   `SegmentApproachAdoption`: observed starting stocks the engine v0 simulation starts from.

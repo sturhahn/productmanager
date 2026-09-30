@@ -486,7 +486,8 @@ public sealed record CreateFactEventRequest(
     Guid? SubjectId = null,
     string? PayloadJson = null,
     string? Notes = null,
-    DateTimeOffset? RecordedAt = null);
+    DateTimeOffset? RecordedAt = null,
+    SourceRef? Source = null);
 
 // ---------- Distribution / AssumptionSet / Parameter ----------
 
@@ -644,7 +645,9 @@ public sealed record CreateFirmProductRelationshipRequest(
     double PriceLevel = 1.0,
     MoneyDto? PricePaidPerPeriod = null,
     DateOnly? AcquisitionDate = null,
-    string? Notes = null);
+    string? Notes = null,
+    DateOnly? EndDate = null,
+    IReadOnlyList<SourceRef>? Sources = null);
 
 /// <summary>Replaces the whole edge. Omitting <c>EndDate</c> reopens a relationship that had ended.</summary>
 public sealed record UpdateFirmProductRelationshipRequest(
@@ -655,26 +658,78 @@ public sealed record UpdateFirmProductRelationshipRequest(
     DateOnly? EndDate = null,
     string? Notes = null);
 
-/// <summary>One firm in a bulk import, with the relationships it already holds.</summary>
+/// <summary>One firm in a bulk import, with the relationships it already holds. Without <c>Source</c>
+/// it upserts by (market, name) and overwrites; with it, it matches by source identity and is a partial
+/// update (absent keeps, <c>ClearFields</c> clears) — see the API's FirmImportItem docs.</summary>
 public sealed record FirmImportItem(
     string Name,
     Guid? ClientSegmentId = null,
-    EpistemicStatus EpistemicStatus = EpistemicStatus.Observed,
+    EpistemicStatus? EpistemicStatus = null,
     string? AttributesJson = null,
     string? Notes = null,
-    IReadOnlyList<FirmImportRelationship>? Relationships = null);
+    IReadOnlyList<FirmImportRelationship>? Relationships = null,
+    SourceRef? Source = null,
+    IReadOnlyList<string>? ClearFields = null);
 
 public sealed record FirmImportRelationship(
     Guid ProductId,
     IReadOnlyList<Guid>? ServedProcessIds = null,
-    double PriceLevel = 1.0,
+    double? PriceLevel = null,
     MoneyDto? PricePaidPerPeriod = null,
-    DateOnly? AcquisitionDate = null);
+    DateOnly? AcquisitionDate = null,
+    DateOnly? EndDate = null,
+    IReadOnlyList<SourceRef>? Sources = null,
+    IReadOnlyList<string>? ClearFields = null);
 
 /// <summary>Imports a roster of firms into one market. Matching is by natural key (market, name).</summary>
 public sealed record BulkImportFirmsRequest(Guid MarketId, IReadOnlyList<FirmImportItem> Firms);
 
-public sealed record BulkImportFirmsResponse(Guid MarketId, int Created, int Updated, int RelationshipsWritten, IReadOnlyList<FirmDto> Firms);
+public sealed record BulkImportFirmsResponse(
+    Guid MarketId,
+    int Created,
+    int Updated,
+    int RelationshipsWritten,
+    IReadOnlyList<FirmDto> Firms,
+    int Unchanged = 0,
+    int Exceptions = 0,
+    IReadOnlyList<FirmImportOutcomeDto>? Outcomes = null);
+
+/// <summary>Identity of one record in an external source system; compared exactly.</summary>
+public sealed record SourceRef(string SourceSystem, string SourceInstance, string ObjectKind, string SourceRecordId);
+
+/// <summary>One source record and the row it became (GET /api/source-bindings).</summary>
+public sealed record SourceBindingDto(
+    Guid Id,
+    Guid WorkspaceId,
+    string SourceSystem,
+    string SourceInstance,
+    string ObjectKind,
+    string SourceRecordId,
+    string TargetType,
+    Guid TargetId,
+    DateTimeOffset BoundAt,
+    string? ImportedValuesJson);
+
+/// <summary>A source-owned field not applied because it was edited locally since the last import.</summary>
+public sealed record FieldConflictDto(string Field, string? StoredValue, string? IncomingValue, string? LastImportedValue);
+
+public sealed record RelationshipImportOutcomeDto(
+    int Index,
+    Guid ProductId,
+    Guid? RelationshipId,
+    ImportOutcome Outcome,
+    string? Reason,
+    IReadOnlyList<FieldConflictDto> Conflicts);
+
+public sealed record FirmImportOutcomeDto(
+    int Index,
+    string Name,
+    SourceRef? Source,
+    Guid? FirmId,
+    ImportOutcome Outcome,
+    string? Reason,
+    IReadOnlyList<FieldConflictDto> Conflicts,
+    IReadOnlyList<RelationshipImportOutcomeDto> Relationships);
 
 /// <summary>Fills a market's segment stocks with deterministically generated synthetic firms.
 /// Regeneration replaces the previous synthetic population rather than adding a second one.</summary>
@@ -723,7 +778,8 @@ public sealed record CreateOpportunityRequest(
     Guid? CrossSellModuleProductId = null,
     IReadOnlyList<Guid>? ScopeProcessIds = null,
     IReadOnlyList<Guid>? CompetitorIds = null,
-    string? Notes = null);
+    string? Notes = null,
+    SourceRef? Source = null);
 
 public sealed record UpdateOpportunityRequest(
     Guid? ChannelId = null,

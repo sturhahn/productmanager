@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ProductManager.Api.Contracts;
 using ProductManager.Api.Infrastructure;
 using ProductManager.Api.Persistence;
+using ProductManager.Domain.Imports;
 using ProductManager.Domain.Market;
 
 namespace ProductManager.Api.Controllers;
@@ -257,26 +258,63 @@ public sealed class FirmRelationshipsController(AppDbContext db) : ApiController
         return relationship is null ? NotFoundProblem("FirmProductRelationship", id) : Ok(relationship.ToDto());
     }
 
+    /// <summary>
+    /// Creates an edge. With <c>sources</c>, an already-bound source record returns its edge (200)
+    /// instead, binding any listed records not bound yet.
+    /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(FirmProductRelationshipDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(FirmProductRelationshipDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<FirmProductRelationshipDto>> Create(
         [FromBody] CreateFirmProductRelationshipRequest request, CancellationToken ct)
     {
-        if (!await db.Firms.AnyAsync(f => f.Id == request.FirmId, ct))
-            return NotFoundProblem("Firm", request.FirmId);
+        var firm = await db.Firms.AsNoTracking().FirstOrDefaultAsync(f => f.Id == request.FirmId, ct);
+        if (firm is null) return NotFoundProblem("Firm", request.FirmId);
         if (!await db.Products.AnyAsync(p => p.Id == request.ProductId, ct))
             return NotFoundProblem("Product", request.ProductId);
 
-        var relationship = new FirmProductRelationship(request.FirmId, request.ProductId, request.AcquisitionDate,
-            request.PricePaidPerPeriod?.ToDomain())
+        var sources = request.Sources?.Distinct().ToList() ?? [];
+        Guid workspaceId = default;
+        var bindings = new List<SourceBinding?>();
+        FirmProductRelationship? bound = null;
+        if (sources.Count > 0)
         {
-            Notes = request.Notes
-        };
-        relationship.SetServedProcesses(request.ServedProcessIds ?? []);
-        relationship.SetPriceLevel(request.PriceLevel);
+            workspaceId = await db.Markets.Where(m => m.Id == firm.MarketId).Select(m => m.WorkspaceId).FirstAsync(ct);
+            foreach (var source in sources) bindings.Add(await db.FindBindingAsync(workspaceId, source, ct));
+            if (bindings.Any(b => b is not null && b.TargetType != nameof(FirmProductRelationship)))
+                return ConflictProblem("A listed source record is bound to something other than a relationship.");
+            var boundIds = bindings.OfType<SourceBinding>().Select(b => b.TargetId).Distinct().ToList();
+            var boundEdges = await db.FirmProductRelationships.Where(r => boundIds.Contains(r.Id)).ToListAsync(ct);
+            if (boundEdges.Count > 1)
+                return ConflictProblem("The listed source records are bound to different relationships.");
+            bound = boundEdges.SingleOrDefault();
+            if (bound is not null && (bound.FirmId != request.FirmId || bound.ProductId != request.ProductId))
+                return CorrectionRequiredProblem(
+                    $"The listed source records are already relationship {bound.Id} of firm {bound.FirmId} " +
+                    $"and product {bound.ProductId}.");
+        }
 
-        db.FirmProductRelationships.Add(relationship);
+        var relationship = bound;
+        if (relationship is null)
+        {
+            relationship = new FirmProductRelationship(request.FirmId, request.ProductId, request.AcquisitionDate,
+                request.PricePaidPerPeriod?.ToDomain())
+            {
+                Notes = request.Notes
+            };
+            relationship.SetServedProcesses(request.ServedProcessIds ?? []);
+            relationship.SetPriceLevel(request.PriceLevel);
+            if (request.EndDate is { } end) relationship.End(end);
+            db.FirmProductRelationships.Add(relationship);
+        }
+
+        for (var i = 0; i < sources.Count; i++)
+            if (bindings[i]?.TargetId != relationship.Id)
+                db.Bind(bindings[i], workspaceId, sources[i], nameof(FirmProductRelationship), relationship.Id);
+
         await db.SaveChangesAsync(ct);
+        if (bound is not null) return Ok(bound.ToDto());
         return CreatedAtAction(nameof(Get), new { id = relationship.Id }, relationship.ToDto());
     }
 

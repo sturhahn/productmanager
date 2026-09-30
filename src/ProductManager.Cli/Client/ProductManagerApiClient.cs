@@ -447,6 +447,15 @@ public sealed class ProductManagerApiClient(HttpClient http)
                 ("effectiveFrom", effectiveFrom), ("effectiveTo", effectiveTo), ("knownAsOf", knownAsOf),
                 ("page", page), ("pageSize", pageSize)), ct);
 
+    public Task<PagedResponse<SourceBindingDto>> ListSourceBindingsAsync(
+        Guid? workspaceId, string? sourceSystem, string? sourceInstance, string? objectKind, string? sourceRecordId,
+        string? targetType, Guid? targetId, int? page, int? pageSize, CancellationToken ct) =>
+        GetAsync<PagedResponse<SourceBindingDto>>(
+            Query("api/source-bindings",
+                ("workspaceId", workspaceId), ("sourceSystem", sourceSystem), ("sourceInstance", sourceInstance),
+                ("objectKind", objectKind), ("sourceRecordId", sourceRecordId), ("targetType", targetType),
+                ("targetId", targetId), ("page", page), ("pageSize", pageSize)), ct);
+
     public Task<FactEventDto> GetFactAsync(Guid id, CancellationToken ct) => GetAsync<FactEventDto>($"api/facts/{id}", ct);
 
     public Task<FactEventDto> CreateFactAsync(CreateFactEventRequest request, CancellationToken ct) =>

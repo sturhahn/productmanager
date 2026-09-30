@@ -88,20 +88,38 @@ public sealed class Opportunity : Entity
         return _scope.RemoveAll(s => s.BusinessProcessId == businessProcessId) > 0;
     }
 
-    public void Qualify(DateTimeOffset at)
+    /// <summary>
+    /// Qualifies an open opportunity. Repeating a qualification already applied at the same instant
+    /// is a no-op returning false — a retried import must not fail on its own earlier success; any
+    /// other qualification of a non-open opportunity is a conflict.
+    /// </summary>
+    public bool Qualify(DateTimeOffset at)
     {
+        if (QualifiedAt is { } qualified && SameInstant(qualified, at)) return false;
         if (Stage != OpportunityStage.Open)
             throw new DomainConflictException($"Only an open opportunity can be qualified (stage is {Stage}).");
         if (at < OpenedAt)
             throw new ArgumentException("Qualification cannot precede opening.");
         Stage = OpportunityStage.Qualified;
         QualifiedAt = at;
+        return true;
     }
 
-    public void Decide(OpportunityStage outcome, DateTimeOffset at, Guid? winningProductId = null)
+    /// <summary>True when this opportunity is already decided with exactly this outcome, winner and date.</summary>
+    public bool IsSameDecision(OpportunityStage outcome, DateTimeOffset at, Guid? winningProductId) =>
+        IsDecided && Stage == outcome && WinningProductId == winningProductId
+        && DecidedAt is { } decided && SameInstant(decided, at);
+
+    /// <summary>
+    /// Decides the opportunity. Repeating the identical decision is a no-op returning false; a
+    /// different decision on a decided opportunity is a conflict — changing a recorded outcome is a
+    /// correction of history, not a transition.
+    /// </summary>
+    public bool Decide(OpportunityStage outcome, DateTimeOffset at, Guid? winningProductId = null)
     {
         if (outcome is not (OpportunityStage.Won or OpportunityStage.Lost or OpportunityStage.NoDecision))
             throw new ArgumentException("Decision outcome must be Won, Lost, or NoDecision.", nameof(outcome));
+        if (IsSameDecision(outcome, at, winningProductId)) return false;
         if (IsDecided)
             throw new DomainConflictException("Opportunity is already decided.");
         if (at < OpenedAt)
@@ -111,7 +129,11 @@ public sealed class Opportunity : Entity
         Stage = outcome;
         DecidedAt = at;
         WinningProductId = winningProductId;
+        return true;
     }
+
+    /// <summary>Equal to the microsecond: the resolution Postgres stores, so a stored instant still matches its retry.</summary>
+    public static bool SameInstant(DateTimeOffset a, DateTimeOffset b) => a.UtcTicks / 10 == b.UtcTicks / 10;
 }
 
 /// <summary>One business process in an opportunity's scope, with when it entered. Owned by Opportunity.</summary>

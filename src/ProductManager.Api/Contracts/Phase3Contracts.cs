@@ -99,6 +99,13 @@ public sealed record FirmProductRelationshipDto(
 /// <c>servedProcessIds</c> may be empty — that reads as "whatever the product covers", the honest
 /// state of a relationship nobody has decomposed into modules yet. <c>priceLevel</c> is a
 /// multiplier on list price (1.0 = list, 0.8 = a 20% discount).
+///
+/// <para>
+/// <c>sources</c> makes the create repeat-safe: when any listed source record is already bound, the
+/// bound relationship is returned (200) and nothing is created; every listed record is bound to
+/// the relationship. Records bound to different relationships, or to another firm/product, are a
+/// 409. Without <c>sources</c> every call creates, as before.
+/// </para>
 /// </summary>
 public sealed record CreateFirmProductRelationshipRequest(
     [Required] Guid FirmId,
@@ -107,7 +114,9 @@ public sealed record CreateFirmProductRelationshipRequest(
     [Range(0.0001, 1000)] double PriceLevel = 1.0,
     MoneyDto? PricePaidPerPeriod = null,
     DateOnly? AcquisitionDate = null,
-    string? Notes = null);
+    string? Notes = null,
+    DateOnly? EndDate = null,
+    IReadOnlyList<SourceRef>? Sources = null);
 
 /// <summary>
 /// Replaces the whole edge. Omitting <c>endDate</c> reopens a relationship that had ended — a PUT
@@ -123,37 +132,100 @@ public sealed record UpdateFirmProductRelationshipRequest(
 
 // ---------- Firm bulk import & synthetic generation ----------
 
-/// <summary>One firm in a bulk import, with the relationships it already holds.</summary>
+/// <summary>
+/// One firm in a bulk import, with the relationships it already holds.
+///
+/// <para>
+/// <b>Without <c>source</c></b> (legacy) the item is matched by (market, name) and overwrites the
+/// firm: an absent segment, attributes or notes is written as null, an absent
+/// <c>epistemicStatus</c> as Observed.
+/// </para>
+///
+/// <para>
+/// <b>With <c>source</c></b> the item is matched by its source binding first. A bound record updates
+/// its firm, so a changed <c>name</c> is a rename (an exception when another firm in the market has
+/// that name). An unbound record adopts the same-named firm and binds it, unless that firm is
+/// already bound to a different record of the same source system, instance and object kind — then
+/// the item is an exception ("indistinguishable same-name firms"): send a distinct, reviewed display
+/// name instead. Otherwise a new firm is created and bound.
+/// </para>
+///
+/// <para>
+/// Source-bound items are <b>partial updates</b>. Source-owned fields: <c>name</c>,
+/// <c>clientSegmentId</c>, <c>epistemicStatus</c>, <c>attributesJson</c>, <c>notes</c>. An absent (null)
+/// field keeps the stored value; <c>clearFields</c> lists the fields to set to null (allowed:
+/// <c>clientSegmentId</c>, <c>attributesJson</c>, <c>notes</c>). A field whose stored value was edited
+/// locally since the last import (it differs from what this source last imported) is not
+/// overwritten: the item reports it under <c>conflicts</c> and keeps the local value.
+/// </para>
+/// </summary>
 public sealed record FirmImportItem(
     [Required, MaxLength(200)] string Name,
     Guid? ClientSegmentId = null,
-    EpistemicStatus EpistemicStatus = EpistemicStatus.Observed,
+    EpistemicStatus? EpistemicStatus = null,
     string? AttributesJson = null,
     string? Notes = null,
-    IReadOnlyList<FirmImportRelationship>? Relationships = null);
+    IReadOnlyList<FirmImportRelationship>? Relationships = null,
+    SourceRef? Source = null,
+    IReadOnlyList<string>? ClearFields = null);
 
+/// <summary>
+/// One firm/product edge in a bulk import. Omitting an edge from a later import never ends or
+/// deletes it; <c>endDate</c> ends it.
+///
+/// <para>
+/// <b>Without <c>sources</c></b> (legacy) the edge is matched by (firm, product) and overwritten; an
+/// absent <c>priceLevel</c> is 1.0, an absent <c>endDate</c> leaves the stored one alone.
+/// </para>
+///
+/// <para>
+/// <b>With <c>sources</c></b> every listed source record is bound to the one edge for (firm, product)
+/// — listing several is how records are deliberately consolidated. The model keeps one episode per
+/// edge, so these are per-item exceptions that leave the stored edge untouched: the same product
+/// twice for one firm in a request; a listed record already bound to another edge; an edge already
+/// bound to other source records none of which is listed (consolidation must be declared); a new
+/// record whose dates describe a different episode (starts after the stored end, or ends before the
+/// stored start). Source-owned fields: <c>acquisitionDate</c>, <c>endDate</c>, <c>pricePaidPerPeriod</c>,
+/// <c>priceLevel</c>, <c>servedProcessIds</c> — absent keeps, <c>clearFields</c> clears
+/// (<c>acquisitionDate</c>, <c>endDate</c>, <c>pricePaidPerPeriod</c>, <c>servedProcessIds</c>), and
+/// local edits are reported as conflicts exactly as for firms.
+/// </para>
+/// </summary>
 public sealed record FirmImportRelationship(
     [Required] Guid ProductId,
     IReadOnlyList<Guid>? ServedProcessIds = null,
-    [Range(0.0001, 1000)] double PriceLevel = 1.0,
+    [Range(0.0001, 1000)] double? PriceLevel = null,
     MoneyDto? PricePaidPerPeriod = null,
-    DateOnly? AcquisitionDate = null);
+    DateOnly? AcquisitionDate = null,
+    DateOnly? EndDate = null,
+    IReadOnlyList<SourceRef>? Sources = null,
+    IReadOnlyList<string>? ClearFields = null);
 
 /// <summary>
-/// Imports a roster of firms into one market. Matching is by natural key (market, name), so
-/// re-importing the same roster updates rather than duplicates it — the same idempotence the CLI's
-/// seed loader relies on.
+/// Imports a roster of firms into one market. Legacy items match by natural key (market, name), so
+/// re-importing the same roster updates rather than duplicates it; source-bound items match by
+/// source identity (see <see cref="FirmImportItem"/>). An unknown segment or product fails the whole
+/// request (404) before anything is written; identity and episode problems are per-item exceptions
+/// that do not stop the other items.
 /// </summary>
 public sealed record BulkImportFirmsRequest(
     [Required] Guid MarketId,
     [Required] IReadOnlyList<FirmImportItem> Firms);
 
+/// <summary>
+/// Counters, the firms written, and one outcome per request item (same order). <c>firms</c> omits
+/// exception items. <c>relationshipsWritten</c> counts every legacy edge and each created or updated
+/// source-bound edge.
+/// </summary>
 public sealed record BulkImportFirmsResponse(
     Guid MarketId,
     int Created,
     int Updated,
     int RelationshipsWritten,
-    IReadOnlyList<FirmDto> Firms);
+    IReadOnlyList<FirmDto> Firms,
+    int Unchanged,
+    int Exceptions,
+    IReadOnlyList<FirmImportOutcomeDto> Outcomes);
 
 /// <summary>
 /// Fills a market's segment stocks with deterministically generated synthetic firms. Regeneration
@@ -201,6 +273,14 @@ public sealed record OpportunityDto(
 /// Opens an opportunity: a firm seeking coverage for a scoped set of business processes.
 /// A cross-sell is not a special case — it is an opportunity at an existing client scoped to new
 /// processes, and <c>crossSellModuleProductId</c> names the module being sold.
+///
+/// <para>
+/// With <c>source</c>, the create is repeat-safe: an already-bound source record returns its
+/// opportunity (200) and creates nothing — whatever else the request says, so a retry after a lost
+/// response is harmless; advance it with qualify/decide. A bound record whose opportunity belongs to
+/// a different firm is a 409 <see cref="ProblemTypes.CorrectionRequired"/>. Without <c>source</c>
+/// every call creates, as before.
+/// </para>
 /// </summary>
 public sealed record CreateOpportunityRequest(
     [Required] Guid FirmId,
@@ -209,7 +289,8 @@ public sealed record CreateOpportunityRequest(
     Guid? CrossSellModuleProductId = null,
     IReadOnlyList<Guid>? ScopeProcessIds = null,
     IReadOnlyList<Guid>? CompetitorIds = null,
-    string? Notes = null);
+    string? Notes = null,
+    SourceRef? Source = null);
 
 public sealed record UpdateOpportunityRequest(
     Guid? ChannelId = null,
@@ -220,6 +301,11 @@ public sealed record UpdateOpportunityRequest(
 /// <summary>Adds one business process to the scope. Scope can expand mid-cycle until the decision.</summary>
 public sealed record AddOpportunityScopeRequest([Required] Guid BusinessProcessId, DateTimeOffset? AddedAt = null);
 
+/// <summary>
+/// Qualifies an open opportunity. Repeat-safe: qualifying again at the same instant (or with
+/// <c>at</c> omitted, once qualified) returns 200 and changes nothing; a different date on an
+/// already-qualified opportunity is a 409 <see cref="ProblemTypes.CorrectionRequired"/>.
+/// </summary>
 public sealed record QualifyOpportunityRequest(DateTimeOffset? At = null);
 
 /// <summary>
@@ -234,6 +320,14 @@ public sealed record QualifyOpportunityRequest(DateTimeOffset? At = null);
 /// loading last year's closed deals must not stamp them all as learned today, or every backdated
 /// calibration reads an empty ledger. Omitted, it is stamped now; it may be backdated, never
 /// post-dated.
+/// </para>
+///
+/// <para>
+/// Repeat-safe for every opportunity: repeating the recorded decision (same outcome, winning
+/// product and <c>at</c> — an omitted <c>at</c> matches the recorded one) returns 200 and appends no
+/// second fact. A different outcome, winner or date on a decided opportunity is a 409 whose
+/// ProblemDetails <c>type</c> is <see cref="ProblemTypes.CorrectionRequired"/>; the opportunity and
+/// its fact are unchanged — history is not rewritten.
 /// </para>
 /// </summary>
 public sealed record DecideOpportunityRequest(

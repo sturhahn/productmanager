@@ -292,6 +292,59 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.ToTable("FactEvents");
                 });
 
+            modelBuilder.Entity("ProductManager.Domain.Imports.SourceBinding", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("BoundAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImportedValuesJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("ObjectKind")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("SourceInstance")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("SourceRecordId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("SourceSystem")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetId");
+
+                    b.HasIndex("WorkspaceId", "SourceSystem", "SourceInstance", "ObjectKind", "SourceRecordId")
+                        .IsUnique();
+
+                    b.ToTable("SourceBindings");
+                });
+
             modelBuilder.Entity("ProductManager.Domain.Market.Approach", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1274,6 +1327,15 @@ namespace ProductManager.Api.Persistence.Migrations
                 });
 
             modelBuilder.Entity("ProductManager.Domain.Facts.FactEvent", b =>
+                {
+                    b.HasOne("ProductManager.Domain.Execution.Workspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ProductManager.Domain.Imports.SourceBinding", b =>
                 {
                     b.HasOne("ProductManager.Domain.Execution.Workspace", null)
                         .WithMany()

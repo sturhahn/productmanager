@@ -6771,7 +6771,7 @@
         "tags": [
           "Facts"
         ],
-        "summary": "Appends one observation. The recorded date is stamped server-side unless the caller supplies\r\n\u0060recordedAt\u0060 \u2014 the import/backfill path, for history whose \u0022when we learned it\u0022 is\r\ngenuinely in the past. A recorded date in the future is refused.",
+        "summary": "Appends one observation. The recorded date is stamped server-side unless the caller supplies\r\n\u0060recordedAt\u0060 \u2014 the import/backfill path, for history whose \u0022when we learned it\u0022 is\r\ngenuinely in the past. A recorded date in the future is refused.\r\n            \r\n\n\r\nWith a \u0060source\u0060, the append is repeat-safe: the source event already bound to a materially\r\nidentical fact returns that fact (200); bound to a different one, it is refused as a correction.\r\nEither way nothing is appended \u2014 the ledger is never rewritten.\r\n",
         "requestBody": {
           "content": {
             "application/json": {
@@ -6868,6 +6868,46 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FactEventDto"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactEventDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactEventDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactEventDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -7890,6 +7930,7 @@
         "tags": [
           "FirmRelationships"
         ],
+        "summary": "Creates an edge. With \u0060sources\u0060, an already-bound source record returns its edge (200)\r\ninstead, binding any listed records not bound yet.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7986,6 +8027,46 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmProductRelationshipDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -8854,7 +8935,7 @@
         "tags": [
           "Firms"
         ],
-        "summary": "Imports a whole roster into one market in a single call, relationships included. Matching is\r\nby natural key (market, name), so re-importing the same roster corrects it rather than\r\nduplicating it \u2014 the same idempotence the seed loader relies on.",
+        "summary": "Imports a whole roster into one market in a single call, relationships included. Items without\r\na source match by natural key (market, name), so re-importing the same roster corrects it\r\nrather than duplicating it. Items with a source match by source identity, update only what\r\nthey carry, and report per item what happened \u2014 see ProductManager.Api.Contracts.FirmImportItem. One item\u0027s\r\nexception never stops the others; everything that applies is saved together.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -11911,6 +11992,7 @@
         "tags": [
           "Opportunities"
         ],
+        "summary": "Opens an opportunity. With a \u0060source\u0060 already bound, returns the bound opportunity (200)\r\ninstead \u2014 the unique binding index makes this safe under retries.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -12007,6 +12089,46 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OpportunityDto"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -12606,6 +12728,7 @@
         "tags": [
           "Opportunities"
         ],
+        "summary": "Qualifies the opportunity; repeating the same qualification is a 200 no-op.",
         "parameters": [
           {
             "name": "id",
@@ -12745,7 +12868,7 @@
         "tags": [
           "Opportunities"
         ],
-        "summary": "Decides the opportunity and appends the ledger entry that calibration will later read. The\r\ntwo writes are one transaction: a decision that never reached the ledger would silently\r\ndisappear from every future fit.",
+        "summary": "Decides the opportunity and appends the ledger entry that calibration will later read. The\r\ntwo writes are one transaction: a decision that never reached the ledger would silently\r\ndisappear from every future fit.\r\n            \r\n\n\r\nRepeat-safe: the identical decision again (a retry after a lost response) returns 200 and\r\nappends nothing; a different one is refused as a correction, leaving the recorded decision and\r\nits fact untouched.\r\n",
         "parameters": [
           {
             "name": "id",
@@ -17031,6 +17154,168 @@
         }
       }
     },
+    "/api/source-bindings": {
+      "get": {
+        "tags": [
+          "SourceBindings"
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sourceSystem",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sourceInstance",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "objectKind",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sourceRecordId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfSourceBindingDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfSourceBindingDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfSourceBindingDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/teams": {
       "get": {
         "tags": [
@@ -18493,7 +18778,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Imports a roster of firms into one market. Matching is by natural key (market, name), so\r\nre-importing the same roster updates rather than duplicates it \u2014 the same idempotence the CLI\u0027s\r\nseed loader relies on."
+        "description": "Imports a roster of firms into one market. Legacy items match by natural key (market, name), so\r\nre-importing the same roster updates rather than duplicates it; source-bound items match by\r\nsource identity (see ProductManager.Api.Contracts.FirmImportItem). An unknown segment or product fails the whole\r\nrequest (404) before anything is written; identity and episode problems are per-item exceptions\r\nthat do not stop the other items."
       },
       "BulkImportFirmsResponse": {
         "type": "object",
@@ -18519,9 +18804,24 @@
             "items": {
               "$ref": "#/components/schemas/FirmDto"
             }
+          },
+          "unchanged": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "exceptions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outcomes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FirmImportOutcomeDto"
+            }
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Counters, the firms written, and one outcome per request item (same order). \u0060firms\u0060 omits\r\nexception items. \u0060relationshipsWritten\u0060 counts every legacy edge and each created or updated\r\nsource-bound edge."
       },
       "BusinessProcessDto": {
         "type": "object",
@@ -19396,10 +19696,13 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceRef"
           }
         },
         "additionalProperties": false,
-        "description": "Appends one observation. For a covariate reading use\r\n\u0060kind = CovariateObserved\u0060, \u0060subjectType = \u0022Covariate\u0022\u0060, \u0060subjectId\u0060 = the\r\ncovariate, and a payload of \u0060{\u0022value\u0022: 1234.5}\u0060 \u2014 that is what the covariate history\r\nendpoint reads back.\r\n            \r\n\n\u0060recordedAt\u0060 is the \u003Cb\u003Eimport / backfill path\u003C/b\u003E: when history is loaded from a CRM export,\r\na seed file or a transcript, the honest recorded date is when that observation was originally\r\nknown, not when the loader ran. Omit it for a live observation and the server stamps now. It may\r\nbe backdated but never post-dated \u2014 a fact cannot have been known before it was written \u2014 and\r\n\u0060effectiveDate\u0060 rules are unchanged either way (a fact may be effective before, on, or after\r\nthe date it was recorded).\r\n"
+        "description": "Appends one observation. For a covariate reading use\r\n\u0060kind = CovariateObserved\u0060, \u0060subjectType = \u0022Covariate\u0022\u0060, \u0060subjectId\u0060 = the\r\ncovariate, and a payload of \u0060{\u0022value\u0022: 1234.5}\u0060 \u2014 that is what the covariate history\r\nendpoint reads back.\r\n            \r\n\n\u0060recordedAt\u0060 is the \u003Cb\u003Eimport / backfill path\u003C/b\u003E: when history is loaded from a CRM export,\r\na seed file or a transcript, the honest recorded date is when that observation was originally\r\nknown, not when the loader ran. Omit it for a live observation and the server stamps now. It may\r\nbe backdated but never post-dated \u2014 a fact cannot have been known before it was written \u2014 and\r\n\u0060effectiveDate\u0060 rules are unchanged either way (a fact may be effective before, on, or after\r\nthe date it was recorded).\r\n\n\u0060source\u0060 gives the observation a source event identity, which is what tells two genuine\r\nsame-day events apart from one event posted twice. A bound source record whose fact is materially\r\nidentical (kind, effective date, subject, payload \u2014 notes and \u0060recordedAt\u0060 are not material)\r\nreturns that fact (200) and appends nothing; materially different is a 409\r\nProductManager.Api.Contracts.ProblemTypes.CorrectionRequired and appends nothing. Without \u0060source\u0060 every\r\ncall appends, as before.\r\n"
       },
       "CreateFeatureRequest": {
         "type": "object",
@@ -19457,10 +19760,22 @@
           "notes": {
             "type": "string",
             "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceRef"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false,
-        "description": "\u0060servedProcessIds\u0060 may be empty \u2014 that reads as \u0022whatever the product covers\u0022, the honest\r\n            state of a relationship nobody has decomposed into modules yet. \u0060priceLevel\u0060 is a\r\n            multiplier on list price (1.0 = list, 0.8 = a 20% discount)."
+        "description": "\u0060servedProcessIds\u0060 may be empty \u2014 that reads as \u0022whatever the product covers\u0022, the honest\r\n             state of a relationship nobody has decomposed into modules yet. \u0060priceLevel\u0060 is a\r\n             multiplier on list price (1.0 = list, 0.8 = a 20% discount).\r\n            \r\n             \n\u0060sources\u0060 makes the create repeat-safe: when any listed source record is already bound, the\r\n             bound relationship is returned (200) and nothing is created; every listed record is bound to\r\n             the relationship. Records bound to different relationships, or to another firm/product, are a\r\n             409. Without \u0060sources\u0060 every call creates, as before.\r\n             "
       },
       "CreateFirmRequest": {
         "type": "object",
@@ -19704,10 +20019,13 @@
           "notes": {
             "type": "string",
             "nullable": true
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceRef"
           }
         },
         "additionalProperties": false,
-        "description": "Opens an opportunity: a firm seeking coverage for a scoped set of business processes.\r\nA cross-sell is not a special case \u2014 it is an opportunity at an existing client scoped to new\r\nprocesses, and \u0060crossSellModuleProductId\u0060 names the module being sold."
+        "description": "Opens an opportunity: a firm seeking coverage for a scoped set of business processes.\r\nA cross-sell is not a special case \u2014 it is an opportunity at an existing client scoped to new\r\nprocesses, and \u0060crossSellModuleProductId\u0060 names the module being sold.\r\n            \r\n\n\r\nWith \u0060source\u0060, the create is repeat-safe: an already-bound source record returns its\r\nopportunity (200) and creates nothing \u2014 whatever else the request says, so a retry after a lost\r\nresponse is harmless; advance it with qualify/decide. A bound record whose opportunity belongs to\r\na different firm is a 409 ProductManager.Api.Contracts.ProblemTypes.CorrectionRequired. Without \u0060source\u0060\r\nevery call creates, as before.\r\n"
       },
       "CreateProductRequest": {
         "type": "object",
@@ -19915,7 +20233,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Records the decision. \u0060outcome\u0060 must be Won, Lost or NoDecision, and a won deal must name\r\nthe winning product (ours or a competitor\u0027s). Deciding also appends an\r\n\u0060OpportunityDecided\u0060 fact carrying a self-contained copy of the deal, which is what\r\ncalibration later reads \u2014 the ledger, not this row, is the history.\r\n            \r\n\n\u0060at\u0060 is when the decision happened (the fact\u0027s effective date); \u0060recordedAt\u0060 is when we\r\nlearned of it, and exists for the same import/backfill reason as on \u0060POST /api/facts\u0060:\r\nloading last year\u0027s closed deals must not stamp them all as learned today, or every backdated\r\ncalibration reads an empty ledger. Omitted, it is stamped now; it may be backdated, never\r\npost-dated.\r\n"
+        "description": "Records the decision. \u0060outcome\u0060 must be Won, Lost or NoDecision, and a won deal must name\r\nthe winning product (ours or a competitor\u0027s). Deciding also appends an\r\n\u0060OpportunityDecided\u0060 fact carrying a self-contained copy of the deal, which is what\r\ncalibration later reads \u2014 the ledger, not this row, is the history.\r\n            \r\n\n\u0060at\u0060 is when the decision happened (the fact\u0027s effective date); \u0060recordedAt\u0060 is when we\r\nlearned of it, and exists for the same import/backfill reason as on \u0060POST /api/facts\u0060:\r\nloading last year\u0027s closed deals must not stamp them all as learned today, or every backdated\r\ncalibration reads an empty ledger. Omitted, it is stamped now; it may be backdated, never\r\npost-dated.\r\n\n\r\nRepeat-safe for every opportunity: repeating the recorded decision (same outcome, winning\r\nproduct and \u0060at\u0060 \u2014 an omitted \u0060at\u0060 matches the recorded one) returns 200 and appends no\r\nsecond fact. A different outcome, winner or date on a decided opportunity is a 409 whose\r\nProblemDetails \u0060type\u0060 is ProductManager.Api.Contracts.ProblemTypes.CorrectionRequired; the opportunity and\r\nits fact are unchanged \u2014 history is not rewritten.\r\n"
       },
       "DistributionSpecDto": {
         "type": "object",
@@ -20661,6 +20979,28 @@
         ],
         "type": "string"
       },
+      "FieldConflictDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "storedValue": {
+            "type": "string",
+            "nullable": true
+          },
+          "incomingValue": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastImportedValue": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "A source-owned field the import did \u003Cem\u003Enot\u003C/em\u003E apply because it was edited locally since the\r\nlast import: the stored value differs from \u0060lastImportedValue\u0060, and the incoming value\r\ndiffers from the stored one. The stored (local) value is kept. Values are canonical strings\r\n(ids as GUIDs, dates as yyyy-MM-dd, money as \u00221000.00 USD\u0022, lists comma-joined), null when empty."
+      },
       "FirmDto": {
         "type": "object",
         "properties": {
@@ -20722,10 +21062,61 @@
               "$ref": "#/components/schemas/FirmImportRelationship"
             },
             "nullable": true
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceRef"
+          },
+          "clearFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false,
-        "description": "One firm in a bulk import, with the relationships it already holds."
+        "description": "One firm in a bulk import, with the relationships it already holds.\r\n            \r\n\n\u003Cb\u003EWithout \u0060source\u0060\u003C/b\u003E (legacy) the item is matched by (market, name) and overwrites the\r\nfirm: an absent segment, attributes or notes is written as null, an absent\r\n\u0060epistemicStatus\u0060 as Observed.\r\n\n\u003Cb\u003EWith \u0060source\u0060\u003C/b\u003E the item is matched by its source binding first. A bound record updates\r\nits firm, so a changed \u0060name\u0060 is a rename (an exception when another firm in the market has\r\nthat name). An unbound record adopts the same-named firm and binds it, unless that firm is\r\nalready bound to a different record of the same source system, instance and object kind \u2014 then\r\nthe item is an exception (\u0022indistinguishable same-name firms\u0022): send a distinct, reviewed display\r\nname instead. Otherwise a new firm is created and bound.\r\n\n\r\nSource-bound items are \u003Cb\u003Epartial updates\u003C/b\u003E. Source-owned fields: \u0060name\u0060,\r\n\u0060clientSegmentId\u0060, \u0060epistemicStatus\u0060, \u0060attributesJson\u0060, \u0060notes\u0060. An absent (null)\r\nfield keeps the stored value; \u0060clearFields\u0060 lists the fields to set to null (allowed:\r\n\u0060clientSegmentId\u0060, \u0060attributesJson\u0060, \u0060notes\u0060). A field whose stored value was edited\r\nlocally since the last import (it differs from what this source last imported) is not\r\noverwritten: the item reports it under \u0060conflicts\u0060 and keeps the local value.\r\n"
+      },
+      "FirmImportOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceRef"
+          },
+          "firmId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ImportOutcome"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldConflictDto"
+            }
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipImportOutcomeDto"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "description": "Per-item result of a bulk firm import, by position in the request\u0027s \u0060firms\u0060. \u0060outcome\u0060\r\nis about the firm row itself; its relationships report their own. Items without a\r\n\u0060source\u0060 report Created or Updated exactly as the counters always have."
       },
       "FirmImportRelationship": {
         "type": "object",
@@ -20744,7 +21135,8 @@
           },
           "priceLevel": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "nullable": true
           },
           "pricePaidPerPeriod": {
             "$ref": "#/components/schemas/MoneyDto"
@@ -20753,9 +21145,29 @@
             "type": "string",
             "format": "date",
             "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceRef"
+            },
+            "nullable": true
+          },
+          "clearFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "One firm/product edge in a bulk import. Omitting an edge from a later import never ends or\r\ndeletes it; \u0060endDate\u0060 ends it.\r\n            \r\n\n\u003Cb\u003EWithout \u0060sources\u0060\u003C/b\u003E (legacy) the edge is matched by (firm, product) and overwritten; an\r\nabsent \u0060priceLevel\u0060 is 1.0, an absent \u0060endDate\u0060 leaves the stored one alone.\r\n\n\u003Cb\u003EWith \u0060sources\u0060\u003C/b\u003E every listed source record is bound to the one edge for (firm, product)\r\n\u2014 listing several is how records are deliberately consolidated. The model keeps one episode per\r\nedge, so these are per-item exceptions that leave the stored edge untouched: the same product\r\ntwice for one firm in a request; a listed record already bound to another edge; an edge already\r\nbound to other source records none of which is listed (consolidation must be declared); a new\r\nrecord whose dates describe a different episode (starts after the stored end, or ends before the\r\nstored start). Source-owned fields: \u0060acquisitionDate\u0060, \u0060endDate\u0060, \u0060pricePaidPerPeriod\u0060,\r\n\u0060priceLevel\u0060, \u0060servedProcessIds\u0060 \u2014 absent keeps, \u0060clearFields\u0060 clears\r\n(\u0060acquisitionDate\u0060, \u0060endDate\u0060, \u0060pricePaidPerPeriod\u0060, \u0060servedProcessIds\u0060), and\r\nlocal edits are reported as conflicts exactly as for firms.\r\n"
       },
       "FirmProductRelationshipDto": {
         "type": "object",
@@ -20871,6 +21283,16 @@
           }
         },
         "additionalProperties": false
+      },
+      "ImportOutcome": {
+        "enum": [
+          "Created",
+          "Updated",
+          "Unchanged",
+          "Exception"
+        ],
+        "type": "string",
+        "description": "What an import did with one item."
       },
       "InitiativeDto": {
         "type": "object",
@@ -21926,6 +22348,36 @@
         "additionalProperties": false,
         "description": "One page of a list endpoint\u0027s results."
       },
+      "PagedResponseOfSourceBindingDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceBindingDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "One page of a list endpoint\u0027s results."
+      },
       "PagedResponseOfTeamDto": {
         "type": "object",
         "properties": {
@@ -22235,7 +22687,41 @@
             "nullable": true
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Qualifies an open opportunity. Repeat-safe: qualifying again at the same instant (or with\r\n\u0060at\u0060 omitted, once qualified) returns 200 and changes nothing; a different date on an\r\nalready-qualified opportunity is a 409 ProductManager.Api.Contracts.ProblemTypes.CorrectionRequired."
+      },
+      "RelationshipImportOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "relationshipId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ImportOutcome"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldConflictDto"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "description": "Per-relationship result of a bulk firm import, by position in the item\u0027s \u0060relationships\u0060."
       },
       "RelationshipSpan": {
         "type": "object",
@@ -22764,6 +23250,67 @@
           }
         },
         "additionalProperties": false
+      },
+      "SourceBindingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceSystem": {
+            "type": "string"
+          },
+          "sourceInstance": {
+            "type": "string"
+          },
+          "objectKind": {
+            "type": "string"
+          },
+          "sourceRecordId": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boundAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "importedValuesJson": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "One source record and the row it became. \u0060targetType\u0060 is Firm, Opportunity,\r\nFirmProductRelationship or FactEvent. \u0060importedValuesJson\u0060 is the source-owned field values\r\nas last imported (field \u2192 value), which is what local-edit conflicts are detected against."
+      },
+      "SourceRef": {
+        "type": "object",
+        "properties": {
+          "sourceSystem": {
+            "type": "string"
+          },
+          "sourceInstance": {
+            "type": "string"
+          },
+          "objectKind": {
+            "type": "string"
+          },
+          "sourceRecordId": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Identity of one record in an external source system, e.g.\r\n\u0060{\u0022sourceSystem\u0022:\u0022salesforce\u0022,\u0022sourceInstance\u0022:\u0022acme.my.salesforce.com\u0022,\u0022objectKind\u0022:\u0022Account\u0022,\u0022sourceRecordId\u0022:\u0022001\u2026\u0022}\u0060.\r\nFree strings \u2014 import metadata, never a list of vendors \u2014 compared exactly (case-sensitive,\r\nuntrimmed). A source record is bound to exactly one domain row per workspace; binding the same\r\nkey to a second row is refused."
       },
       "StrategicIntent": {
         "enum": [
@@ -23580,6 +24127,10 @@
     {
       "name": "SimulationRuns",
       "description": "Immutable simulation executions. A run references a roadmap branch, an assumption set, a\r\ncovariate scenario, an event overlay and a seed, snapshots the resulting engine input in full,\r\nand stores the trajectories. Runs are never mutated \u2014 only created, read and deleted \u2014 because\r\ncomparing two runs is only honest if neither has changed underneath you."
+    },
+    {
+      "name": "SourceBindings",
+      "description": "Import provenance, read-only: which source record became which row. Bindings are written by the\r\nimport paths themselves (firm bulk import, opportunity/relationship/fact creates with a source);\r\nthis listing is what an importer resolves and plans against, and what reconciliation traces a\r\nrow back to its source record with."
     },
     {
       "name": "Teams",

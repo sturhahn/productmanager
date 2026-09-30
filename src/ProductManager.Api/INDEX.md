@@ -23,6 +23,8 @@
 - `RoadmapContracts.cs` — RoadmapItem/Roadmap DTOs including branch/adopt/order requests.
 - `SeamContracts.cs` — Feature and FeatureDelta DTOs.
 - `SimulationContracts.cs` — Distribution/AssumptionSet/Parameter/simulation-run DTOs.
+- `SourceContracts.cs` — PRD6 import identity: `SourceRef`, `SourceBindingDto`, `ImportOutcome`,
+  per-item/field outcome DTOs of the firm bulk import, `ProblemTypes.CorrectionRequired`.
 - These are the CLI's mirroring target and the frontend's hand-written-type source — see
   `CLAUDE.md` before renaming/removing a field.
 
@@ -37,12 +39,15 @@
 - `HealthController.cs` — anonymous liveness probe hitting the DbContext.
 - `InitiativesController.cs` — Initiative CRUD.
 - `MarketCatalogControllers.cs` — market/segment/business-process/approach catalog endpoints.
-- `MarketDynamicsControllers.cs` — firms, competitors, products, firm-product relationships.
+- `MarketDynamicsControllers.cs` — firms (incl. `POST /api/firms/bulk`: legacy name upsert and
+  source-bound partial import with per-item outcomes), needs, market events.
 - `OpportunitiesController.cs` — opportunity lifecycle: scope/qualify/decide.
 - `Phase3MarketControllers.cs` — channels, integrations, segment reach, product affinity.
 - `ProjectsController.cs` — Project CRUD, dependencies, delivered-feature linking.
 - `RoadmapsController.cs` — Roadmap CRUD, branching, adoption, ordering, feasibility.
 - `SimulationRunsController.cs` — simulation run creation, results, diagnostics.
+- `SourceBindingsController.cs` — `GET /api/source-bindings`: paged, filterable, read-only
+  listing of source record → row bindings.
 - `TeamsController.cs` — Team CRUD.
 - `WorkspacesController.cs` — Workspace CRUD (root aggregate).
 
@@ -57,6 +62,8 @@
 - `OpenApiSchemaIds.cs` — stable, collision-free schema-id naming for generic and
   cross-namespace DTOs (e.g. the `Engine`-prefix rule for `DistributionType`).
 - `PagedResponse.cs` — `PagedResponse<T>`, `PageQuery` (max page size 200, default 50).
+- `SourceImport.cs` — `SourceBindingStore` (find/bind/re-point), `ImportValues` (canonical field
+  strings, JSON-by-value equality), `FieldMerge` (absent keeps / clear clears / local edit → conflict).
 
 ## Persistence/
 - `AppDbContext.cs` — DbContext with all DbSets; non-Npgsql value-converter fallbacks
@@ -69,9 +76,9 @@
 - `Configurations/SeamAndMarketConfigurations.cs` — EF configs: Feature, market-structure
   entities.
 - `Configurations/SimulationAndFactsConfigurations.cs` — EF configs: AssumptionSet, Parameter,
-  CalibrationRun, SimulationRun, FactEvent.
-- `Migrations/` — four EF migrations (`InitialSchema`, `Phase2`, `Phase3`,
-  `AddInitiativeStrategicIntent`) + current model snapshot. Postgres-only; SQLite tests use
+  CalibrationRun, SimulationRun, FactEvent, SourceBinding (unique per workspace + source key).
+- `Migrations/` — five EF migrations (`InitialSchema`, `Phase2`, `Phase3`,
+  `AddInitiativeStrategicIntent`, `ReliableSourceImports`) + current model snapshot. Postgres-only; SQLite tests use
   `EnsureCreatedAsync` from the live model instead (see `CLAUDE.md` — nothing enforces the two
   stay in sync).
 
@@ -79,7 +86,8 @@
 - `CalibrationInputBuilder.cs` — assembles everything a calibration run needs "as of" a date.
 - `ChoiceParameterKeys.cs` — structural key scheme for firm-level choice-model parameters.
 - `CovariateHistoryReader.cs` — reads covariate observation history back out of the facts ledger.
-- `FactPayloads.cs` — payload shape for `OpportunityDecided` fact-ledger entries.
+- `FactPayloads.cs` — payload shapes for `OpportunityDecided`, `SegmentArrivalObserved` and
+  `Churn` facts (churn carries optional source customer/relationship refs as provenance).
 - `FirmLevelInputBuilder.cs` — builds firm-level (`FirmLevelInput`) simulation world.
 - `SimulationInputBuilder.cs` — builds engine v0 input; coverage tier resolution
   (`max(base, scheduled delta)`) and attractiveness schedule live here — this is the semantics

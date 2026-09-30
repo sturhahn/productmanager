@@ -157,6 +157,11 @@ public class ApiContractDriftTests
         ["FirmImportRelationship"] = "FirmImportRelationship",
         ["BulkImportFirmsRequest"] = "BulkImportFirmsRequest",
         ["BulkImportFirmsResponse"] = "BulkImportFirmsResponse",
+        ["FirmImportOutcomeDto"] = "FirmImportOutcomeDto",
+        ["RelationshipImportOutcomeDto"] = "RelationshipImportOutcomeDto",
+        ["FieldConflictDto"] = "FieldConflictDto",
+        ["SourceRef"] = "SourceRef",
+        ["SourceBindingDto"] = "SourceBindingDto",
         ["GenerateSyntheticFirmsRequest"] = "GenerateSyntheticFirmsRequest",
         ["GenerateSyntheticFirmsResponse"] = "GenerateSyntheticFirmsResponse",
         ["SyntheticSegmentFillDto"] = "SyntheticSegmentFillDto",
@@ -217,6 +222,7 @@ public class ApiContractDriftTests
         ["MarketEventType"] = "MarketEventType",
 
         ["OpportunityStage"] = "OpportunityStage",
+        ["ImportOutcome"] = "ImportOutcome",
         ["SimulationEngineMode"] = "SimulationEngineMode",
     };
 

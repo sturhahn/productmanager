@@ -44,6 +44,12 @@ domain model's *rationale*; this file is the mechanical how.
   parameter must deep-copy its distribution, never share the reference.
 - **`Period` is a calendar month**, not a `DateOnly` — capacity and effort demand are budgeted
   per month. Use `Period.FromDate` / `Period.Range` rather than hand-rolling month arithmetic.
+- **Repeating an applied transition is a no-op, not a conflict.** `Opportunity.Qualify`/`Decide`
+  return `false` when the identical transition is already recorded (instants compared to the
+  microsecond — Postgres resolution — via `Opportunity.SameInstant`), so an import retried after a
+  lost response succeeds; a *different* decision still throws `DomainConflictException`.
+- **Source identity is `Imports/SourceBinding`, not a column on entities.** Key parts are free
+  strings kept verbatim (source ids are often case-sensitive); nothing vendor-specific is schema.
 
 ## EF ctors
 

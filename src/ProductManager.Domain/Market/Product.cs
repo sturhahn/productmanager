@@ -120,6 +120,15 @@ public sealed class FirmProductRelationship : Entity
 
     public bool IsActive => EndDate is null;
 
+    /// <summary>
+    /// Whether a span (either end may be unknown) could be this same relationship episode: false only
+    /// when it provably starts after this one ended or ends before this one began. The model keeps one
+    /// episode per firm/product edge, so a second episode must be surfaced, not merged.
+    /// </summary>
+    public bool DescribesSameEpisode(DateOnly? acquisitionDate, DateOnly? endDate) =>
+        !(EndDate is { } storedEnd && acquisitionDate is { } start && start > storedEnd)
+        && !(AcquisitionDate is { } storedStart && endDate is { } end && end < storedStart);
+
     private FirmProductRelationship() { } // EF
 
     public FirmProductRelationship(Guid firmId, Guid productId, DateOnly? acquisitionDate = null,

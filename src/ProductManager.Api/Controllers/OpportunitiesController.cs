@@ -6,6 +6,7 @@ using ProductManager.Api.Persistence;
 using ProductManager.Api.Simulation;
 using ProductManager.Domain.Common;
 using ProductManager.Domain.Facts;
+using ProductManager.Domain.Imports;
 using ProductManager.Domain.Market;
 
 namespace ProductManager.Api.Controllers;
@@ -53,13 +54,38 @@ public sealed class OpportunitiesController(AppDbContext db) : ApiControllerBase
         return opportunity is null ? NotFoundProblem("Opportunity", id) : Ok(opportunity.ToDto());
     }
 
+    /// <summary>
+    /// Opens an opportunity. With a <c>source</c> already bound, returns the bound opportunity (200)
+    /// instead — the unique binding index makes this safe under retries.
+    /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(OpportunityDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(OpportunityDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<OpportunityDto>> Create([FromBody] CreateOpportunityRequest request,
         CancellationToken ct)
     {
         var firm = await db.Firms.AsNoTracking().FirstOrDefaultAsync(f => f.Id == request.FirmId, ct);
         if (firm is null) return NotFoundProblem("Firm", request.FirmId);
+
+        Guid workspaceId = default;
+        SourceBinding? binding = null;
+        if (request.Source is not null)
+        {
+            workspaceId = await db.Markets.Where(m => m.Id == firm.MarketId).Select(m => m.WorkspaceId).FirstAsync(ct);
+            binding = await db.FindBindingAsync(workspaceId, request.Source, ct);
+            if (binding is not null && binding.TargetType != nameof(Opportunity))
+                return ConflictProblem($"Source record '{request.Source.SourceRecordId}' is bound to a {binding.TargetType}.");
+            var bound = binding is null
+                ? null
+                : await db.Opportunities.AsNoTracking().FirstOrDefaultAsync(o => o.Id == binding.TargetId, ct);
+            if (bound is not null)
+                return bound.FirmId == request.FirmId
+                    ? Ok(bound.ToDto())
+                    : CorrectionRequiredProblem(
+                        $"Source record '{request.Source.SourceRecordId}' is already opportunity {bound.Id} " +
+                        $"at firm {bound.FirmId}, not firm {request.FirmId}.");
+        }
         if (request.ChannelId is not null && !await db.Channels.AnyAsync(c => c.Id == request.ChannelId, ct))
             return NotFoundProblem("Channel", request.ChannelId.Value);
         if (request.CrossSellModuleProductId is not null &&
@@ -83,6 +109,8 @@ public sealed class OpportunitiesController(AppDbContext db) : ApiControllerBase
             opportunity.AddToScope(processId, openedAt);
 
         db.Opportunities.Add(opportunity);
+        if (request.Source is not null)
+            db.Bind(binding, workspaceId, request.Source, nameof(Opportunity), opportunity.Id);
         await db.SaveChangesAsync(ct);
         return CreatedAtAction(nameof(Get), new { id = opportunity.Id }, opportunity.ToDto());
     }
@@ -153,6 +181,7 @@ public sealed class OpportunitiesController(AppDbContext db) : ApiControllerBase
         return Ok(opportunity.ToDto());
     }
 
+    /// <summary>Qualifies the opportunity; repeating the same qualification is a 200 no-op.</summary>
     [HttpPost("{id:guid}/qualify")]
     [ProducesResponseType(typeof(OpportunityDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -162,7 +191,14 @@ public sealed class OpportunitiesController(AppDbContext db) : ApiControllerBase
         var opportunity = await db.Opportunities.FirstOrDefaultAsync(o => o.Id == id, ct);
         if (opportunity is null) return NotFoundProblem("Opportunity", id);
 
-        opportunity.Qualify(request.At ?? DateTimeOffset.UtcNow);
+        if (opportunity.QualifiedAt is { } qualifiedAt && request.At is { } requested
+            && !Opportunity.SameInstant(qualifiedAt, requested))
+            return CorrectionRequiredProblem(
+                $"Opportunity {id} was already qualified on {qualifiedAt:O}; the recorded date is not rewritten.");
+
+        // An omitted date on a retry means "the qualification you already have".
+        var at = request.At ?? opportunity.QualifiedAt ?? DateTimeOffset.UtcNow;
+        if (!opportunity.Qualify(at)) return Ok(opportunity.ToDto());
         await db.SaveChangesAsync(ct);
         return Ok(opportunity.ToDto());
     }
@@ -171,6 +207,12 @@ public sealed class OpportunitiesController(AppDbContext db) : ApiControllerBase
     /// Decides the opportunity and appends the ledger entry that calibration will later read. The
     /// two writes are one transaction: a decision that never reached the ledger would silently
     /// disappear from every future fit.
+    ///
+    /// <para>
+    /// Repeat-safe: the identical decision again (a retry after a lost response) returns 200 and
+    /// appends nothing; a different one is refused as a correction, leaving the recorded decision and
+    /// its fact untouched.
+    /// </para>
     /// </summary>
     [HttpPost("{id:guid}/decide")]
     [ProducesResponseType(typeof(OpportunityDto), StatusCodes.Status200OK)]
@@ -180,6 +222,14 @@ public sealed class OpportunitiesController(AppDbContext db) : ApiControllerBase
     {
         var opportunity = await db.Opportunities.FirstOrDefaultAsync(o => o.Id == id, ct);
         if (opportunity is null) return NotFoundProblem("Opportunity", id);
+
+        if (opportunity.IsDecided)
+            return opportunity.IsSameDecision(request.Outcome, request.At ?? opportunity.DecidedAt!.Value,
+                request.WinningProductId)
+                ? Ok(opportunity.ToDto())
+                : CorrectionRequiredProblem(
+                    $"Opportunity {id} is already decided ({opportunity.Stage} on {opportunity.DecidedAt:O}). " +
+                    "Changing a recorded decision is a correction of the ledger, which this API does not rewrite.");
 
         var firm = await db.Firms.AsNoTracking().FirstOrDefaultAsync(f => f.Id == opportunity.FirmId, ct);
         if (firm is null) return NotFoundProblem("Firm", opportunity.FirmId);

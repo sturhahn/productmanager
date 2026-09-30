@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ProductManager.Api.Contracts;
 
 namespace ProductManager.Api.Controllers;
 
@@ -21,6 +22,11 @@ public abstract class ApiControllerBase : ControllerBase
 
     protected ObjectResult ConflictProblem(string detail) =>
         Problem(detail: detail, statusCode: StatusCodes.Status409Conflict, title: "Conflict");
+
+    /// <summary>409 a client can tell apart by its <c>type</c>: the request contradicts recorded history.</summary>
+    protected ObjectResult CorrectionRequiredProblem(string detail) =>
+        Problem(detail: detail, statusCode: StatusCodes.Status409Conflict, title: "Correction required",
+            type: ProblemTypes.CorrectionRequired);
 
     protected ObjectResult BadRequestProblem(string detail) =>
         Problem(detail: detail, statusCode: StatusCodes.Status400BadRequest, title: "Invalid request");

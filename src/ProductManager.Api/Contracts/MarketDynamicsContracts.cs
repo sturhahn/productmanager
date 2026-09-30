@@ -221,6 +221,15 @@ public sealed record FactEventDto(
 /// <c>effectiveDate</c> rules are unchanged either way (a fact may be effective before, on, or after
 /// the date it was recorded).
 /// </para>
+///
+/// <para>
+/// <c>source</c> gives the observation a source event identity, which is what tells two genuine
+/// same-day events apart from one event posted twice. A bound source record whose fact is materially
+/// identical (kind, effective date, subject, payload — notes and <c>recordedAt</c> are not material)
+/// returns that fact (200) and appends nothing; materially different is a 409
+/// <see cref="ProblemTypes.CorrectionRequired"/> and appends nothing. Without <c>source</c> every
+/// call appends, as before.
+/// </para>
 /// </summary>
 public sealed record CreateFactEventRequest(
     [Required] Guid WorkspaceId,
@@ -230,7 +239,8 @@ public sealed record CreateFactEventRequest(
     Guid? SubjectId = null,
     string? PayloadJson = null,
     string? Notes = null,
-    DateTimeOffset? RecordedAt = null);
+    DateTimeOffset? RecordedAt = null,
+    SourceRef? Source = null);
 
 public static class FactMapping
 {

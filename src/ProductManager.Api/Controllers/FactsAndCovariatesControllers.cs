@@ -7,6 +7,7 @@ using ProductManager.Api.Persistence;
 using ProductManager.Api.Simulation;
 using ProductManager.Domain.Common;
 using ProductManager.Domain.Facts;
+using ProductManager.Domain.Imports;
 using ProductManager.Domain.Market;
 
 namespace ProductManager.Api.Controllers;
@@ -54,9 +55,17 @@ public sealed class FactsController(AppDbContext db) : ApiControllerBase
     /// Appends one observation. The recorded date is stamped server-side unless the caller supplies
     /// <c>recordedAt</c> — the import/backfill path, for history whose "when we learned it" is
     /// genuinely in the past. A recorded date in the future is refused.
+    ///
+    /// <para>
+    /// With a <c>source</c>, the append is repeat-safe: the source event already bound to a materially
+    /// identical fact returns that fact (200); bound to a different one, it is refused as a correction.
+    /// Either way nothing is appended — the ledger is never rewritten.
+    /// </para>
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(FactEventDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(FactEventDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<FactEventDto>> Create([FromBody] CreateFactEventRequest request,
         CancellationToken ct)
     {
@@ -70,13 +79,40 @@ public sealed class FactsController(AppDbContext db) : ApiControllerBase
         if (!TryResolveRecordedDate(request.RecordedAt, out var recordedDate, out string? error))
             return BadRequestProblem(error!);
 
+        SourceBinding? binding = null;
+        if (request.Source is not null)
+        {
+            binding = await db.FindBindingAsync(request.WorkspaceId, request.Source, ct);
+            if (binding is not null && binding.TargetType != nameof(FactEvent))
+                return ConflictProblem($"Source record '{request.Source.SourceRecordId}' is bound to a {binding.TargetType}.");
+            var bound = binding is null
+                ? null
+                : await db.FactEvents.AsNoTracking().FirstOrDefaultAsync(f => f.Id == binding.TargetId, ct);
+            if (bound is not null)
+                return IsMateriallyIdentical(bound, request)
+                    ? Ok(bound.ToDto())
+                    : CorrectionRequiredProblem(
+                        $"Source record '{request.Source.SourceRecordId}' is already fact {bound.Id} with different " +
+                        "kind, effective date, subject or payload. The ledger is append-only; nothing was appended.");
+        }
+
         var fact = new FactEvent(request.WorkspaceId, request.Kind, request.EffectiveDate, recordedDate,
             request.SubjectType, request.SubjectId, request.PayloadJson, request.Notes);
 
         db.FactEvents.Add(fact);
+        if (request.Source is not null)
+            db.Bind(binding, request.WorkspaceId, request.Source, nameof(FactEvent), fact.Id);
         await db.SaveChangesAsync(ct);
         return CreatedAtAction(nameof(Get), new { id = fact.Id }, fact.ToDto());
     }
+
+    /// <summary>What makes two postings the same observation. Notes and the recorded date are not.</summary>
+    private static bool IsMateriallyIdentical(FactEvent fact, CreateFactEventRequest request) =>
+        fact.Kind == request.Kind
+        && fact.EffectiveDate == request.EffectiveDate
+        && fact.SubjectType == request.SubjectType
+        && fact.SubjectId == request.SubjectId
+        && ImportValues.SameJson(fact.PayloadJson, request.PayloadJson);
 
     private static bool IsJsonOrEmpty(string? json)
     {

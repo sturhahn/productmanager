@@ -23,6 +23,10 @@
   coverage) shared by Phase 3 tests.
 - `RoadmapTests.cs` — roadmap CRUD, planning, branching.
 - `SimulationRunTests.cs` — assumption sets, branches, and simulation-run round trips.
+- `SourceImportTests.cs` — PRD6: source-identity firm import (same-name accounts, rename, adoption,
+  unchanged), repeat-safe opportunity create/qualify/decide and sourced facts, correction-required
+  409s, relationship end dates/episodes/consolidation, partial update + local-edit conflicts, the
+  binding unique index, and the `/api/source-bindings` listing.
 
 ## ProductManager.Cli.Tests — unit tests + contract-drift guard
 - `ApiContractDriftTests.cs` — guards CLI DTOs/enums/routes against
@@ -59,6 +63,8 @@
 - `InitiativeTests.cs` — StrategicIntent tag set/clear behavior.
 - `RoadmapBranchingTests.cs` — roadmap branch/adopt invariants.
 - `RoadmapSequencingTests.cs` — dependency/sequencing violation detection.
+- `SourceIdentityTests.cs` — `SourceBinding` key invariants, repeat-safe opportunity transitions,
+  relationship episode compatibility.
 - `ValueObjectAndInvariantTests.cs` — Period, Money, Distribution value-object invariants.
 
 ## ProductManager.Engine.Tests — determinism/statistical-property tests

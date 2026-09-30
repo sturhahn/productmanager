@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProductManager.Domain.Execution;
 using ProductManager.Domain.Facts;
+using ProductManager.Domain.Imports;
 using ProductManager.Domain.Market;
 using ProductManager.Domain.Seam;
 using ProductManager.Domain.Simulation;
@@ -51,6 +52,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     // Facts ledger (bi-temporal, append-only)
     public DbSet<FactEvent> FactEvents => Set<FactEvent>();
+
+    // Import provenance: which source record became which row
+    public DbSet<SourceBinding> SourceBindings => Set<SourceBinding>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

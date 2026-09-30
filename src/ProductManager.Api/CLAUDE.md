@@ -68,6 +68,27 @@
 - When you throw a new exception type from a controller or service, make sure it lands in one
   of these buckets on purpose — an unclassified exception silently becomes a 500.
 
+## Source imports (PRD6)
+
+- **Identity lives in one table, `SourceBinding`** (Domain `Imports/`): (workspace, sourceSystem,
+  sourceInstance, objectKind, sourceRecordId) → (targetType, targetId), unique per workspace. Never
+  add source columns to entities, and never let it reach the Engine or `CalibrationInput`.
+  Workspace scope, not market: facts have no market. Known ceiling: one source account cannot be a
+  firm in two markets of one workspace (the second is a per-item exception).
+- Every write that takes a `source`/`sources` is optional and additive: **without it, behaviour is
+  exactly the pre-PRD6 behaviour** (bulk import upserts by name and overwrites; creates always create).
+- Repeat safety: a bound source returns the bound row (200) instead of creating; bound but materially
+  different (fact, opportunity firm) → 409 with `type = ProblemTypes.CorrectionRequired`
+  (`CorrectionRequiredProblem` in `ApiControllerBase`). Qualify/decide are idempotent for every
+  opportunity; a different decision/qualification date → the same correction-required 409. Nothing
+  ever rewrites or deletes a fact.
+- Source-bound bulk items are partial updates through `FieldMerge` (`Infrastructure/SourceImport.cs`):
+  absent keeps, `clearFields` clears, and a stored value that differs from the binding's
+  `ImportedValuesJson` snapshot is a local edit → reported conflict, local value kept. The field
+  ownership lists are in the XML docs on `FirmImportItem` / `FirmImportRelationship` — keep those, the
+  `FirmClearable`/`RelationshipClearable` arrays and the merge calls in `FirmsController` in step.
+- A binding whose target was deleted is re-pointed (`SourceBinding.RebindTo`), never duplicated.
+
 ## Other conventions
 
 - Every controller inherits `ApiControllerBase` (`[ApiController] [Authorize]` + ProblemDetails
