@@ -17,8 +17,11 @@
 ## Commands/ — one file per command group (verbs registered on the `pm` root command)
 - `AssumptionSetCommands.cs` — versioned/branchable parameter collections.
 - `AuthCommands.cs` — `pm auth login`, obtaining and persisting a bearer token.
-- `CalibrationCommands.cs` — run/diff calibration fits against the facts ledger.
-- `CalibrationSummary.cs` — pure formatter: `CalibrationDiffDto` → prior-vs-posterior table.
+- `CalibrationCommands.cs` — run/diff calibration fits against the facts ledger;
+  `run --observations-recorded-after` (evidence-reuse refusal = exit 6) and
+  `readiness <id> [--holdout-through] [--output file] [--json]`.
+- `CalibrationSummary.cs` — pure formatter: `CalibrationDiffDto` → prior-vs-posterior table;
+  `FormatReadiness` for the readiness report; `EvidenceReuseMessage`.
 - `ChannelCommands.cs` — Channel CRUD + `IntegrationCommands`, `FirmRelationshipCommands`.
 - `ChoiceParameterKeys.cs` — mirrors the API's free-form parameter-key scheme for the choice
   model.
@@ -58,7 +61,8 @@
   churn and arrivals: PRD6 source identity and the correction-required boundary; `FirmResolver`.
 - `SeedPreflight.cs` — whole-file checks that need no API (source ids, `clearFields`, duplicate
   edges, ambiguous in-file firm names) and `SeedSourceRef` resolution against `sourceDefaults`.
-- `SeedModels.cs` — POCOs mirroring the seed JSON schema (name-referenced, not id-referenced).
+- `SeedModels.cs` — POCOs mirroring the seed JSON schema (name-referenced, not id-referenced);
+  `SeedParameter.priorEvidence` (`SeedPriorEvidence`, PRD8) is sent with the parameter upsert.
 - `SeedReport.cs` — the printed summary and the `--report` JSON file.
 - `SeedTally.cs` — per-pass ledger: counts per kind, one planned/outcome row per record,
   blocking problems, dry-run placeholders.

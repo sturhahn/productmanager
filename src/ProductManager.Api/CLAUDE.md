@@ -94,6 +94,28 @@
   `FirmClearable`/`RelationshipClearable` arrays and the merge calls in `FirmsController` in step.
 - A binding whose target was deleted is re-pointed (`SourceBinding.RebindTo`), never duplicated.
 
+## Calibration readiness (PRD8)
+
+- **Prior evidence is provenance metadata, never engine input.** `Parameter.PriorEvidence` must not reach
+  `CalibrationInput`, `SimulationInput` or the Engine. Null = unknown: the fit runs and readiness flags it.
+- **Evidence reuse is refused before anything is stored** (`CalibrationEvidence.FindOverlaps`, run on the
+  dry-run output): 409 `ProblemTypes.PriorEvidenceReuse`. The overlap rule is documented on
+  `CreateCalibrationRunRequest` and `FindOverlaps` — keep both in step. Every fit stamps what it moved
+  (`Observations`, `recordedThrough` = as-of, run id, and the updated prior's period **verbatim** — never widened
+  with the fit's own dates), and both rules run whenever their field is present, so fitting a fitted set over the
+  same facts, or over the deals behind an inherited period, is refused. `observationsRecordedAfter` is the
+  sequential-update window (exposure starts on that day, half-open by day).
+- **Evidence is sticky on upsert** (`AssumptionSetsController.UpsertParameter`): no `priorEvidence` keeps what the
+  parameter had; `clearPriorEvidence` clears; different evidence over a run's stamp with an unchanged distribution
+  is a 409 correction-required. The web editor and `set-param` rely on this to not wipe stamps.
+- **Readiness is computed on read and never refits or edits the run.** It reads the run's input, output and
+  `PriorParametersJson` snapshots plus current reference data; runs stored before PRD8 fall back to the current
+  prior set and say so in a note. `CalibrationEvidence.Summarize` must select exactly what
+  `CalibrationEngine` selects per flow — change both together. Status/issue/holdout enums are a closed,
+  documented set mirrored in the CLI; add a member only with its doc comment and the CLI mirror.
+- The holdout only compares WinRate and arrivals (self-contained outcome facts). Exposure-denominated flows
+  are `Unsupported` on purpose: their exposure would have to be reconstructed from current relationship rows.
+
 ## Other conventions
 
 - Every controller inherits `ApiControllerBase` (`[ApiController] [Authorize]` + ProblemDetails

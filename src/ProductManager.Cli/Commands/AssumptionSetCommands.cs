@@ -109,6 +109,20 @@ internal static class AssumptionSetCommands
             Description = "Elasticity to the covariate: rate * (x_t / x_0)^beta, i.e. +1% covariate => +beta% rate.",
         };
         var keyOption = new Option<string?>("--key") { Description = "Free-form key, for a parameter the engine ignores. Alternative to --segment-id + --flow-kind." };
+        var priorBasisOption = new Option<string?>("--prior-basis")
+        {
+            Description = "Independent | Observations: what informed this distribution. Omitted = unknown (a calibration " +
+                          "readiness issue). Observations needs --prior-observed-from/--prior-observed-through or --prior-recorded-through."
+        };
+        var priorFromOption = new Option<string?>("--prior-observed-from") { Description = "yyyy-MM-dd, first effective date of the observations behind the prior." };
+        var priorThroughOption = new Option<string?>("--prior-observed-through") { Description = "yyyy-MM-dd, last effective date of the observations behind the prior." };
+        var priorRecordedOption = new Option<string?>("--prior-recorded-through") { Description = "yyyy-MM-dd: the prior was derived from the ledger as recorded through this date." };
+        var priorPopulationOption = new Option<string?>("--prior-population") { Description = "Free text: which population the observations came from." };
+        var clearPriorOption = new Option<bool>("--clear-prior-evidence")
+        {
+            Description = "Clear the parameter's prior evidence (it becomes unknown). Without this or --prior-basis the " +
+                          "parameter keeps the evidence it had, a calibration stamp included."
+        };
 
         var cmd = new Command("set-param", "Sets (upserting) one parameter. Give --segment-id + --flow-kind (+ --module-id for CrossSellRate) for a parameter the engine reads, or --key for a free-form one.");
         cmd.Arguments.Add(idArg);
@@ -123,9 +137,21 @@ internal static class AssumptionSetCommands
         cmd.Options.Add(covariateIdOption);
         cmd.Options.Add(covariateBetaOption);
         cmd.Options.Add(keyOption);
+        cmd.Options.Add(priorBasisOption);
+        cmd.Options.Add(priorFromOption);
+        cmd.Options.Add(priorThroughOption);
+        cmd.Options.Add(priorRecordedOption);
+        cmd.Options.Add(priorPopulationOption);
+        cmd.Options.Add(clearPriorOption);
         cmd.SetAction((parseResult, ct) => CliInfrastructure.RunAsync(async ct2 =>
         {
             var segmentId = parseResult.GetValue(segmentIdOption);
+            var basis = ParseHelpers.ParseOptionalEnum<PriorEvidenceBasis>(parseResult.GetValue(priorBasisOption), "--prior-basis");
+            var evidence = basis is null ? null : new PriorEvidenceDto(basis.Value,
+                ParseHelpers.ParseOptionalDate(parseResult.GetValue(priorFromOption), "--prior-observed-from"),
+                ParseHelpers.ParseOptionalDate(parseResult.GetValue(priorThroughOption), "--prior-observed-through"),
+                ParseHelpers.ParseOptionalDate(parseResult.GetValue(priorRecordedOption), "--prior-recorded-through"),
+                parseResult.GetValue(priorPopulationOption));
             var flowKind = ParseHelpers.ParseOptionalEnum<SimulationFlowKind>(parseResult.GetValue(flowKindOption), "--flow-kind");
             var key = parseResult.GetValue(keyOption);
 
@@ -143,7 +169,7 @@ internal static class AssumptionSetCommands
                 parseResult.GetValue(rationaleOption),
                 segmentId, flowKind, parseResult.GetValue(moduleIdOption),
                 parseResult.GetValue(covariateIdOption), parseResult.GetValue(covariateBetaOption),
-                key);
+                key, evidence, parseResult.GetValue(clearPriorOption));
             CliInfrastructure.WriteJson(await client.UpsertParameterAsync(parseResult.GetValue(idArg), request, ct2));
         }, ct));
         return cmd;

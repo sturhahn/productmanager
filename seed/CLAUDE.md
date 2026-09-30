@@ -44,6 +44,19 @@
   facts that are meant to exercise calibration-as-of-a-date behavior, set `recordedDate`
   deliberately rather than letting it default.
 
+## Prior evidence (PRD8)
+
+The three phase seeds are legacy fixtures and deliberately declare no `priorEvidence` on their assumption-set
+parameters, so every parameter a calibration moves is of unknown evidence: a fit runs, and its readiness report
+carries an open `PriorEvidenceUnknown` issue per fitted parameter. Do not edit the JSON to silence that. What
+would change if they were brought up to the PRD8 rule (`docs/onboarding/readiness/README.md` section 2):
+`phase2-seed.json`'s "FY27 Baseline" parameters marked `Calibrated` with "trailing 12 month" rationales would
+declare `Observations` with that period and population, and the `Asserted`/`Default` placeholders would declare
+`Independent`. Because `phase3-seed.json` also loads decided deals, churn events and arrival counts from the same
+period, a trailing-period `Observations` prior would make a fit over the loaded ledger refuse with 409
+`prior-evidence-reuse` (CLI exit code 6) until the fit used a disjoint window. `docs/onboarding/example-seed.json`
+is the declared example.
+
 ## Working here
 
 - Load via the CLI, never by hand-inserting rows or bypassing the API — the API is the only

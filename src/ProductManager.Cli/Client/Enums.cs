@@ -150,3 +150,45 @@ public enum ImportOutcome
     Unchanged,
     Exception
 }
+
+/// <summary>What informed a prior (PRD8). Unknown is a null evidence, not a member.</summary>
+public enum PriorEvidenceBasis
+{
+    Independent,
+    Observations
+}
+
+// ---------- Calibration readiness (PRD8) ----------
+
+public enum CalibrationReadinessStatus
+{
+    Ready,
+    NotReady,
+    Unfitted,
+    Asserted
+}
+
+public enum CalibrationReadinessOverall
+{
+    Ready,
+    Exploratory
+}
+
+public enum ReadinessIssueCode
+{
+    PriorEvidenceUnknown,
+    MissingAcquisitionDate,
+    ChurnWithoutEndDate,
+    LogoLevelChurn,
+    UnsegmentedEvidence,
+    ExposureApproximated,
+    ArrivalMonthsMissing,
+    DuplicateArrivalMonth,
+    LedgerChangedSinceRun
+}
+
+public enum HoldoutComparisonStatus
+{
+    Compared,
+    Unsupported
+}

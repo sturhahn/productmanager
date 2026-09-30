@@ -52,7 +52,9 @@ There is no installed `pm` binary.
    `productName` and `sourceCustomerRef` go into the fact's provenance.
 7. **"How many firms entered each segment per month, and how big was the prospect pool?"** ->
    `arrivalCounts`. Two different flows, see Units. Many users have neither; that is fine, skip
-   them and leave those parameters asserted.
+   them and leave those parameters asserted. Ask which months the source actually covers, and
+   whether a month with no arrivals is reported as zero or simply absent: a reported zero is an
+   observed zero (seed `count: 0`), an absent month is a missing month (seed nothing).
 8. **"Is your CRM the source of record, or is there a finance system that disagrees?"** Pick one
    and say which in `notes`. Do not merge two sources into one ledger without a rule.
 9. **Do not ask for record ids - read them** from the discovery manifest (`sourceIds`): every
@@ -116,10 +118,10 @@ The payload fields after `clientSegmentId` are provenance only; calibration igno
 | Field | Required? | Type | Unit / allowed values | Notes |
 |---|---|---|---|---|
 | `segmentName` | yes | string | must already exist | |
-| `flowKind` | yes | string | `NewFirmArrival` \| `ConversionToMarket` | `SimulationFlowKind` member names (`Enums.cs:57-64`); defaults to `NewFirmArrival`. Other members parse but are dropped by the calibration mapper (`CalibrationInputBuilder.cs:118-124`). |
+| `flowKind` | yes | string | `NewFirmArrival` \| `ConversionToMarket` | `SimulationFlowKind` member names (`Enums.cs:57-64`); defaults to `NewFirmArrival`. Other members parse but are dropped by the calibration mapper (`CalibrationInputBuilder.cs:155-161`). |
 | `month` | yes | string | ISO `yyyy-MM-dd` | Any day in the month; the loader normalizes to the 1st. Non-nullable; never `""`. |
 | `count` | yes | int | whole firms observed that month | 0 is meaningful evidence - see Units. |
-| `exposure` | no | double | see Units | Defaults to 1.0. Must be **> 0** or the observation is dropped (`CalibrationInputBuilder.cs:122`). |
+| `exposure` | no | double | see Units | Defaults to 1.0. Must be **> 0** or the observation is dropped (`CalibrationInputBuilder.cs:159`). |
 | `source` | no | `SeedSourceRef` | the report or extract row id | Match by source identity instead of (segment, month, flowKind). |
 | `recordedDate` | no | string | ISO `yyyy-MM-dd`, never in the future | Omitted = stamped now. |
 
@@ -163,7 +165,10 @@ The payload fields after `clientSegmentId` are provenance only; calibration igno
   `recordedDate` was set honestly.
   - Documented approximation: relationship spans (the exposure denominators) are cut by
     **effective** date, not recorded date, because there is no ledger of relationship starts yet
-    (`CalibrationInputBuilder.cs:44-51`).
+    (`CalibrationInputBuilder.cs:50-63`). An as-of fit therefore does not reconstruct relationship knowledge-history (what was
+    known about relationships on that date): a relationship entered later but acquired earlier still adds
+    exposure. The readiness report states this in a fixed note, and no holdout uses relationship
+    exposure ([readiness](../readiness/README.md) sections 6 and 9).
 - **What calibration fits, per source:**
 
   | Source | Parameter | How |
@@ -177,13 +182,30 @@ The payload fields after `clientSegmentId` are provenance only; calibration igno
 - **`exposure` means two different things, and only one of them is read:**
   - `NewFirmArrival`: exposure is the **observation window** - 1 per observed month. The parameter
     is an absolute monthly intensity. **The mapper hard-codes 1.0 here regardless of what you
-    seed** (`CalibrationInputBuilder.cs:131`), so write `1.0` and move on.
+    seed** (`CalibrationInputBuilder.cs:168`), so write `1.0` and move on.
   - `ConversionToMarket`: exposure is the **prospect-pool size that month**, and the parameter is a
     per-prospect monthly rate with `count ~ Poisson(rate * pool)`. This one is read as given. Get
     it from the same source as `initialProspectPool` in
     [06-segment-economics](06-segment-economics.md).
-  - A month with `count: 0` is honest Poisson evidence and should be seeded, not skipped - the
-    exposure *is* the observation there (`CalibrationEngine.cs:46-49`).
+  - **An observed zero versus a missing month.** A month the source confirms as zero is honest
+    Poisson evidence: seed it with `count: 0`, because the exposure *is* the observation there
+    (`CalibrationEngine.cs:46-49`). A month the source does not cover is missing: leave the row out,
+    and never write `count: 0` to fill it: missing months are never fabricated, because a zero pulls the
+    fitted rate down. The
+    readiness report counts observed zeros (`zeroMonths`), lists the months between the first and last
+    observation with no row (`missingMonths`, issue `ArrivalMonthsMissing`) and flags a month observed
+    twice (`DuplicateArrivalMonth`). See [readiness](../readiness/README.md) section 7.
+  - **No churn events is not the same as no data.** A segment with exposure and no `churnEvents` row
+    is not fitted (the prior stands, unchanged and never relabeled calibrated), and the same holds for
+    a cross-sell module with no won cross-sell. Do not seed a zero to make it fit; say "no churn
+    recorded" and let the source owner confirm whether none happened or none was recorded.
+  - **Churn level.** One churn row is one lost client relationship. Whether the source records the
+    loss of the firm (logo level) or of one product (product level) is a consequential reading, taken
+    from the normalization artifact's `calibrationPopulation.churn.level` when there is one and from the
+    register otherwise; use one level per fitted rate. Give a product-level churn its `productName`.
+    The readiness report flags logo-level events at firms holding several products (`LogoLevelChurn`)
+    and churn events that outnumber ended relationships (`ChurnWithoutEndDate`: an end date was
+    probably omitted on the relationship in dataset 11).
 - **`priceLevel`, ARPU and money do not appear in this dataset.** Historical facts are counts and
   dates only; the deal's revenue comes from the relationship in
   [11-firms-and-relationships](11-firms-and-relationships.md).
@@ -424,6 +446,12 @@ pm seed --file <your-file>.json
   the arrival rates fitted for the segments where you loaded events. Anything unfitted is listed
   separately with the reason, and the reason names the as-of date - read it, it is usually "no
   events as of that date", which means your `recordedDate` values are later than your `--as-of`.
+- **A nonempty diff table is a smoke result, not readiness.** It shows the fit executed. Whether the
+  evidence behind each fitted number is sufficient (declared prior evidence, complete exposure, months
+  observed, populations equal to the source) is `pm calibrate readiness <run-id>` and the reconciliation in
+  [readiness](../readiness/README.md). If the fit exits with code 6 the prior already contains
+  evidence the fit would count again (409 `prior-evidence-reuse`); nothing was stored, and readiness
+  section 3 says what to do.
 - Bi-temporal proof: run the same fit twice with two `--as-of` dates that straddle a
   `lateRecorded` deal. The earlier run must not see it. If both runs agree, your `recordedDate`
   values are not doing anything.
@@ -452,8 +480,12 @@ pm seed --file <your-file>.json
   product in `winningProductName` - it is the evidence of who beats us where.
 - **Several unsourced churn events on the same date in the same segment.** All but the first are
   skipped. Give each its `source`; never invent dates to keep them apart.
-- **Skipping months with zero arrivals.** A zero is evidence; omitting it biases the fitted rate
-  upward.
+- **Skipping months with zero arrivals.** An observed zero is evidence; omitting it biases the fitted
+  rate upward.
+- **Filling months the source does not cover with zero arrivals.** A missing month is not an
+  observed zero; the fitted rate is biased downward and the readiness report cannot tell.
+- **Seeding a zero to make a segment with no churn or cross-sell events "fit".** The parameter is
+  deliberately unfitted; its prior stands.
 - **Expecting a re-run to correct a decision or a number.** Decided opportunities are never
   re-decided and recorded facts are never rewritten - the ledger is append-only by design. With
   source identity the difference is reported as a correction-required exception (exit code 5);

@@ -276,6 +276,24 @@ public sealed class SeedParameter
     public string? Rationale { get; set; }
     public string? CovariateName { get; set; }
     public double? CovariateBeta { get; set; }
+
+    /// <summary>Which observations informed this prior (PRD8); omitted = unknown, which a calibration
+    /// readiness report flags on every parameter it fits.</summary>
+    public SeedPriorEvidence? PriorEvidence { get; set; }
+}
+
+/// <summary>
+/// Prior evidence of a seed parameter. <c>basis</c> Independent (no dates: a flat prior, a benchmark) or
+/// Observations with either <c>observedFrom</c>+<c>observedThrough</c> (yyyy-MM-dd, effective dates of the
+/// outcomes it was derived from) or <c>recordedThrough</c> (derived from the ledger as recorded through that date).
+/// </summary>
+public sealed class SeedPriorEvidence
+{
+    public string Basis { get; set; } = "";
+    public string? ObservedFrom { get; set; }
+    public string? ObservedThrough { get; set; }
+    public string? RecordedThrough { get; set; }
+    public string? Population { get; set; }
 }
 
 public sealed class SeedAssumptionSet

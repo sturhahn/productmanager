@@ -69,7 +69,9 @@ internal static class CliInfrastructure
         return new ProductManagerApiClient(http);
     }
 
-    public static void WriteJson<T>(T value) => Console.WriteLine(JsonSerializer.Serialize(value, PrettyJson));
+    public static void WriteJson<T>(T value) => Console.WriteLine(ToJson(value));
+
+    public static string ToJson<T>(T value) => JsonSerializer.Serialize(value, PrettyJson);
 
     /// <summary>Every leaf command's action body runs through here so connection/auth/API failures
     /// produce one clear line instead of a raw stack trace.</summary>

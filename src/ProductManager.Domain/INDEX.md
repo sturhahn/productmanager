@@ -56,6 +56,8 @@
 ## Simulation/ — parameters, not engine logic
 - `AssumptionSet.cs` — `AssumptionSet`, `Parameter`, `CalibrationRun`, `SimulationRun`.
   Schema stub only — no engine math lives here; see `src/ProductManager.Engine`.
+- `PriorEvidence.cs` — `PriorEvidence` value object (PRD8): which observations informed a prior —
+  `Independent`, or `Observations` with an effective-date period and/or a recorded cut-off (+ source run).
 
 ## Services/ — pure domain services (stateless, static)
 - `CapacityFeasibilityService.cs` — `CapacityWarning`, `ComputeOverallocations`: demand vs

@@ -7,6 +7,9 @@
 - `AuthTests.cs` — token issuance and auth-guard behavior.
 - `BiTemporalBackdatingTests.cs` — backfilled facts carry their true recorded date, not loader
   wall-clock.
+- `CalibrationReadinessTests.cs` — PRD8, names carry the acceptance criterion: Beta(1,1)+6/4 → Beta(7,5)
+  and the refit refusal, hand-declared overlap, unknown evidence, exposure completeness, zero vs missing
+  arrival months, as-of exclusions, asserted/Exploratory, holdout Compared/Unsupported.
 - `CalibrationRunTests.cs` — calibration fit against facts-as-of-date, diffable vs prior.
 - `CrudRoundTripTests.cs` — basic CRUD round trips across core entities.
 - `ExceptionHandlingTests.cs` — exception-to-HTTP-status classification, including DB-outage
@@ -15,6 +18,8 @@
 - `FirmLevelCoverageMappingTests.cs` — coverage grid and roadmap deltas map correctly into the
   choice model.
 - `FirmLevelSimulationTests.cs` — end-to-end firm-level simulation runs via the choice model.
+- `HoldoutMathTests.cs` — PRD8 holdout maths (`LogGamma`, Beta-Binomial and Gamma-Poisson pmfs and
+  intervals) against independently computed exact values.
 - `OpenApiDocumentTests.cs` — regenerates/validates `openapi/productmanager.json` from the live
   route (this test IS the generator — see `src/ProductManager.Api/CLAUDE.md`).
 - `Phase2MarketCrudTests.cs` — Phase 2 market-side CRUD (segments, products, competitors).
@@ -32,13 +37,16 @@
 ## ProductManager.Cli.Tests — unit tests + contract-drift guard
 - `ApiContractDriftTests.cs` — guards CLI DTOs/enums/routes against
   `openapi/productmanager.json` (see `src/ProductManager.Cli/CLAUDE.md`).
-- `CalibrationSummaryTests.cs` — formatting logic for calibration diff summaries.
+- `CalibrationSummaryTests.cs` — formatting logic for calibration diff summaries and the PRD8 readiness
+  report / evidence-reuse message.
 - `OnboardingDocsTests.cs` — guards `docs/onboarding/`: every dataset file's JSON example parses
   strictly into `SeedFile`, enum spellings and ISO dates are exact, headings and links are
   intact, and `example-seed.json` resolves its by-name references; also the discovery manifest
   and fixture (PRD3), the portfolio mapping, fixture and seed fragments (PRD4), and the decision register,
   review walkthrough and accepted-only seed fragments (PRD5), and the commercial normalization artifact,
-  Salesforce extract and seed fragments, whose figures it recomputes from the raw records (PRD7).
+  Salesforce extract and seed fragments, whose figures it recomputes from the raw records (PRD7), and the
+  calibration-readiness artifact (PRD8), whose report it parses into the CLI DTO and reconciles against the
+  PRD7 artifact, plus the `priorEvidence` declarations in dataset 08 and the `pm` verbs the docs name.
 - `ChoiceParameterKeysTests.cs` — CLI's mirror of the API's choice-model parameter key scheme.
 - `NameIndexTests.cs` — name-matching rules for idempotent seed loading.
 - `ParameterKeyHelperTests.cs` — engine-vs-free-form parameter key validation logic.
@@ -70,6 +78,8 @@
 ## ProductManager.Domain.Tests — invariant-focused unit tests
 - `CapacityFeasibilityTests.cs` — team capacity vs. project demand feasibility rules.
 - `InitiativeTests.cs` — StrategicIntent tag set/clear behavior.
+- `PriorEvidenceTests.cs` — PRD8 `PriorEvidence` invariants, fit stamp, `Branch` carries it,
+  calibration-run window ordering.
 - `RoadmapBranchingTests.cs` — roadmap branch/adopt invariants.
 - `RoadmapSequencingTests.cs` — dependency/sequencing violation detection.
 - `SourceIdentityTests.cs` — `SourceBinding` key invariants, repeat-safe opportunity transitions,

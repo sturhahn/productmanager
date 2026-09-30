@@ -29,7 +29,13 @@ public sealed class ApiRequestException(HttpStatusCode statusCode, string? title
     public string? Detail { get; } = detail;
     public string? Type { get; } = type;
 
+    /// <summary>The ProblemDetails <c>type</c> of a calibration run refused because its prior already
+    /// contains the observations it would fit: nothing was stored; narrow the window or fix the prior's evidence.</summary>
+    public const string PriorEvidenceReuseType = "urn:productmanager:problem:prior-evidence-reuse";
+
     public bool IsCorrectionRequired => StatusCode == HttpStatusCode.Conflict && Type == CorrectionRequiredType;
+
+    public bool IsPriorEvidenceReuse => StatusCode == HttpStatusCode.Conflict && Type == PriorEvidenceReuseType;
 
     private static string BuildMessage(HttpStatusCode statusCode, string? title, string? detail)
     {

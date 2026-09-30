@@ -987,11 +987,17 @@ namespace ProductManager.Api.Persistence.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("text");
 
+                    b.Property<DateOnly?>("ObservationsRecordedAfter")
+                        .HasColumnType("date");
+
                     b.Property<string>("OutputJson")
                         .HasColumnType("jsonb");
 
                     b.Property<Guid>("PriorAssumptionSetId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("PriorParametersJson")
+                        .HasColumnType("jsonb");
 
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid");
@@ -2074,8 +2080,50 @@ namespace ProductManager.Api.Persistence.Migrations
                                 .HasForeignKey("ParameterId");
                         });
 
+                    b.OwnsOne("ProductManager.Domain.Simulation.PriorEvidence", "PriorEvidence", b1 =>
+                        {
+                            b1.Property<Guid>("ParameterId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Basis")
+                                .IsRequired()
+                                .HasMaxLength(40)
+                                .HasColumnType("character varying(40)")
+                                .HasColumnName("PriorEvidenceBasis");
+
+                            b1.Property<DateOnly?>("ObservedFrom")
+                                .HasColumnType("date")
+                                .HasColumnName("PriorEvidenceObservedFrom");
+
+                            b1.Property<DateOnly?>("ObservedThrough")
+                                .HasColumnType("date")
+                                .HasColumnName("PriorEvidenceObservedThrough");
+
+                            b1.Property<string>("Population")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("PriorEvidencePopulation");
+
+                            b1.Property<DateOnly?>("RecordedThrough")
+                                .HasColumnType("date")
+                                .HasColumnName("PriorEvidenceRecordedThrough");
+
+                            b1.Property<Guid?>("SourceCalibrationRunId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("PriorEvidenceSourceCalibrationRunId");
+
+                            b1.HasKey("ParameterId");
+
+                            b1.ToTable("Parameters");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ParameterId");
+                        });
+
                     b.Navigation("Distribution")
                         .IsRequired();
+
+                    b.Navigation("PriorEvidence");
                 });
 
             modelBuilder.Entity("ProductManager.Domain.Simulation.SimulationRun", b =>

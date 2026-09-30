@@ -32,7 +32,8 @@ public sealed record ParameterDto(
     Guid? ModuleProductId,
     Guid? CovariateId,
     double? CovariateBeta,
-    bool IsEngineParameter);
+    bool IsEngineParameter,
+    PriorEvidenceDto? PriorEvidence = null);
 
 public sealed record AssumptionSetDto(
     Guid Id,
@@ -64,6 +65,13 @@ public sealed record BranchAssumptionSetRequest([Required, MaxLength(200)] strin
 /// so +1% on the covariate is about +beta% on the rate. The covariate's units are irrelevant (the
 /// term is a ratio), but its path must be strictly positive wherever beta is nonzero.
 /// </para>
+/// <para>
+/// <c>priorEvidence</c> records which observations informed the distribution (see
+/// <see cref="PriorEvidenceDto"/>). Omitted, the parameter keeps the evidence it already had (unknown for a new
+/// one); <c>clearPriorEvidence: true</c> clears it deliberately (not together with <c>priorEvidence</c>: 400).
+/// Declaring different evidence over a calibration run's stamp while the distribution is unchanged is a 409
+/// <see cref="ProblemTypes.CorrectionRequired"/>: that distribution is the run's posterior.
+/// </para>
 /// </summary>
 public sealed record UpsertParameterRequest(
     [Required] DistributionSpecDto Distribution,
@@ -74,7 +82,9 @@ public sealed record UpsertParameterRequest(
     Guid? ModuleProductId = null,
     Guid? CovariateId = null,
     double? CovariateBeta = null,
-    [MaxLength(300)] string? Key = null);
+    [MaxLength(300)] string? Key = null,
+    PriorEvidenceDto? PriorEvidence = null,
+    bool ClearPriorEvidence = false);
 
 // ---------- SimulationRun ----------
 
@@ -139,7 +149,8 @@ public static class SimulationMapping
 {
     public static ParameterDto ToDto(this Parameter p) =>
         new(p.Id, p.AssumptionSetId, p.Key, DistributionSpecDto.From(p.Distribution), p.Provenance, p.Rationale,
-            p.ClientSegmentId, p.FlowKind, p.ModuleProductId, p.CovariateId, p.CovariateBeta, p.IsEngineParameter);
+            p.ClientSegmentId, p.FlowKind, p.ModuleProductId, p.CovariateId, p.CovariateBeta, p.IsEngineParameter,
+            PriorEvidenceDto.From(p.PriorEvidence));
 
     public static AssumptionSetDto ToDto(this AssumptionSet a) =>
         new(a.Id, a.WorkspaceId, a.Name, a.ParentAssumptionSetId, a.CreatedAt, a.Notes,

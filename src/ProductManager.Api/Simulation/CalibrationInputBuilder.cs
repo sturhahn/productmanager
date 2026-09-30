@@ -20,12 +20,24 @@ namespace ProductManager.Api.Simulation;
 /// </param>
 /// <param name="Relationships">Active and ended relationships with our products, for client-month exposure.</param>
 /// <param name="SegmentByFirm">Segment of each firm, for facts whose payload omits it.</param>
+/// <param name="ObservationsRecordedAfter">
+/// Lower bound of the observation window (PRD8). The caller has already dropped facts recorded on or
+/// before it; here it clips relationship exposure to start at it, so the denominator covers the same
+/// window as the numerator.
+/// </param>
 public sealed record CalibrationWorld(
     DateOnly AsOfDate,
     AssumptionSet Prior,
     IReadOnlyList<FactEvent> Facts,
     IReadOnlyList<FirmProductRelationship> Relationships,
-    IReadOnlyDictionary<Guid, Guid> SegmentByFirm);
+    IReadOnlyDictionary<Guid, Guid> SegmentByFirm,
+    DateOnly? ObservationsRecordedAfter = null);
+
+/// <summary>The ledger observations one set of facts maps to, in the calibration contract's own shapes.</summary>
+public sealed record CalibrationObservations(
+    IReadOnlyList<OpportunityOutcome> Opportunities,
+    IReadOnlyList<ChurnEvent> ChurnEvents,
+    IReadOnlyList<ArrivalCount> ArrivalCounts);
 
 /// <summary>
 /// Maps the prior assumption set plus the bi-temporal facts ledger onto the pure calibration
@@ -73,12 +85,37 @@ public static class CalibrationInputBuilder
             .ToList();
 
         var salesCyclePriors = BuildSalesCyclePriors(world.Prior);
+        var observations = MapObservations(world.Facts, world.SegmentByFirm);
 
+        var windowStart = world.ObservationsRecordedAfter;
+        var spans = world.Relationships
+            .Where(r => r.AcquisitionDate is not null && r.AcquisitionDate.Value <= world.AsOfDate)
+            .Where(r => windowStart is null || r.EndDate is null || r.EndDate > windowStart)
+            .Select(r => (Relationship: r, SegmentId: world.SegmentByFirm.GetValueOrDefault(r.FirmId)))
+            .Where(x => x.SegmentId != Guid.Empty)
+            .OrderBy(x => x.Relationship.Id)
+            .Select(x => new RelationshipSpan(
+                x.SegmentId.ToString(),
+                windowStart is { } w && w > x.Relationship.AcquisitionDate!.Value ? w : x.Relationship.AcquisitionDate!.Value,
+                x.Relationship.EndDate is { } end && end <= world.AsOfDate ? end : null))
+            .ToList();
+
+        return new CalibrationInput(world.AsOfDate, flowPriors, salesCyclePriors, observations.Opportunities,
+            observations.ChurnEvents, observations.ArrivalCounts, spans);
+    }
+
+    /// <summary>
+    /// Maps ledger facts onto observations. Facts that cannot be attributed (no segment, an unreadable
+    /// payload, an unknown outcome) are dropped — the readiness report counts them.
+    /// </summary>
+    public static CalibrationObservations MapObservations(IEnumerable<FactEvent> facts,
+        IReadOnlyDictionary<Guid, Guid> segmentByFirm)
+    {
         var opportunities = new List<OpportunityOutcome>();
         var churns = new List<ChurnEvent>();
         var arrivals = new List<ArrivalCount>();
 
-        foreach (var fact in world.Facts.OrderBy(f => f.EffectiveDate).ThenBy(f => f.RecordedDate).ThenBy(f => f.Id))
+        foreach (var fact in facts.OrderBy(f => f.EffectiveDate).ThenBy(f => f.RecordedDate).ThenBy(f => f.Id))
         {
             switch (fact.Kind)
             {
@@ -86,7 +123,7 @@ public static class CalibrationInputBuilder
                     if (TryRead<OpportunityDecisionFact>(fact.PayloadJson, out var decision))
                     {
                         var segmentId = decision.ClientSegmentId
-                                        ?? world.SegmentByFirm.GetValueOrDefault(decision.FirmId);
+                                        ?? segmentByFirm.GetValueOrDefault(decision.FirmId);
                         if (segmentId == Guid.Empty) break;
                         var outcome = ToOutcome(decision.Outcome);
                         if (outcome is null) break;
@@ -110,7 +147,7 @@ public static class CalibrationInputBuilder
                         ? churn.ClientSegmentId
                         : Guid.Empty;
                     if (churnSegment == Guid.Empty && fact.SubjectId is { } subject)
-                        churnSegment = world.SegmentByFirm.GetValueOrDefault(subject);
+                        churnSegment = segmentByFirm.GetValueOrDefault(subject);
                     if (churnSegment != Guid.Empty)
                         churns.Add(new ChurnEvent(churnSegment.ToString(), fact.EffectiveDate));
                     break;
@@ -135,27 +172,19 @@ public static class CalibrationInputBuilder
             }
         }
 
-        var spans = world.Relationships
-            .Where(r => r.AcquisitionDate is not null && r.AcquisitionDate.Value <= world.AsOfDate)
-            .Select(r => (Relationship: r, SegmentId: world.SegmentByFirm.GetValueOrDefault(r.FirmId)))
-            .Where(x => x.SegmentId != Guid.Empty)
-            .OrderBy(x => x.Relationship.Id)
-            .Select(x => new RelationshipSpan(
-                x.SegmentId.ToString(),
-                x.Relationship.AcquisitionDate!.Value,
-                x.Relationship.EndDate is { } end && end <= world.AsOfDate ? end : null))
-            .ToList();
-
-        return new CalibrationInput(world.AsOfDate, flowPriors, salesCyclePriors, opportunities, churns, arrivals, spans);
+        return new CalibrationObservations(opportunities, churns, arrivals);
     }
 
     /// <summary>
     /// Builds the fitted assumption set: a branch of the prior (so every unfitted parameter travels
     /// unchanged and the lineage is explicit) with each fitted posterior written back over its key,
     /// provenance Calibrated and the module's own rationale. Covariate links survive the fit — a
-    /// refitted rate is still the same rate, still elastic to the same series.
+    /// refitted rate is still the same rate, still elastic to the same series. <paramref name="stamps"/>
+    /// (by parameter key; sales cycles by their mu key) is the prior evidence each fitted parameter now
+    /// carries — see <see cref="CalibrationEvidence.Stamps"/>. Unfitted parameters keep their own.
     /// </summary>
-    public static AssumptionSet BuildFittedSet(AssumptionSet prior, CalibrationOutput output, string name)
+    public static AssumptionSet BuildFittedSet(AssumptionSet prior, CalibrationOutput output, string name,
+        IReadOnlyDictionary<string, PriorEvidence>? stamps = null)
     {
         ArgumentNullException.ThrowIfNull(prior);
         ArgumentNullException.ThrowIfNull(output);
@@ -179,18 +208,20 @@ public static class CalibrationInputBuilder
                 ParameterProvenance.Calibrated,
                 flow.AutoRationale,
                 previous?.CovariateId,
-                previous?.CovariateBeta);
+                previous?.CovariateBeta,
+                stamps?.GetValueOrDefault(key));
         }
 
         foreach (var cycle in output.FittedSalesCycles)
         {
             if (!Guid.TryParse(cycle.SegmentId, out var segmentId)) continue;
             Guid? productId = Guid.TryParse(cycle.ProductId, out var product) ? product : null;
+            var stamp = stamps?.GetValueOrDefault(ChoiceParameterKeys.SalesCycleMu(segmentId, productId));
 
             fitted.SetParameter(ChoiceParameterKeys.SalesCycleMu(segmentId, productId),
-                Distribution.PointValue(cycle.Mu), ParameterProvenance.Calibrated, cycle.AutoRationale);
+                Distribution.PointValue(cycle.Mu), ParameterProvenance.Calibrated, cycle.AutoRationale, stamp);
             fitted.SetParameter(ChoiceParameterKeys.SalesCycleSigma(segmentId, productId),
-                Distribution.PointValue(cycle.Sigma), ParameterProvenance.Calibrated, cycle.AutoRationale);
+                Distribution.PointValue(cycle.Sigma), ParameterProvenance.Calibrated, cycle.AutoRationale, stamp?.Copy());
         }
 
         return fitted;

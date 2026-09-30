@@ -101,7 +101,7 @@ public class OnboardingDocsTests
         {
             RootReadmePath, GuidePath, DiscoveryReadmePath, AssessmentPath, FixtureReadmePath,
             PortfolioReadmePath, PortfolioFixtureReadmePath, ReviewReadmePath, ReviewExamplePath,
-            CommercialReadmePath, CommercialFixtureReadmePath
+            CommercialReadmePath, CommercialFixtureReadmePath, ReadinessReadmePath, ReadinessFixtureReadmePath
         }
             .Concat(DatasetFileNames.Select(name => $"{DatasetDirectory}/{name}"))
             .Select(path => new object[] { path });
@@ -2858,4 +2858,755 @@ public class OnboardingDocsTests
     }
 
     // ---------- PRD7: append new tests above this line ----------
+
+    // ---------- PRD8: calibration readiness ----------
+    // docs/onboarding/readiness/: the procedure, an agent-side readiness artifact for Harborline (the API
+    // report plus source reconciliation, verdict and sensitivity comparisons) and the walkthrough. The
+    // artifact's report is parsed into the CLI's own readiness DTO with unknown members disallowed, and its
+    // numbers are recomputed from the PRD7 normalization artifact and fragments it reconciles against.
+
+    private const string ReadinessDirectory = "docs/onboarding/readiness";
+    private const string ReadinessReadmePath = ReadinessDirectory + "/README.md";
+    private const string ReadinessArtifactPath = ReadinessDirectory + "/calibration-readiness.example.json";
+    private const string ReadinessFixtureReadmePath = ReadinessDirectory + "/fixture/README.md";
+    private const string ReadinessApiTestsPath = "tests/ProductManager.Api.Tests/CalibrationReadinessTests.cs";
+    private const double DaysPerMonth = 30.4375;
+
+    private static readonly string[] ReadinessStatuses = ["Ready", "NotReady", "Unfitted", "Asserted"];
+    private static readonly string[] ReadinessOveralls = ["Ready", "Exploratory"];
+    private static readonly string[] HoldoutStatuses = ["Compared", "Unsupported"];
+    private static readonly string[] PriorEvidenceBases = ["Independent", "Observations"];
+
+    private static readonly string[] ReadinessIssueCodes =
+    [
+        "PriorEvidenceUnknown", "MissingAcquisitionDate", "ChurnWithoutEndDate", "LogoLevelChurn",
+        "UnsegmentedEvidence", "ExposureApproximated", "ArrivalMonthsMissing", "DuplicateArrivalMonth",
+        "LedgerChangedSinceRun"
+    ];
+
+    private static readonly string[] ReconciliationFigures =
+    [
+        "importedFirms", "activeCustomers", "moduleHolders", "closedNewLogoDeals", "churnEvents", "clientMonths",
+        "baseArr", "moduleArr", "implementationFee", "monthlyObservations"
+    ];
+
+    private static readonly string[] ReconciliationReasons =
+    [
+        "syntheticFill", "unresolved", "excludedByRule", "excludedByAsOfCut", "open", "notLoaded",
+        "edgeVersusLogoExposure", "rounding"
+    ];
+
+    private static JsonNode Readiness() => ReadJson(ReadinessArtifactPath);
+
+    private static CalibrationReadinessDto ReadinessReport(JsonNode artifact)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<CalibrationReadinessDto>(artifact["report"]!.ToJsonString(),
+                StrictSeedJsonOptions)!;
+        }
+        catch (JsonException ex)
+        {
+            throw new Xunit.Sdk.XunitException(
+                $"{ReadinessArtifactPath} report does not deserialize into the CLI's CalibrationReadinessDto " +
+                $"with unknown members disallowed: {ex.Message}");
+        }
+    }
+
+    private static HashSet<string> RegisterKeys() =>
+        Decisions(Register()).Concat(Decisions(CommercialRegister())).Select(d => Text(d["key"])).ToHashSet();
+
+    [Fact]
+    public void The_readiness_vocabulary_the_docs_teach_is_exactly_the_closed_sets_the_CLI_mirrors()
+    {
+        Assert.Equal(ReadinessStatuses.Order(), Enum.GetNames<CalibrationReadinessStatus>().Order());
+        Assert.Equal(ReadinessOveralls.Order(), Enum.GetNames<CalibrationReadinessOverall>().Order());
+        Assert.Equal(ReadinessIssueCodes.Order(), Enum.GetNames<ReadinessIssueCode>().Order());
+        Assert.Equal(HoldoutStatuses.Order(), Enum.GetNames<HoldoutComparisonStatus>().Order());
+        Assert.Equal(PriorEvidenceBases.Order(), Enum.GetNames<PriorEvidenceBasis>().Order());
+    }
+
+    [Fact]
+    public void The_readiness_procedure_documents_every_status_issue_code_and_requirement()
+    {
+        var readme = ReadRepoFile(ReadinessReadmePath);
+        foreach (var name in ReadinessStatuses.Concat(ReadinessOveralls).Concat(HoldoutStatuses)
+                     .Concat(PriorEvidenceBases).Concat(ReadinessIssueCodes).Concat(new[]
+                     {
+                         "priorEvidence", "observedFrom", "observedThrough", "recordedThrough", "sourceCalibrationRunId",
+                         "observationsRecordedAfter", "--observations-recorded-after", "prior-evidence-reuse",
+                         "exit code 6", "409", "pm calibrate readiness", "--holdout-through", "--output", "--json",
+                         "populations", "exclusions", "arrivalObservations", "asserted", "notes", "overallReasons",
+                         "sourceCounts", "calibrationPopulation", "segmentTotals", "normalized", "tolerance",
+                         "synthetic", "unresolved", "reconciliation", "churn.level", "logo", "product",
+                         "count: 0", "missing", "sensitivity", "pm assumptions branch", "pm sim compare",
+                         "smoke", "exploratory", "roadmap-only", "validated forecast", "forecast accuracy",
+                         "GET /api/calibration-runs/{id}/input", "units", "denominator"
+                     }))
+            Assert.Contains(name, readme, StringComparison.OrdinalIgnoreCase);
+
+        // Requirement sections are named so a reader can find them.
+        for (var requirement = 1; requirement <= 8; requirement++)
+            Assert.Contains($"requirement {requirement}", readme, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void The_readiness_example_report_parses_into_the_CLI_DTO_and_uses_only_defined_exact_members()
+    {
+        var artifact = Readiness();
+        Assert.Equal(1, artifact["readinessArtifactVersion"]!.GetValue<int>());
+        var report = ReadinessReport(artifact);
+
+        // The DTO parse is case-insensitive for enum strings; the docs must spell members exactly.
+        var raw = artifact["report"]!;
+        Assert.Contains(Text(raw["overall"]), ReadinessOveralls);
+        foreach (var p in Nodes(raw["parameters"]))
+        {
+            Assert.Contains(Text(p["status"]), ReadinessStatuses.Where(s => s != "Asserted"));
+            foreach (var issue in Nodes(p["issues"])) Assert.Contains(Text(issue["code"]), ReadinessIssueCodes);
+            if (p["priorEvidence"] is { } evidence) Assert.Contains(Text(evidence["basis"]), PriorEvidenceBases);
+        }
+
+        foreach (var a in Nodes(raw["asserted"])) Assert.Equal("Asserted", Text(a["status"]));
+        foreach (var c in Nodes(raw["holdout"]!["comparisons"])) Assert.Contains(Text(c["status"]), HoldoutStatuses);
+        foreach (var e in Nodes(raw["exclusions"])) Assert.Contains(Text(e["kind"]), Enum.GetNames<FactEventKind>());
+        Assert.NotEmpty(report.Parameters);
+        Assert.NotEmpty(report.Notes);
+    }
+
+    [Fact]
+    public void The_report_statuses_follow_its_own_rules_and_its_posteriors_follow_from_the_fit()
+    {
+        var report = ReadinessReport(Readiness());
+
+        foreach (var p in report.Parameters)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(p.Units), $"{p.Key}: every rate carries units.");
+            Assert.False(string.IsNullOrWhiteSpace(p.Denominator), $"{p.Key}: every rate carries its denominator.");
+            var codes = p.Issues.Select(i => i.Code).ToList();
+            Assert.Equal(p.Status != CalibrationReadinessStatus.Unfitted && p.PriorEvidence is null,
+                codes.Contains(ReadinessIssueCode.PriorEvidenceUnknown));
+
+            switch (p.Status)
+            {
+                case CalibrationReadinessStatus.Ready:
+                    Assert.Empty(p.Issues);
+                    Assert.NotNull(p.Posterior);
+                    Assert.Null(p.UnfittedReason);
+                    break;
+                case CalibrationReadinessStatus.NotReady:
+                    Assert.NotEmpty(p.Issues);
+                    Assert.NotNull(p.Posterior);
+                    break;
+                case CalibrationReadinessStatus.Unfitted:
+                    Assert.Null(p.Posterior);
+                    Assert.Null(p.PosteriorMean);
+                    Assert.False(string.IsNullOrWhiteSpace(p.UnfittedReason), $"{p.Key}: an unfitted parameter says why.");
+                    break;
+                default:
+                    Assert.Fail($"{p.Key}: a fitted or unfitted parameter is never '{p.Status}'.");
+                    break;
+            }
+
+            if (p.Posterior is not { Type: DistributionType.Beta } posterior) continue;
+
+            // Beta-Binomial (WinRate) and the client-month updates the engine documents; a Point prior counts as 50.
+            var (a, b) = p.Prior!.Type == DistributionType.Point
+                ? (p.Prior.P1 * 50, (1 - p.Prior.P1) * 50)
+                : (p.Prior.P1, p.Prior.P2);
+            var (expectedA, expectedB) = p.FlowKind == SimulationFlowKind.WinRate
+                ? (a + p.Successes!.Value, b + p.Failures!.Value)
+                : (a + p.Successes!.Value, b + p.Exposure!.Value - p.Successes.Value);
+            Assert.Equal(expectedA, posterior.P1, 3);
+            Assert.Equal(expectedB, posterior.P2, 3);
+            Assert.Equal(posterior.P1 / (posterior.P1 + posterior.P2), p.PosteriorMean!.Value, 4);
+        }
+
+        bool allReady = report.Parameters.Count > 0
+                        && report.Parameters.All(p => p.Status == CalibrationReadinessStatus.Ready)
+                        && report.Asserted.Count == 0;
+        Assert.Equal(allReady ? CalibrationReadinessOverall.Ready : CalibrationReadinessOverall.Exploratory, report.Overall);
+        Assert.Equal(allReady, report.OverallReasons.Count == 0);
+        Assert.Contains(report.Notes, n => n.Contains("not reconstruct", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(report.Notes, n => n.Contains("current state", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(report.Notes, n => n.Contains("forecast accuracy", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Client-months of one segment's relationships as the engine cuts them (30.4375 days a month, spans clipped at as-of).</summary>
+    private static double ClientMonths(JsonNode commercial, string segment, DateOnly asOf, bool baseOnly = false)
+    {
+        var firmSegment = Rows(commercial, "firms").ToDictionary(f => Text(f["sourceId"]), f => Text(f["segment"]!["name"]));
+        double months = 0;
+        foreach (var edge in Rows(commercial, "relationships"))
+        {
+            if (firmSegment[Text(edge["firmSourceId"])] != segment) continue;
+            if (baseOnly && Text(edge["kind"]) != "base") continue;
+            var start = Day(edge["acquisitionDate"]);
+            var end = edge["endDate"] is { } e && Day(e) < asOf ? Day(e) : asOf;
+            months += (end.DayNumber - start.DayNumber) / DaysPerMonth;
+        }
+
+        return months;
+    }
+
+    [Fact]
+    public void Report_populations_equal_the_PRD7_stable_keys_they_are_reconciled_against()
+    {
+        var commercial = Commercial();
+        var report = ReadinessReport(Readiness());
+        Assert.Equal(CommercialAsOf, report.AsOfDate);
+        var totals = Nodes(commercial["segmentTotals"]).ToDictionary(t => Text(t["segment"]));
+        var winRate = commercial["calibrationPopulation"]!["winRate"]!;
+        Assert.Equal(Nodes(commercial["segmentTotals"]).Count(), report.Populations.Count);
+
+        foreach (var pop in report.Populations)
+        {
+            var segment = pop.SegmentName!;
+            var firms = Rows(commercial, "firms").Where(f => Text(f["segment"]!["name"]) == segment).ToList();
+            Assert.Equal(firms.Count, pop.ObservedFirms + pop.InferredFirms + pop.SyntheticFirms);
+            Assert.Equal(0, pop.SyntheticFirms);
+
+            var total = totals[segment];
+            if (Text(total["status"]) == "resolved")
+            {
+                Assert.Equal(total["activeCustomers"]!.GetValue<int>(), pop.ActiveCustomers);
+                foreach (var module in Nodes(total["modules"]))
+                    Assert.Equal(module["holders"]!.GetValue<int>(),
+                        pop.ModuleHolders.Single(m => m.Name == Text(module["product"])).Holders);
+            }
+
+            var outcomes = winRate[segment]!;
+            Assert.Equal(outcomes["won"]!.AsArray().Count, pop.Decisions.Won);
+            Assert.Equal(outcomes["lost"]!.AsArray().Count, pop.Decisions.Lost);
+            Assert.Equal(outcomes["noDecision"]!.AsArray().Count, pop.Decisions.NoDecision);
+            Assert.Equal(0, pop.Decisions.CrossSellWon + pop.Decisions.CrossSellLost + pop.Decisions.CrossSellNoDecision);
+
+            Assert.Equal(Rows(commercial, "churnEvents").Count(c => Text(c["segment"]) == segment), pop.ChurnEvents);
+            Assert.Equal(0, pop.ProductlessChurnEvents);
+            var edges = Rows(commercial, "relationships")
+                .Where(r => firms.Any(f => Text(f["sourceId"]) == Text(r["firmSourceId"]))).ToList();
+            Assert.Equal(edges.Count, pop.Relationships);
+            Assert.Equal(edges.Count(r => r["endDate"] is not null), pop.EndedRelationships);
+            Assert.Equal(edges.Count(r => r["acquisitionDate"] is null), pop.RelationshipsWithoutAcquisitionDate);
+            Assert.Equal(edges.GroupBy(r => Text(r["firmSourceId"])).Count(g => g.Count() > 1), pop.MultiProductFirms);
+            Assert.Equal(ClientMonths(commercial, segment, report.AsOfDate), pop.ClientMonths, 3);
+        }
+
+        // Nothing was cut by the as-of date or added since; every decision, churn and arrival fact was read.
+        Assert.All(report.Exclusions, e =>
+            Assert.Equal((0, 0, 0, 0), (e.RecordedAfterAsOf, e.RecordedOnOrBeforeWindowStart, e.Unattributed, e.AddedAfterRun)));
+        Assert.Empty(report.ArrivalObservations);   // calibrationPopulation.arrivals.loaded is false
+    }
+
+    [Fact]
+    public void The_readiness_example_parameters_match_the_loaded_PRD7_fragments()
+    {
+        var commercial = Commercial();
+        var report = ReadinessReport(Readiness());
+        var facts = CommercialDynamics("12-historical-facts.json");
+        var firmSegment = Rows(commercial, "firms").ToDictionary(f => Text(f["sourceId"]), f => Text(f["segment"]!["name"]));
+        var bySegment = report.Populations.ToDictionary(p => p.SegmentName!, p => p.ClientSegmentId);
+
+        foreach (var (segment, id) in bySegment)
+        {
+            var decided = facts.Opportunities
+                .Where(o => o.Outcome is "Won" or "Lost" && firmSegment[o.FirmSource!.SourceRecordId] == segment).ToList();
+            var parameter = report.Parameters.SingleOrDefault(p => p.FlowKind == SimulationFlowKind.WinRate && p.ClientSegmentId == id);
+            if (parameter is null)
+            {
+                Assert.Empty(decided);
+                continue;
+            }
+
+            Assert.Equal(decided.Count, parameter.Observations);
+            Assert.Equal(decided.Count(o => o.Outcome == "Won"), parameter.Successes);
+            Assert.Equal(decided.Count(o => o.Outcome == "Lost"), parameter.Failures);
+            Assert.Equal(facts.Opportunities.Count(o => o.Outcome == "NoDecision" && firmSegment[o.FirmSource!.SourceRecordId] == segment),
+                parameter.Excluded);
+            Assert.Equal(decided.Min(o => o.DecidedDate), parameter.ObservedFrom?.ToString("yyyy-MM-dd"));
+            Assert.Equal(decided.Max(o => o.DecidedDate), parameter.ObservedThrough?.ToString("yyyy-MM-dd"));
+        }
+
+        // The churn hazard's exposure is the population's client-months; its numerator is the one churn fact.
+        var churn = report.Parameters.Single(p => p.FlowKind == SimulationFlowKind.ChurnHazard);
+        Assert.Equal(facts.ChurnEvents.Count, churn.Successes);
+        Assert.Equal(report.Populations.Single(p => p.ClientSegmentId == churn.ClientSegmentId).ClientMonths, churn.Exposure!.Value, 6);
+
+        // The PRD7 fixture has no cross-sell evidence and no arrival counts: honest result, no fit, no fabricated zero.
+        Assert.Empty(facts.ArrivalCounts);
+        var crossSell = report.Parameters.Single(p => p.FlowKind == SimulationFlowKind.CrossSellRate);
+        Assert.Equal(CalibrationReadinessStatus.Unfitted, crossSell.Status);
+        Assert.Equal(0, crossSell.Observations);
+        Assert.DoesNotContain(facts.Opportunities, o => o.CrossSellModuleProductName is not null);
+    }
+
+    /// <summary>The system side of a reconciliation figure, read from the report (or, for money, the loaded stock state).</summary>
+    private static double? SystemFigure(string figure, string segment, string? module, CalibrationReadinessDto report)
+    {
+        var pop = report.Populations.Single(p => p.SegmentName == segment);
+        var stock = CommercialDynamics("06-segment-economics.json").SegmentStockStates.SingleOrDefault(s => s.SegmentName == segment);
+        return figure switch
+        {
+            "importedFirms" => pop.ObservedFirms + pop.InferredFirms + pop.SyntheticFirms,
+            "activeCustomers" => pop.ActiveCustomers,
+            "moduleHolders" => pop.ModuleHolders.Single(m => m.Name == module).Holders,
+            "closedNewLogoDeals" => pop.Decisions.Won + pop.Decisions.Lost + pop.Decisions.NoDecision,
+            "churnEvents" => pop.ChurnEvents,
+            "clientMonths" => pop.ClientMonths,
+            "baseArr" => stock is null ? 0 : stock.ArpuPerMonth * stock.InitialClientCount * 12,
+            "moduleArr" => stock?.ModulePenetrations.Where(m => m.ModuleProductName == module)
+                .Sum(m => m.Penetration * stock.InitialClientCount * m.ArpuPerMonth * 12) ?? 0,
+            "implementationFee" => stock?.ImplementationFee ?? 0,
+            "monthlyObservations" => report.ArrivalObservations.Where(a => a.ClientSegmentId == pop.ClientSegmentId).Sum(a => a.ObservedMonths),
+            _ => throw new Xunit.Sdk.XunitException($"Unknown reconciliation figure '{figure}'.")
+        };
+    }
+
+    /// <summary>The source side of a reconciliation figure, read from the PRD7 artifact's stable keys (null = unresolved there).</summary>
+    private static double? SourceFigure(string figure, string segment, string? module, JsonNode commercial, DateOnly asOf)
+    {
+        var total = Nodes(commercial["segmentTotals"]).Single(t => Text(t["segment"]) == segment);
+        bool resolved = Text(total["status"]) == "resolved";
+        var outcomes = commercial["calibrationPopulation"]!["winRate"]![segment]!;
+        int Count(string key) => outcomes[key]!.AsArray().Count;
+        return figure switch
+        {
+            "importedFirms" => Rows(commercial, "firms").Count(f => Text(f["segment"]!["name"]) == segment),
+            "activeCustomers" => resolved ? total["activeCustomers"]!.GetValue<int>() : null,
+            "moduleHolders" => resolved ? Nodes(total["modules"]).Single(m => Text(m["product"]) == module)["holders"]!.GetValue<int>() : null,
+            "closedNewLogoDeals" => Count("won") + Count("lost") + Count("noDecision") + Count("unresolved"),
+            "churnEvents" => Rows(commercial, "churnEvents").Count(c => Text(c["segment"]) == segment),
+            // Logo level (PRD7 churn.level): a firm counts once per month however many products it holds.
+            "clientMonths" => ClientMonths(commercial, segment, asOf, baseOnly: true),
+            "baseArr" => resolved ? total["baseArr"]!.GetValue<double>() : null,
+            "moduleArr" => resolved ? Nodes(total["modules"]).Single(m => Text(m["product"]) == module)["arr"]!.GetValue<double>() : null,
+            "implementationFee" => resolved
+                ? Nodes(total["implementationFee"]!["inputs"]).Average(i => i["oneTimeReporting"]!.GetValue<double>())
+                : null,
+            "monthlyObservations" => commercial["calibrationPopulation"]!["arrivals"]!["loaded"]!.GetValue<bool>() ? null : 0,
+            _ => throw new Xunit.Sdk.XunitException($"Unknown reconciliation figure '{figure}'.")
+        };
+    }
+
+    [Fact]
+    public void Every_reconciliation_figure_equals_its_system_and_source_values_and_every_difference_has_a_named_reason()
+    {
+        var artifact = Readiness();
+        var commercial = Commercial();
+        var report = ReadinessReport(artifact);
+        var figures = Nodes(artifact["reconciliation"]!["figures"]).ToList();
+        Assert.NotEmpty(Text(artifact["reconciliation"]!["tolerancePolicy"]));
+        Assert.Equal(figures.Count, figures.Select(f => Text(f["id"])).Distinct().Count());
+        Assert.Subset(ReconciliationFigures.ToHashSet(), figures.Select(f => Text(f["figure"])).ToHashSet());
+        foreach (var required in ReconciliationFigures)
+            Assert.Contains(required, figures.Select(f => Text(f["figure"])));
+        var keys = RegisterKeys();
+
+        foreach (var f in figures)
+        {
+            var id = Text(f["id"]);
+            var segment = Text(f["segment"]);
+            var module = f["module"] is { } m ? Text(m) : null;
+            var system = SystemFigure(Text(f["figure"]), segment, module, report);
+            var source = SourceFigure(Text(f["figure"]), segment, module, commercial, CommercialAsOf);
+            Assert.Equal(system!.Value, f["system"]!.GetValue<double>(), 3);
+            Assert.Equal(source is null, f["source"] is null);
+            if (source is { } s) Assert.Equal(s, f["source"]!.GetValue<double>(), 3);
+
+            var tolerance = f["tolerance"]!;
+            var toleranceValue = tolerance["value"]!.GetValue<double>();
+            Assert.False(string.IsNullOrWhiteSpace(Text(tolerance["basis"])), $"{id}: a tolerance states its basis.");
+            Assert.Contains(Text(tolerance["kind"]), new[] { "exact", "absolute" });
+            if (Text(tolerance["kind"]) == "exact") Assert.Equal(0, toleranceValue);
+            else Assert.Matches(@"F\d+|rounding", Text(tolerance["basis"]));
+
+            var reasons = Nodes(f["reasons"]).ToList();
+            foreach (var reason in reasons)
+            {
+                Assert.Contains(Text(reason["reason"]), ReconciliationReasons);
+                Assert.False(string.IsNullOrWhiteSpace(Text(reason["ref"])), $"{id}: every reason names what it refers to.");
+                if (Text(reason["reason"]) == "unresolved") Assert.Contains(Text(reason["decisionKey"]), keys);
+            }
+
+            if (source is null)
+            {
+                Assert.Equal("unresolvedInSource", Text(f["status"]));
+                Assert.Null(f["difference"]);
+                continue;
+            }
+
+            var difference = system!.Value - source.Value;
+            Assert.Equal(difference, f["difference"]!.GetValue<double>(), 3);
+            if (Math.Abs(difference) <= toleranceValue)
+            {
+                Assert.Equal("matched", Text(f["status"]));
+                Assert.Empty(reasons);
+            }
+            else
+            {
+                // Beyond tolerance: explained only when the named reasons add up to the difference.
+                var unexplained = difference - reasons.Sum(r => r["count"]!.GetValue<double>());
+                Assert.Equal(unexplained, f["unexplained"]!.GetValue<double>(), 3);
+                Assert.Equal(Math.Abs(unexplained) <= toleranceValue ? "explained" : "unexplained", Text(f["status"]));
+                Assert.NotEmpty(reasons);
+            }
+        }
+    }
+
+    [Fact]
+    public void A_mismatch_that_touches_a_parameter_keeps_it_from_being_presented_as_Ready_however_the_API_rates_it()
+    {
+        var artifact = Readiness();
+        var report = ReadinessReport(artifact);
+        var figures = Nodes(artifact["reconciliation"]!["figures"]).ToList();
+        var figureIds = figures.Select(f => Text(f["id"])).ToHashSet();
+        var verdict = artifact["verdict"]!;
+        var entries = Nodes(verdict["parameters"]).ToDictionary(e => Text(e["key"]));
+        Assert.Equal(report.Parameters.Select(p => p.Key).Order(), entries.Keys.Order());
+
+        // The deliberate mismatch: a figure the system cannot match exactly, named, explained and blocking.
+        var blocking = figures.Where(f => Text(f["status"]) != "matched" && Text(f["effect"]) == "notReady").ToList();
+        Assert.NotEmpty(blocking);
+        var blocked = new HashSet<string>();
+        foreach (var f in blocking)
+        {
+            Assert.NotEmpty(Nodes(f["reasons"]));
+            var affected = Strings(f["affectsParameters"]);
+            Assert.NotEmpty(affected);
+            foreach (var key in affected) { Assert.Contains(report.Parameters, p => p.Key == key); blocked.Add(key); }
+        }
+
+        // A Ready parameter blocked by a figure is the point of the mechanism.
+        Assert.Contains(report.Parameters, p => p.Status == CalibrationReadinessStatus.Ready && blocked.Contains(p.Key));
+
+        foreach (var p in report.Parameters)
+        {
+            var entry = entries[p.Key];
+            Assert.Equal(p.Status.ToString(), Text(entry["apiStatus"]));
+            var presented = Text(entry["presentedStatus"]);
+            Assert.Contains(presented, new[] { "Ready", "NotReady", "Unfitted" });
+            if (p.Status != CalibrationReadinessStatus.Ready || blocked.Contains(p.Key))
+                Assert.NotEqual("Ready", presented);
+            if (p.Status == CalibrationReadinessStatus.Unfitted) Assert.Equal("Unfitted", presented);
+            foreach (var cause in Strings(entry["because"]))
+                Assert.True(figureIds.Contains(cause) || ReadinessIssueCodes.Contains(cause),
+                    $"{p.Key}: '{cause}' is neither a reconciliation figure nor a readiness issue code.");
+        }
+
+        Assert.Equal(report.Overall.ToString(), Text(verdict["overall"]));
+        Assert.Equal("exploratory", Text(verdict["presentableAs"]));
+        Assert.Contains("validated forecast", Text(verdict["statement"]), StringComparison.OrdinalIgnoreCase);
+        Assert.NotEmpty(Nodes(verdict["unsupportedAssumptions"]));
+
+        // Decisions the agent needs are proposals with new keys: it never invents an accepted one.
+        var existing = RegisterKeys();
+        foreach (var entry in Nodes(artifact["proposedRegisterEntries"]))
+        {
+            Assert.Matches(DecisionKeyRegex, Text(entry["key"]));
+            Assert.DoesNotContain(Text(entry["key"]), existing);
+            Assert.Equal("proposed", Text(entry["state"]));
+            Assert.All(Strings(entry["blocks"]), key => Assert.Contains(report.Parameters, p => p.Key == key));
+        }
+    }
+
+    [Fact]
+    public void An_evidence_reuse_refusal_names_the_overlap_and_the_resolution_and_matches_the_loaded_deals()
+    {
+        var artifact = Readiness();
+        var report = ReadinessReport(artifact);
+        var attempt = Nodes(artifact["refusedAttempts"]).Single();
+        Assert.Equal(409, attempt["httpStatus"]!.GetValue<int>());
+        Assert.Equal("urn:productmanager:problem:prior-evidence-reuse", Text(attempt["problemType"]));
+        Assert.Equal(6, attempt["exitCode"]!.GetValue<int>());
+        Assert.False(attempt["stored"]!.GetValue<bool>());
+        Assert.False(string.IsNullOrWhiteSpace(Text(attempt["resolution"])));
+
+        var overlap = Nodes(attempt["overlaps"]).Single();
+        var winRate = report.Parameters.Single(p => p.FlowKind == SimulationFlowKind.WinRate && p.Observations > 1);
+        Assert.Equal(winRate.Key, Text(overlap["key"]));
+        Assert.Equal("Observations", Text(overlap["priorEvidence"]!["basis"]));
+        var declaredFrom = Day(overlap["priorEvidence"]!["observedFrom"]);
+        var declaredThrough = Day(overlap["priorEvidence"]!["observedThrough"]);
+        Assert.True(declaredFrom <= Day(overlap["overlapFrom"]) && Day(overlap["overlapThrough"]) <= declaredThrough);
+        Assert.Equal(winRate.ObservedFrom!.Value, Day(overlap["overlapFrom"]));
+        Assert.Equal(winRate.ObservedThrough!.Value, Day(overlap["overlapThrough"]));
+        Assert.Equal(winRate.Observations, overlap["overlappingObservations"]!.GetValue<int>());
+        Assert.Equal(winRate.Observations, overlap["fitObservations"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public void Holdout_comparisons_are_unsupported_without_held_out_history_and_never_a_false_pass()
+    {
+        var report = ReadinessReport(Readiness());
+        var holdout = report.Holdout!;
+        Assert.Equal(report.AsOfDate.AddDays(1), holdout.HeldOutFrom);
+        Assert.True(holdout.HeldOutThrough > report.AsOfDate);
+        var fitted = report.Parameters.Where(p => p.Status != CalibrationReadinessStatus.Unfitted).Select(p => p.Key).Order();
+        Assert.Equal(fitted, holdout.Comparisons.Select(c => c.Key).Order());
+
+        foreach (var c in holdout.Comparisons)
+        {
+            if (c.Status == HoldoutComparisonStatus.Unsupported)
+            {
+                Assert.False(string.IsNullOrWhiteSpace(c.Reason), $"{c.Key}: an unsupported comparison says why.");
+                Assert.Null(c.ObservedInsideInterval);
+                Assert.Null(c.IntervalLower);
+                Assert.Null(c.ObservedRate);
+            }
+            else
+            {
+                Assert.True(c.SampleSize > 0, $"{c.Key}: a comparison needs held-out observations.");
+            }
+        }
+
+        // The fixture's extract ends on the as-of date: nothing is held out, so nothing may compare.
+        Assert.All(holdout.Comparisons, c => Assert.Equal(HoldoutComparisonStatus.Unsupported, c.Status));
+        Assert.DoesNotContain("pass", holdout.Note.Replace("not a pass", ""), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Sensitivity_comparisons_vary_one_asserted_quantity_with_real_commands_and_invent_no_results()
+    {
+        var artifact = Readiness();
+        var report = ReadinessReport(artifact);
+        var comparisons = Nodes(artifact["sensitivityComparisons"]).ToList();
+        Assert.InRange(comparisons.Count, 3, 5);
+        Assert.Equal(comparisons.Count, comparisons.Select(c => Text(c["id"])).Distinct().Count());
+
+        foreach (var c in comparisons)
+        {
+            var id = Text(c["id"]);
+            Assert.False(string.IsNullOrWhiteSpace(Text(c["output"])), $"{id}: names the output compared.");
+            Assert.NotEmpty(Strings(c["commands"]));
+            Assert.All(Strings(c["commands"]), command => Assert.StartsWith("pm ", command));
+            if (c["assertedKey"] is { } key)
+            {
+                var asserted = report.Asserted.Single(a => a.Key == Text(key));
+                var baseline = c["baseline"]!;
+                Assert.Equal(asserted.Distribution!.Type.ToString(), Text(baseline["type"]));
+                Assert.Equal(asserted.Distribution.P1, baseline["p1"]!.GetValue<double>(), 6);
+                Assert.NotEqual(asserted.Distribution.P1, c["variant"]!["p1"]!.GetValue<double>());
+            }
+            else
+            {
+                Assert.True(c["variesRoadmap"]!.GetValue<bool>(), $"{id}: varies an asserted key or the roadmap.");
+            }
+
+            Assert.Contains(Text(c["status"]), new[] { "planned", "run" });
+            if (Text(c["status"]) == "planned")
+            {
+                Assert.Null(c["simRunIds"]);
+                Assert.Null(c["result"]);
+            }
+            else
+            {
+                Assert.Equal(2, c["simRunIds"]!.AsArray().Count);
+                Assert.NotNull(c["result"]);
+            }
+        }
+    }
+
+    [Fact]
+    public void The_guide_links_the_readiness_procedure_and_keeps_model_readiness_apart_from_the_smoke_test()
+    {
+        var guide = ReadRepoFile(GuidePath);
+        var linked = RelativeLinkTargets(guide, GuidePath).Select(t => t.ResolvedPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in new[] { ReadinessReadmePath, ReadinessArtifactPath })
+            Assert.Contains(Path.GetFullPath(RepoPath(path)), linked);
+
+        var smoke = guide.IndexOf("### Smoke simulation (tiers C and D)", StringComparison.Ordinal);
+        var readiness = guide.IndexOf("### Model readiness (tiers C and D)", StringComparison.Ordinal);
+        var troubleshooting = guide.IndexOf("## 13. Troubleshooting", StringComparison.Ordinal);
+        Assert.True(smoke >= 0 && readiness > smoke && troubleshooting > readiness,
+            "Model readiness must be its own subsection after the smoke simulation and before troubleshooting.");
+
+        var smokeText = guide[smoke..readiness];
+        Assert.DoesNotContain("pm calibrate readiness", smokeText);   // the smoke test never claims readiness
+        Assert.Contains("execute", smokeText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Exit 6", smokeText);
+
+        var readinessText = guide[readiness..troubleshooting];
+        foreach (var token in new[] { "pm calibrate readiness", "not a smoke test", "evidence sufficiency", "Exploratory", "roadmap-only" })
+            Assert.Contains(token, readinessText, StringComparison.OrdinalIgnoreCase);
+        AssertCliNamesExist(guide[smoke..troubleshooting], "guide smoke simulation and model readiness");
+
+        var troubleshootingText = guide[troubleshooting..];
+        Assert.Contains("Exit 6", troubleshootingText);
+        Assert.Contains("prior-evidence-reuse", troubleshootingText);
+
+        var loading = guide.IndexOf("## 11. Assembling and loading", StringComparison.Ordinal);
+        var verification = guide.IndexOf("## 12. Verification checklist", StringComparison.Ordinal);
+        Assert.Contains("readiness", guide[loading..verification], StringComparison.OrdinalIgnoreCase);   // import package
+
+        var brief = guide[..guide.IndexOf("## 2. Prerequisites", StringComparison.Ordinal)];
+        Assert.Contains("Prior evidence:", brief);
+        Assert.Contains("priorEvidence", brief);
+    }
+
+    private static readonly Regex PmVerbRegex = new(@"\bpm ([a-z][a-z-]*)(?: ([a-z][a-z-]*))?");
+    private static readonly Regex OptionRegex = new(@"(?<![\w-])(--[a-z][a-z0-9-]*)");
+
+    /// <summary>The text of every command definition, so a documented verb or option can be checked without invoking the CLI.</summary>
+    private static string CliCommandSources() =>
+        string.Join("\n", Directory.GetFiles(RepoPath("src/ProductManager.Cli/Commands"), "*.cs").Select(File.ReadAllText));
+
+    [Theory]
+    [InlineData(ReadinessReadmePath)]
+    [InlineData(ReadinessFixtureReadmePath)]
+    [InlineData(ReadinessArtifactPath)]
+    [InlineData(DatasetDirectory + "/08-assumption-sets.md")]
+    [InlineData(DatasetDirectory + "/12-historical-facts.md")]
+    public void Every_pm_verb_and_option_the_readiness_docs_name_exists_in_the_CLI_sources(string path) =>
+        AssertCliNamesExist(ReadRepoFile(path), path);
+
+    private static void AssertCliNamesExist(string content, string where)
+    {
+        var sources = CliCommandSources();
+        string[] leaves = ["seed"];
+        string[] notCliOptions = ["--help", "--project", "--filter"];   // dotnet's own: "dotnet run --project ... --", "dotnet test --filter"
+
+        foreach (Match m in PmVerbRegex.Matches(content))
+        {
+            var group = m.Groups[1].Value;
+            Assert.True(sources.Contains($"new Command(\"{group}\"", StringComparison.Ordinal),
+                $"{where}: 'pm {group}' names a command group that does not exist.");
+            if (m.Groups[2].Success && !leaves.Contains(group))
+                Assert.True(sources.Contains($"new Command(\"{m.Groups[2].Value}\"", StringComparison.Ordinal),
+                    $"{where}: 'pm {group} {m.Groups[2].Value}' names a verb that does not exist under '{group}'.");
+        }
+
+        foreach (Match m in OptionRegex.Matches(content))
+            Assert.True(sources.Contains($"\"{m.Groups[1].Value}\"", StringComparison.Ordinal) || notCliOptions.Contains(m.Groups[1].Value),
+                $"{where}: option '{m.Groups[1].Value}' is not defined by any command.");
+    }
+
+    private static void AssertPriorEvidenceIsValid(SeedPriorEvidence e, string source, string where)
+    {
+        Assert.Contains(e.Basis, PriorEvidenceBases);
+        var from = AssertIsoDate(e.ObservedFrom, source, $"{where} observedFrom");
+        var through = AssertIsoDate(e.ObservedThrough, source, $"{where} observedThrough");
+        var recorded = AssertIsoDate(e.RecordedThrough, source, $"{where} recordedThrough");
+
+        if (e.Basis == "Independent")
+        {
+            Assert.True(from is null && through is null && recorded is null,
+                $"{source}: {where} is Independent, so it has no observation period or recorded cut-off.");
+            return;
+        }
+
+        Assert.Equal(from is null, through is null);
+        Assert.True(from is not null || recorded is not null,
+            $"{source}: {where} is derived from observations, so it needs observedFrom/observedThrough or recordedThrough.");
+        if (from is not null)
+        {
+            Assert.True(from <= through, $"{source}: {where} observedFrom is after observedThrough.");
+            Assert.True(through <= LatestAllowedRecordedDate, $"{source}: {where} observation period ends in the future.");
+        }
+    }
+
+    private static IEnumerable<(string Source, SeedParameter Parameter)> EngineParameters(SeedFile seed, string source) =>
+        (seed.MarketDynamics?.AssumptionSets ?? []).SelectMany(s => s.Parameters)
+            .Where(p => p.FlowKind is not null).Select(p => (source, p));
+
+    [Fact]
+    public void Dataset_08_and_the_example_seed_declare_prior_evidence_on_every_engine_parameter()
+    {
+        var examples = JsonBlocks("08-assumption-sets.md")
+            .Select((json, i) => (Source: $"{DatasetPath("08-assumption-sets.md")} json block #{i + 1}", Seed: ParseSeedFile(json, "08")))
+            .Append((Source: ExampleSeedPath, Seed: LoadExampleSeed())).ToList();
+
+        var engine = examples.SelectMany(e => EngineParameters(e.Seed, e.Source)).ToList();
+        Assert.NotEmpty(engine);
+        foreach (var (source, parameter) in engine)
+        {
+            var where = $"{parameter.FlowKind} parameter of '{parameter.SegmentName}'";
+            Assert.True(parameter.PriorEvidence is not null,
+                $"{source}: {where} must declare priorEvidence (Independent, or Observations with its period).");
+        }
+
+        foreach (var (source, seed) in examples)
+            foreach (var parameter in (seed.MarketDynamics?.AssumptionSets ?? []).SelectMany(s => s.Parameters)
+                         .Where(p => p.PriorEvidence is not null))
+                AssertPriorEvidenceIsValid(parameter.PriorEvidence!, source, $"{parameter.FlowKind ?? parameter.ChoiceKind ?? parameter.Key} priorEvidence");
+
+        // Both forms are taught: an independent prior, and a win-count prior with the period it counted.
+        var all = engine.Select(e => e.Parameter.PriorEvidence!).ToList();
+        Assert.Contains(all, e => e.Basis == "Independent");
+        Assert.Contains(all, e => e.Basis == "Observations" && e.ObservedFrom is not null);
+
+        var text = ReadRepoFile(DatasetPath("08-assumption-sets.md"));
+        foreach (var token in new[]
+                 {
+                     "priorEvidence", "Independent", "Observations", "--observations-recorded-after", "prior-evidence-reuse",
+                     "counts the same", "](../readiness/README.md)", "disjoint"
+                 })
+            Assert.Contains(token, text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("from last year's decided deals", text);
+    }
+
+    [Fact]
+    public void Datasets_11_and_12_explain_zero_versus_missing_months_churn_level_and_the_history_approximation()
+    {
+        var dataset12 = ReadRepoFile(DatasetPath("12-historical-facts.md"));
+        foreach (var token in new[]
+                 {
+                     "observed zero", "missing month", "never fabricat", "calibrationPopulation.churn.level",
+                     "knowledge", "](../readiness/README.md)", "ArrivalMonthsMissing", "ChurnWithoutEndDate"
+                 })
+            Assert.Contains(token, dataset12, StringComparison.OrdinalIgnoreCase);
+
+        var dataset11 = ReadRepoFile(DatasetPath("11-firms-and-relationships.md"));
+        foreach (var token in new[] { "](../readiness/README.md)", "MissingAcquisitionDate", "ChurnWithoutEndDate" })
+            Assert.Contains(token, dataset11, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Line_citations_into_CalibrationInputBuilder_point_at_the_code_they_describe()
+    {
+        var builder = File.ReadAllLines(RepoPath("src/ProductManager.Api/Simulation/CalibrationInputBuilder.cs"));
+        string[] expected = ["spans", "RelationshipSpan", "arrival", "Arrival", "Exposure", "Remaining approximation", "AcquisitionDate"];
+        var citation = new Regex(@"CalibrationInputBuilder\.cs:(\d+)(?:-(\d+))?");
+        var checkedCitations = 0;
+
+        foreach (var path in DatasetFileNames.Select(DatasetPath).Append(ReadinessReadmePath))
+            foreach (Match m in citation.Matches(ReadRepoFile(path)))
+            {
+                int from = int.Parse(m.Groups[1].Value), to = m.Groups[2].Success ? int.Parse(m.Groups[2].Value) : from;
+                Assert.True(from >= 1 && to <= builder.Length && from <= to, $"{path}: {m.Value} is outside the file.");
+                var window = string.Join("\n", builder.Skip(from - 1).Take(to - from + 1));
+                Assert.True(expected.Any(window.Contains), $"{path}: {m.Value} no longer points at spans, arrivals or exposure code.");
+                checkedCitations++;
+            }
+
+        Assert.True(checkedCitations >= 6, "The datasets cite CalibrationInputBuilder for spans, arrivals and exposure.");
+    }
+
+    [Fact]
+    public void The_readiness_walkthrough_maps_every_PRD8_acceptance_criterion_to_an_API_test_or_the_artifact()
+    {
+        var fixture = ReadRepoFile(ReadinessFixtureReadmePath);
+        for (var i = 1; i <= 6; i++) Assert.Contains($"| {i}.", fixture);
+
+        var apiTests = ReadRepoFile(ReadinessApiTestsPath);
+        var named = Regex.Matches(fixture, @"`((?:AC\d|R\d(?:_R\d)*)_\w+)`").Select(m => m.Groups[1].Value).Distinct().ToList();
+        foreach (var name in named)
+            Assert.Contains($"Task {name}(", apiTests);
+        foreach (var prefix in new[] { "AC1_", "AC2_", "AC3_", "AC4_" })
+            Assert.Contains(named, n => n.StartsWith(prefix, StringComparison.Ordinal));
+
+        foreach (var token in new[] { "reconciliation", "verdict", "Exploratory", "Unsupported", "refusedAttempts" })
+            Assert.Contains(token, fixture);
+    }
+
+    [Theory]
+    [InlineData(ReadinessReadmePath)]
+    [InlineData(ReadinessFixtureReadmePath)]
+    public void The_new_readiness_prose_uses_plain_ascii_hyphens_and_no_em_dashes(string path)
+    {
+        var content = ReadRepoFile(path);
+        Assert.DoesNotContain('\u2014', content);
+        Assert.DoesNotContain('\u2013', content);
+    }
+
+    // ---------- PRD8: append new tests above this line ----------
 }

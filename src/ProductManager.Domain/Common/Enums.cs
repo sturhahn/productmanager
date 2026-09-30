@@ -69,6 +69,16 @@ public enum ParameterProvenance
     Default
 }
 
+/// <summary>What informed a prior (see <c>Simulation.PriorEvidence</c>). No member means unknown: that is a null evidence.</summary>
+public enum PriorEvidenceBasis
+{
+    /// <summary>Not derived from ledger observations: a flat prior, an industry benchmark, a judgement.</summary>
+    Independent,
+
+    /// <summary>Derived from observed outcomes in a stated period, or from the ledger as recorded through a date.</summary>
+    Observations
+}
+
 /// <summary>Kind of market observation in the append-only facts ledger.</summary>
 public enum FactEventKind
 {

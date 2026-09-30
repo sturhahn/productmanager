@@ -15,7 +15,7 @@
   `onboarding/`.
 - `onboarding/README.md` — the orchestrator agent's onboarding guide: environment checks,
   running the stack, source discovery, the mandatory/optional dataset task list, the consolidated
-  interview, portfolio selection, commercial normalization, consequential-decision review, load order, verification. Hand this file to an agent onboarding a new instance.
+  interview, portfolio selection, commercial normalization, consequential-decision review, load order, verification, model readiness. Hand this file to an agent onboarding a new instance.
 - `onboarding/discovery/README.md` - the detailed source-discovery procedure (PRD3): scope
   boundaries, inspection, pagination, authority by concept, dataset-to-evidence mapping, manifest
   field reference. Open when the human has connected sources.
@@ -51,6 +51,16 @@
 - `onboarding/review/review.example.md` - the consolidated human-facing review of the example register.
 - `onboarding/review/fixture/seed/` - the seed fragments generated from the example register's accepted
   decisions only (`03-feature-deltas`, `04-roadmap`, `05-coverage-and-needs`, `11-firms`).
+- `onboarding/readiness/README.md` - the detailed calibration-readiness procedure (PRD8): what readiness is
+  and is not, declaring prior evidence, the evidence-reuse refusal (exit code 6), reading the readiness
+  report (statuses, issue codes, units), reconciling against the sources with per-figure tolerances,
+  exposure and churn-level checks, zero versus missing months, sensitivity comparisons, the holdout, and
+  the agent-side artifact. Open after a calibration run exists.
+- `onboarding/readiness/calibration-readiness.example.json` - the worked agent-side readiness artifact
+  (Harborline, fictional): the API report plus reconciliation, verdict and sensitivity comparisons;
+  guarded by tests.
+- `onboarding/readiness/fixture/README.md` - the walkthrough of every PRD8 acceptance criterion against
+  the API tests and the example artifact.
 - `onboarding/datasets/NN-*.md` — one file per dataset (12, numbered in load order): data
   requirements, units and conversions, seed JSON shape, idempotency rule, verification. Each
   follows the same eight-heading skeleton; a subagent reads exactly one.

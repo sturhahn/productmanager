@@ -43,6 +43,16 @@ public class ParameterConfiguration : IEntityTypeConfiguration<Parameter>
             dist.Property(d => d.ParamB).HasColumnName("DistributionParamB");
         });
         b.Navigation(x => x.Distribution).IsRequired();
+        // Optional: null = unknown evidence. Basis is the non-null column that tells "none" from "present".
+        b.OwnsOne(x => x.PriorEvidence, evidence =>
+        {
+            evidence.Property(e => e.Basis).HasColumnName("PriorEvidenceBasis").HasConversion<string>().HasMaxLength(40);
+            evidence.Property(e => e.ObservedFrom).HasColumnName("PriorEvidenceObservedFrom");
+            evidence.Property(e => e.ObservedThrough).HasColumnName("PriorEvidenceObservedThrough");
+            evidence.Property(e => e.RecordedThrough).HasColumnName("PriorEvidenceRecordedThrough");
+            evidence.Property(e => e.Population).HasColumnName("PriorEvidencePopulation").HasMaxLength(500);
+            evidence.Property(e => e.SourceCalibrationRunId).HasColumnName("PriorEvidenceSourceCalibrationRunId");
+        });
     }
 }
 
@@ -58,6 +68,7 @@ public class CalibrationRunConfiguration : IEntityTypeConfiguration<CalibrationR
         b.Property(x => x.Name).HasMaxLength(200);
         b.Property(x => x.InputSnapshotJson).HasColumnType("jsonb");
         b.Property(x => x.OutputJson).HasColumnType("jsonb");
+        b.Property(x => x.PriorParametersJson).HasColumnType("jsonb");
         b.Ignore(x => x.IsExecuted);
         b.HasIndex(x => x.CreatedAt);
     }

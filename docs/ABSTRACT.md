@@ -9,4 +9,6 @@ Salesforce sources before any data is prepared, and a portfolio-reconciliation s
 a commercial-normalization step (`onboarding/commercial/`) that classifies CRM deals, normalizes contract
 amounts and states the calibration population before any commercial row is prepared, and
 a consequential-decision review (`onboarding/review/`) that keeps interpretations out of the seed until the
-human has accepted them.
+human has accepted them, and a calibration-readiness step (`onboarding/readiness/`) that says whether a
+fitted baseline's evidence is sufficient, non-reused and reconciled to the sources before it supports a
+roadmap decision.

@@ -385,6 +385,10 @@ public sealed class ProductManagerApiClient(HttpClient http)
 
     public Task DeleteCalibrationRunAsync(Guid id, CancellationToken ct) => DeleteAsync($"api/calibration-runs/{id}", ct);
 
+    public Task<CalibrationReadinessDto> GetCalibrationReadinessAsync(Guid id, DateOnly? holdoutThrough, CancellationToken ct) =>
+        GetAsync<CalibrationReadinessDto>(
+            Query($"api/calibration-runs/{id}/readiness", ("holdoutThrough", holdoutThrough)), ct);
+
     // ---------- Needs ----------
 
     public Task<PagedResponse<NeedDto>> ListNeedsAsync(Guid? firmId, Guid? clientSegmentId, Guid? businessProcessId, int? page, int? pageSize, CancellationToken ct) =>

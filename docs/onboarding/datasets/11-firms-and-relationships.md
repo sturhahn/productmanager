@@ -54,8 +54,9 @@ There is no installed `pm` binary.
    conversion from contract value. Default 1.0.
 8. **"When did each relationship start?"** -> `acquisitionDate`. Push for this one: without it the
    relationship contributes **zero exposure** to churn and cross-sell calibration
-   (`CalibrationInputBuilder.cs:135-147`). "The year they signed, first of January" is far better
-   than null.
+   (`CalibrationInputBuilder.cs:91-102`). "The year they signed, first of January" is far better
+   than null. A relationship without one is reported by the calibration readiness check as
+   `MissingAcquisitionDate` ([readiness](../readiness/README.md) section 6).
 9. **"How sure are you about each row?"** -> `epistemicStatus`. `Observed` for anything from your
    own CRM or billing system; `Inferred` for a competitor client you deduced from a press release,
    a job ad, or a conversation. Default `Observed` for your own accounts, `Inferred` for
@@ -158,9 +159,12 @@ on one firm are refused before anything is written. Not settable from a seed fil
     already hold.
 - **`endDate` closes the exposure clock.** An ended edge contributes client-months only up to its
   end date, and is inactive (`pm firm-relationship list --active-only true` leaves it out).
+  A churn event in dataset 12 whose relationship has no `endDate` keeps adding exposure after the
+  client left; the readiness check reports churn events that outnumber ended relationships as
+  `ChurnWithoutEndDate` ([readiness](../readiness/README.md) section 6).
 - **`acquisitionDate` is the calibration exposure clock.** Every relationship with an
   `acquisitionDate` on or before the calibration as-of date contributes client-months to the
-  denominators of `ChurnHazard` and `CrossSellRate` (`CalibrationInputBuilder.cs:135-147`,
+  denominators of `ChurnHazard` and `CrossSellRate` (`CalibrationInputBuilder.cs:91-102`,
   `CalibrationEngine.cs:12-21`). A null `acquisitionDate` contributes nothing, which inflates
   those fitted hazards. Month precision is enough - use the 1st of the month.
 - **`epistemicStatus`**:

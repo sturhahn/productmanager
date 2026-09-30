@@ -55,7 +55,13 @@ integration tests on CRUD/API. Light touch on UI.")
   artifact, its register excerpt, the Salesforce extract and the seed fragments generated from it: the
   fixture's term, quantity, currency, ARPU, penetration and count arithmetic is recomputed from the raw
   records with the documented formulas, every source record is imported, excluded or unresolved exactly
-  once, and no unresolved value is a zero); edit the artifact, extract, fragments and walkthrough together.
+  once, and no unresolved value is a zero); edit the artifact, extract, fragments and walkthrough together. It also guards
+  `docs/onboarding/readiness/` (the PRD8 readiness artifact: its `report` parses into the CLI's
+  `CalibrationReadinessDto` with unknown members disallowed, populations, client-months and posteriors are
+  recomputed from the PRD7 artifact and fragments, reconciliation figures carry named reasons and per-figure
+  tolerances, a mismatch blocks Ready, and every `pm` verb and option named in the readiness docs, dataset 08
+  and 12 and the guide's readiness subsection exists in `src/ProductManager.Cli/Commands/`); when the readiness
+  contracts change, update the CLI mirrors, the procedure's tables and the example together.
 
 ---
 Update this trio (`ABSTRACT.md` / `INDEX.md` / `CLAUDE.md`) whenever you add, remove, or

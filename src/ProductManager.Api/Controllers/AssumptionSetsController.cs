@@ -135,6 +135,25 @@ public sealed class AssumptionSetsController(AppDbContext db) : ApiControllerBas
             return NotFoundProblem("Covariate", request.CovariateId.Value);
 
         var distribution = request.Distribution.ToDomain();
+        if (request.ClearPriorEvidence && request.PriorEvidence is not null)
+            return BadRequestProblem("Give priorEvidence or clearPriorEvidence, not both.");
+
+        // Evidence is sticky: an edit that says nothing about it keeps what the parameter had (a fit's stamp
+        // included); clearing it is a deliberate clearPriorEvidence. A fitted posterior's stamp cannot be
+        // relabelled while its distribution is unchanged — that would hide the evidence the run applied.
+        var key = isEngineParameter
+            ? Parameter.EngineKey(request.FlowKind!.Value, request.ClientSegmentId!.Value, request.ModuleProductId)
+            : request.Key!.Trim();
+        var existing = set.Parameters.FirstOrDefault(p => p.Key == key);
+        var priorEvidence = request.ClearPriorEvidence ? null
+            : request.PriorEvidence?.ToDomain() ?? existing?.PriorEvidence?.Copy();
+        if (existing?.PriorEvidence is { SourceCalibrationRunId: { } runId } stamp
+            && request.PriorEvidence is not null && priorEvidence != stamp && existing.Distribution == distribution)
+            return CorrectionRequiredProblem(
+                $"This distribution is the posterior of calibration run {runId}, whose evidence is recorded on it " +
+                $"(recorded through {stamp.RecordedThrough:yyyy-MM-dd}). Declaring different evidence for the same " +
+                "distribution would hide what the fit applied; change the distribution, or clear the evidence " +
+                "deliberately with clearPriorEvidence.");
 
         // Parameters are non-owned children with domain-assigned ids, so EF has to be told which
         // ones this call actually created.
@@ -143,9 +162,9 @@ public sealed class AssumptionSetsController(AppDbContext db) : ApiControllerBas
             if (isEngineParameter)
                 set.SetEngineParameter(request.ClientSegmentId!.Value, request.FlowKind!.Value,
                     request.ModuleProductId, distribution, request.Provenance, request.Rationale,
-                    request.CovariateId, request.CovariateBeta);
+                    request.CovariateId, request.CovariateBeta, priorEvidence);
             else
-                set.SetParameter(request.Key!, distribution, request.Provenance, request.Rationale);
+                set.SetParameter(request.Key!, distribution, request.Provenance, request.Rationale, priorEvidence);
         });
 
         await db.SaveChangesAsync(ct);

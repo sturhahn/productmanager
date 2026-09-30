@@ -66,6 +66,21 @@
   value as a zero, and that every decision key exists in the PRD5 register or the commercial excerpt.
   Change the artifact, the extract, the fragments, the excerpt and the walkthrough together. The artifact's
   stable keys (README section 10) are what PRD8 references. Salesforce field names stay in these artifacts.
+- **`onboarding/readiness/` is documentation plus examples only** (PRD8): no code, API or seed-schema changes
+  beyond the `priorEvidence` seed key the code half added; the API computes the readiness report, the
+  orchestrator agent reconciles it against the sources and keeps the result outside the repo. The tests parse
+  the example's `report` into the CLI's own `CalibrationReadinessDto` with unknown members disallowed, pin
+  the status, issue-code and holdout vocabularies to the CLI enum mirrors, recompute populations, client-months
+  and posteriors from the PRD7 artifact and fragments, check every reconciliation figure (system, source,
+  difference, named reasons, per-figure tolerance), that a mismatch keeps its parameters from being presented
+  as Ready, that refusals and holdouts never read as a pass, that sensitivity comparisons invent no results,
+  that every `pm` verb and option the readiness docs, dataset 08, dataset 12 and the guide's readiness
+  subsection name exists in `src/ProductManager.Cli/Commands/`, that every dataset 08 and example-seed engine
+  parameter declares valid `priorEvidence`, that line citations into `CalibrationInputBuilder.cs` still point
+  at spans, arrivals or exposure, and that the walkthrough's API test names exist. Change the artifact, the
+  PRD7 artifact and fragments, the walkthrough and the procedure together; when the readiness contracts
+  (`CalibrationReadinessContracts.cs`) change, update the procedure's tables and the CLI mirrors first. Guide
+  section 12 has a separate "Model readiness" subsection after the smoke simulation: keep the two apart.
 - Dataset files are written for an agent reader: state units only when verified in code, cite
   the file, keep the shared Harborline example world consistent across files, and never invent a
   `pm` verb or option.

@@ -89,6 +89,13 @@ public static class ProblemTypes
     /// needs a deliberate correction, not a retry.
     /// </summary>
     public const string CorrectionRequired = "urn:productmanager:problem:correction-required";
+
+    /// <summary>
+    /// 409 from <c>POST /api/calibration-runs</c>: a prior the run would fit was informed by observations
+    /// the fit would apply again (see <see cref="PriorEvidenceReuseProblem"/>). Nothing was fitted or
+    /// stored; narrow the window with <c>observationsRecordedAfter</c> or change the prior's evidence.
+    /// </summary>
+    public const string PriorEvidenceReuse = "urn:productmanager:problem:prior-evidence-reuse";
 }
 
 public static class SourceMapping

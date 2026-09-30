@@ -15,6 +15,9 @@
 
 ## Contracts/ — request/response DTOs, one file per area
 - `AuthContracts.cs` — `TokenRequest`/`TokenResponse`.
+- `CalibrationReadinessContracts.cs` — PRD8: `PriorEvidenceDto`, the evidence-reuse problem
+  (`PriorEvidenceReuseProblem`, `PriorEvidenceOverlapDto`), the readiness report DTOs and their closed
+  status/issue/holdout enums.
 - `ExecutionContracts.cs` — Workspace/Period/Roadmap-execution-side DTOs and create/update
   requests.
 - `MarketContracts.cs` — Market and ClientSegment DTOs/requests.
@@ -24,7 +27,8 @@
 - `SeamContracts.cs` — Feature and FeatureDelta DTOs.
 - `SimulationContracts.cs` — Distribution/AssumptionSet/Parameter/simulation-run DTOs.
 - `SourceContracts.cs` — PRD6 import identity: `SourceRef`, `SourceBindingDto`, `ImportOutcome`,
-  per-item/field outcome DTOs of the firm bulk import, `ProblemTypes.CorrectionRequired`.
+  per-item/field outcome DTOs of the firm bulk import, `ProblemTypes.CorrectionRequired` /
+  `PriorEvidenceReuse`.
 - These are the CLI's mirroring target and the frontend's hand-written-type source — see
   `CLAUDE.md` before renaming/removing a field.
 
@@ -33,7 +37,8 @@
   bi-temporal helper.
 - `AssumptionSetsController.cs` — versioned/branchable parameter-set CRUD and branching.
 - `AuthController.cs` — `POST /api/auth/token`.
-- `CalibrationRunsController.cs` — calibration run creation, diff, input inspection.
+- `CalibrationRunsController.cs` — calibration run creation (with the evidence-reuse refusal and the
+  `observationsRecordedAfter` window), diff, input inspection, `/readiness` report.
 - `FactsAndCovariatesControllers.cs` — bi-temporal facts ledger + covariate/history endpoints.
 - `FeaturesController.cs` — Feature CRUD and delta management.
 - `HealthController.cs` — anonymous liveness probe hitting the DbContext.
@@ -77,14 +82,20 @@
   entities.
 - `Configurations/SimulationAndFactsConfigurations.cs` — EF configs: AssumptionSet, Parameter,
   CalibrationRun, SimulationRun, FactEvent, SourceBinding (unique per workspace + source key).
-- `Migrations/` — six EF migrations (`InitialSchema`, `Phase2`, `Phase3`,
-  `AddInitiativeStrategicIntent`, `ReliableSourceImports`, `OneDecisionFactPerOpportunity`) + current
+- `Migrations/` — seven EF migrations (`InitialSchema`, `Phase2`, `Phase3`,
+  `AddInitiativeStrategicIntent`, `ReliableSourceImports`, `OneDecisionFactPerOpportunity`,
+  `CalibrationReadiness`) + current
   model snapshot. Postgres-only; SQLite tests use
   `EnsureCreatedAsync` from the live model instead (see `CLAUDE.md` — nothing enforces the two
   stay in sync).
 
 ## Simulation/ — turns persisted state into Engine input
-- `CalibrationInputBuilder.cs` — assembles everything a calibration run needs "as of" a date.
+- `CalibrationInputBuilder.cs` — assembles everything a calibration run needs "as of" a date
+  (and from an optional window start); `MapObservations` is the fact -> observation mapping.
+- `CalibrationEvidence.cs` — PRD8: per-parameter observation selection (mirrors the engine's),
+  the evidence-reuse overlap rule, and the prior-evidence stamp a fit puts on what it moved.
+- `CalibrationReadiness.cs` — PRD8: the readiness report, computed on read from a stored run
+  (statuses, issues, populations, exclusions, arrival months, asserted quantities, holdout math).
 - `ChoiceParameterKeys.cs` — structural key scheme for firm-level choice-model parameters.
 - `CovariateHistoryReader.cs` — reads covariate observation history back out of the facts ledger.
 - `FactPayloads.cs` — payload shapes for `OpportunityDecided`, `SegmentArrivalObserved` and

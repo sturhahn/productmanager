@@ -63,6 +63,92 @@ public static class CalibrationSummary
         return sb.ToString().TrimEnd('\n', '\r');
     }
 
+    /// <summary>
+    /// Renders a readiness report (PRD8) for the terminal: the run verdict and its reasons, one row per
+    /// parameter (status, N, events, exposure, posterior mean, issue codes) with every issue message and
+    /// unfitted reason beneath, the asserted quantities, the holdout comparisons, and the report's notes.
+    /// Populations, exclusions and arrival months stay in the JSON (<c>--output</c>).
+    /// </summary>
+    public static string FormatReadiness(CalibrationReadinessDto report, NameResolver? names = null)
+    {
+        string Label(string key) => names is null ? key : ParameterKeyTranslator.Translate(key, names.ParameterMaps);
+        string Text(string text) => names is null ? text : TranslateReason(text, names.ParameterMaps);
+
+        var sb = new StringBuilder();
+        var window = report.ObservationsRecordedAfter is { } after ? $", observations recorded after {after:yyyy-MM-dd}" : "";
+        sb.AppendLine($"Calibration run {report.CalibrationRunId} (as of {report.AsOfDate:yyyy-MM-dd}{window}): {report.Overall}");
+        foreach (var reason in report.OverallReasons) sb.AppendLine($"  - {Text(reason)}");
+
+        if (report.Parameters.Count > 0)
+        {
+            const int nameWidth = 46;
+            sb.AppendLine();
+            sb.AppendLine($"{Pad("Parameter", nameWidth)} {Pad("Status", 9)} {"N",6} {"Events",7} {"Exposure",9} {"Post. mean",10}  Issues");
+            foreach (var p in report.Parameters)
+            {
+                var exposure = p.Exposure is { } e ? e.ToString("F1") : "-";
+                var mean = p.PosteriorMean is { } m ? m.ToString("F4") : "-";
+                var codes = string.Join(", ", p.Issues.Select(i => i.Code).Distinct());
+                sb.AppendLine($"{Pad(Truncate(Label(p.Key), nameWidth), nameWidth)} {Pad(p.Status.ToString(), 9)} " +
+                              $"{p.Observations,6} {(p.Successes?.ToString() ?? "-"),7} {exposure,9} {mean,10}  {codes}".TrimEnd());
+            }
+
+            foreach (var p in report.Parameters.Where(p => p.Issues.Count > 0 || p.UnfittedReason is not null))
+            {
+                sb.AppendLine($"  {Label(p.Key)}:");
+                if (p.UnfittedReason is { } reason) sb.AppendLine($"    unfitted: {Text(reason)}");
+                foreach (var issue in p.Issues) sb.AppendLine($"    {issue.Code}: {Text(issue.Message)}");
+            }
+        }
+
+        if (report.Asserted.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Asserted (not fitted; not validated by this fit):");
+            foreach (var a in report.Asserted)
+            {
+                var value = a.Distribution is { } d
+                    ? $"{d.Type} {d.P1:0.####}" + (d.Type == DistributionType.Point ? "" : $", {d.P2:0.####}")
+                    : $"{a.Count} row(s)";
+                var provenance = a.Provenance is { } pr ? $", {pr}" : "";
+                sb.AppendLine($"  {Label(a.Key)} — {a.Quantity}: {value}{provenance}");
+            }
+        }
+
+        if (report.Holdout is { } holdout)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Holdout {holdout.HeldOutFrom:yyyy-MM-dd}..{holdout.HeldOutThrough:yyyy-MM-dd} " +
+                          $"(central {holdout.IntervalMass:P0} posterior-predictive interval):");
+            foreach (var c in holdout.Comparisons)
+            {
+                var detail = c.Status == HoldoutComparisonStatus.Compared
+                    ? $"n={c.SampleSize}, observed {c.ObservedRate:F4} vs posterior mean {c.PosteriorMean:F4} " +
+                      $"[{c.IntervalLower:F4}, {c.IntervalUpper:F4}] — {(c.ObservedInsideInterval == true ? "inside" : "outside")}"
+                    : $"n={c.SampleSize} — {Text(c.Reason ?? "")}";
+                sb.AppendLine($"  {Label(c.Key)}: {c.Status}, {detail}");
+            }
+            sb.AppendLine($"  {holdout.Note}");
+        }
+
+        if (report.Notes.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Notes:");
+            foreach (var note in report.Notes) sb.AppendLine($"  - {note}");
+        }
+
+        return sb.ToString().TrimEnd('\n', '\r');
+    }
+
+    /// <summary>The evidence-reuse refusal as 'calibrate run' prints it (exit code 6): nothing was stored, the
+    /// server's per-parameter overlap detail, and the two ways forward.</summary>
+    public static string EvidenceReuseMessage(string? detail) =>
+        "Refused: the prior already contains evidence this fit would apply again, so nothing was fitted or stored.\n" +
+        (string.IsNullOrWhiteSpace(detail) ? "" : detail + "\n") +
+        "Fit only newer facts with --observations-recorded-after <the prior's recordedThrough>, or declare prior " +
+        "evidence that is independent of (or disjoint from) the fit's observations.";
+
     private static readonly Regex GuidPattern = new(
         @"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
         RegexOptions.Compiled);

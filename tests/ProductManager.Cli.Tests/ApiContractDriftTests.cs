@@ -180,6 +180,18 @@ public class ApiContractDriftTests
         ["CalibrationUnfittedDto"] = "CalibrationUnfittedDto",
         ["CalibrationDiffDto"] = "CalibrationDiffDto",
         ["CalibrationRunResultDto"] = "CalibrationRunResultDto",
+        ["PriorEvidenceDto"] = "PriorEvidenceDto",
+        ["CalibrationReadinessDto"] = "CalibrationReadinessDto",
+        ["ReadinessParameterDto"] = "ReadinessParameterDto",
+        ["ReadinessIssueDto"] = "ReadinessIssueDto",
+        ["ReadinessAssertedDto"] = "ReadinessAssertedDto",
+        ["ReadinessSegmentPopulationDto"] = "ReadinessSegmentPopulationDto",
+        ["ReadinessModuleHoldersDto"] = "ReadinessModuleHoldersDto",
+        ["ReadinessDecisionCountsDto"] = "ReadinessDecisionCountsDto",
+        ["ReadinessExclusionDto"] = "ReadinessExclusionDto",
+        ["ReadinessArrivalSeriesDto"] = "ReadinessArrivalSeriesDto",
+        ["ReadinessHoldoutDto"] = "ReadinessHoldoutDto",
+        ["ReadinessHoldoutComparisonDto"] = "ReadinessHoldoutComparisonDto",
 
         ["EngineSegmentFunnel"] = "EngineSegmentFunnel",
         ["EngineChannelFunnel"] = "EngineChannelFunnel",
@@ -224,6 +236,11 @@ public class ApiContractDriftTests
         ["OpportunityStage"] = "OpportunityStage",
         ["ImportOutcome"] = "ImportOutcome",
         ["SimulationEngineMode"] = "SimulationEngineMode",
+        ["PriorEvidenceBasis"] = "PriorEvidenceBasis",
+        ["CalibrationReadinessStatus"] = "CalibrationReadinessStatus",
+        ["CalibrationReadinessOverall"] = "CalibrationReadinessOverall",
+        ["ReadinessIssueCode"] = "ReadinessIssueCode",
+        ["HoldoutComparisonStatus"] = "HoldoutComparisonStatus",
     };
 
     private static readonly Assembly ClientAssembly = typeof(ProductManagerApiClient).Assembly;

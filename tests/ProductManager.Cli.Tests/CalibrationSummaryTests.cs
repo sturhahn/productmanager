@@ -147,3 +147,109 @@ public class CalibrationSummaryTests
         Assert.Contains("z-param", lines[2]);
     }
 }
+
+/// <summary>PRD8: the readiness report as 'pm calibrate readiness' prints it.</summary>
+public class CalibrationReadinessSummaryTests
+{
+    private static readonly Guid RunId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid SegmentId = Guid.Parse("cec3eedf-c83a-487f-9c3a-42d71775d02c");
+
+    private static ReadinessParameterDto Parameter(string key, SimulationFlowKind? flow, CalibrationReadinessStatus status,
+        params ReadinessIssueDto[] issues) =>
+        new(key, flow, SegmentId, null, null, status, "probability per decided opportunity", "decided deals",
+            new DateOnly(2026, 1, 5), new DateOnly(2026, 5, 30), 10, 6, 4, 1, null,
+            new DistributionSpecDto(DistributionType.Beta, 1, 1), ParameterProvenance.Asserted,
+            new PriorEvidenceDto(PriorEvidenceBasis.Independent), new DistributionSpecDto(DistributionType.Beta, 7, 5),
+            7.0 / 12.0, status == CalibrationReadinessStatus.Unfitted ? "No observed churn events" : null, issues);
+
+    private static CalibrationReadinessDto Report(CalibrationReadinessOverall overall, IReadOnlyList<ReadinessParameterDto> parameters,
+        IReadOnlyList<ReadinessAssertedDto>? asserted = null, ReadinessHoldoutDto? holdout = null) =>
+        new(RunId, new DateOnly(2026, 6, 30), new DateOnly(2025, 12, 31), Guid.Empty, null, overall,
+            overall == CalibrationReadinessOverall.Ready ? [] : ["1 asserted choice-model quantity is not validated by this fit."],
+            parameters, asserted ?? [], [], [], [], ["Relationship spans ... does not reconstruct ..."], holdout);
+
+    [Fact]
+    public void EvidenceReuseMessage_says_nothing_was_stored_and_names_the_window_option()
+    {
+        var text = CalibrationSummary.EvidenceReuseMessage("WinRate:x: 10 of 14 observation(s) were already in the prior.");
+        Assert.Contains("nothing was fitted or stored", text);
+        Assert.Contains("10 of 14", text);
+        Assert.Contains("--observations-recorded-after", text);
+    }
+
+    [Fact]
+    public void FormatReadiness_leads_with_the_run_verdict_and_its_reasons()
+    {
+        var text = CalibrationSummary.FormatReadiness(Report(CalibrationReadinessOverall.Exploratory,
+            [Parameter($"WinRate:{SegmentId}", SimulationFlowKind.WinRate, CalibrationReadinessStatus.Ready)]));
+        var lines = text.Split('\n');
+
+        Assert.Contains(RunId.ToString(), lines[0]);
+        Assert.Contains("2026-06-30", lines[0]);
+        Assert.Contains("recorded after 2025-12-31", lines[0]);
+        Assert.Contains("Exploratory", lines[0]);
+        Assert.Contains("not validated", text);
+        Assert.Contains("does not reconstruct", text);
+    }
+
+    [Fact]
+    public void FormatReadiness_prints_status_counts_and_issue_codes_per_parameter_with_translated_names()
+    {
+        var names = new NameResolver(segments: new Dictionary<Guid, string> { [SegmentId] = "Boutique Family Offices" });
+        var text = CalibrationSummary.FormatReadiness(Report(CalibrationReadinessOverall.Exploratory,
+        [
+            Parameter($"WinRate:{SegmentId}", SimulationFlowKind.WinRate, CalibrationReadinessStatus.NotReady,
+                new ReadinessIssueDto(ReadinessIssueCode.PriorEvidenceUnknown, "The prior carries no evidence metadata.")),
+            Parameter($"ChurnHazard:{SegmentId}", SimulationFlowKind.ChurnHazard, CalibrationReadinessStatus.Unfitted)
+        ]), names);
+
+        Assert.Contains("Win rate — Boutique Family Offices", text);
+        Assert.Contains("NotReady", text);
+        Assert.Contains("PriorEvidenceUnknown", text);
+        Assert.Contains("The prior carries no evidence metadata.", text);
+        Assert.Contains("Unfitted", text);
+        Assert.Contains("No observed churn events", text);
+        Assert.Contains("0.5833", text);
+        Assert.DoesNotContain(SegmentId.ToString(), text);
+    }
+
+    [Fact]
+    public void FormatReadiness_lists_asserted_quantities_with_provenance()
+    {
+        var text = CalibrationSummary.FormatReadiness(Report(CalibrationReadinessOverall.Exploratory, [],
+        [
+            new ReadinessAssertedDto("choice.switching-cost-base", "switching cost (base)", CalibrationReadinessStatus.Asserted,
+                ParameterProvenance.Asserted, new DistributionSpecDto(DistributionType.Point, 0.5), null, 1),
+            new ReadinessAssertedDto("reference:integration-quality", "integration quality between products",
+                CalibrationReadinessStatus.Asserted, null, null, null, 3)
+        ]));
+
+        Assert.Contains("Asserted", text);
+        Assert.Contains("switching cost (base)", text);
+        Assert.Contains("Point 0.5", text);
+        Assert.Contains("3 row(s)", text);
+    }
+
+    [Fact]
+    public void FormatReadiness_reports_holdout_comparisons_and_unsupported_ones_without_a_pass()
+    {
+        var holdout = new ReadinessHoldoutDto(new DateOnly(2026, 7, 1), new DateOnly(2026, 9, 30), 0.9, "not a pass",
+        [
+            new ReadinessHoldoutComparisonDto($"WinRate:{SegmentId}", SimulationFlowKind.WinRate, SegmentId, null, null,
+                HoldoutComparisonStatus.Compared, null, 8, 5, null, 0.625, 7.0 / 12.0, 0.25, 0.875, true),
+            new ReadinessHoldoutComparisonDto($"ChurnHazard:{SegmentId}", SimulationFlowKind.ChurnHazard, SegmentId, null, null,
+                HoldoutComparisonStatus.Unsupported, "Needs client-month exposure over the held-out period.", 0, null, null,
+                null, null, null, null, null)
+        ]);
+        var text = CalibrationSummary.FormatReadiness(Report(CalibrationReadinessOverall.Exploratory, [], holdout: holdout));
+
+        Assert.Contains("2026-07-01..2026-09-30", text);
+        Assert.Contains("n=8", text);
+        Assert.Contains("0.6250", text);
+        Assert.Contains("[0.2500, 0.8750]", text);
+        Assert.Contains("inside", text);
+        Assert.Contains("Unsupported", text);
+        Assert.Contains("Needs client-month exposure", text);
+        Assert.DoesNotContain("pass", text.Replace("not a pass", ""), StringComparison.OrdinalIgnoreCase);
+    }
+}

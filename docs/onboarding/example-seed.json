@@ -591,7 +591,7 @@
     "assumptionSets": [
       {
         "name": "Baseline 2026",
-        "notes": "Planning baseline for the 2026 roadmap. Funnel rates from the 2025 CRM export; everything asserted pending the first calibration run.",
+        "notes": "Planning baseline for the 2026 roadmap. Funnel rates are sales-ops and finance estimates, each declaring what informed it; everything asserted pending the first calibration run.",
         "parameters": [
           {
             "segmentName": "Regional 3PLs",
@@ -601,6 +601,10 @@
             "p2": 0.3,
             "provenance": "Asserted",
             "rationale": "About 6 new regional 3PLs per month appear in the prospect list (72 in 2025); moves with parcel volume.",
+            "priorEvidence": {
+              "basis": "Independent",
+              "population": "Sales-ops estimate from the prospect list; not derived from recorded arrival counts."
+            },
             "covariateName": "US parcel volume index",
             "covariateBeta": 0.8
           },
@@ -611,7 +615,11 @@
             "p1": 3,
             "p2": 97,
             "provenance": "Asserted",
-            "rationale": "About 3% of the pool opens an opportunity each month (roughly 12 opportunities/month from 420 firms)."
+            "rationale": "About 3% of the pool opens an opportunity each month (roughly 12 opportunities/month from 420 firms).",
+            "priorEvidence": {
+              "basis": "Independent",
+              "population": "Sales-ops rule of thumb; not derived from recorded arrival counts."
+            }
           },
           {
             "segmentName": "Regional 3PLs",
@@ -620,7 +628,13 @@
             "p1": 9,
             "p2": 21,
             "provenance": "Asserted",
-            "rationale": "Won 8 of 28 decided deals in 2025 against Stackline and Palletto; Beta(wins + 1, losses + 1)."
+            "rationale": "Won 8 of 28 decided deals in 2024 against Stackline and Palletto; Beta(wins + 1, losses + 1). Declared Observations for 2024: a fit must read a disjoint window.",
+            "priorEvidence": {
+              "basis": "Observations",
+              "observedFrom": "2024-01-01",
+              "observedThrough": "2024-12-31",
+              "population": "2024 decided new-logo deals, Regional 3PLs (CRM export)"
+            }
           },
           {
             "segmentName": "Regional 3PLs",
@@ -629,7 +643,11 @@
             "p1": 2,
             "p2": 198,
             "provenance": "Asserted",
-            "rationale": "11% annual logo churn -> 1 - 0.89^(1/12) = 0.0097 per month."
+            "rationale": "11% annual logo churn -> 1 - 0.89^(1/12) = 0.0097 per month.",
+            "priorEvidence": {
+              "basis": "Independent",
+              "population": "Finance planning benchmark; not derived from the churn facts in the ledger."
+            }
           },
           {
             "segmentName": "Regional 3PLs",
@@ -639,7 +657,11 @@
             "p1": -3.912,
             "p2": 0.4,
             "provenance": "Asserted",
-            "rationale": "About 2% of clients without Carrier Connect add it each month (ln 0.02 = -3.912)."
+            "rationale": "About 2% of clients without Carrier Connect add it each month (ln 0.02 = -3.912).",
+            "priorEvidence": {
+              "basis": "Independent",
+              "population": "Sales estimate; not derived from recorded attaches."
+            }
           },
           {
             "segmentName": "E-commerce Fulfillment",
@@ -649,6 +671,10 @@
             "p2": 2,
             "provenance": "Asserted",
             "rationale": "About 9 new fulfillment operators per month; the most parcel-sensitive segment.",
+            "priorEvidence": {
+              "basis": "Independent",
+              "population": "Analyst estimate; not derived from recorded arrival counts."
+            },
             "covariateName": "US parcel volume index",
             "covariateBeta": 1.2
           },
@@ -659,7 +685,11 @@
             "p1": 4,
             "p2": 96,
             "provenance": "Asserted",
-            "rationale": "About 4% of the pool comes to market each month; fast-moving segment."
+            "rationale": "About 4% of the pool comes to market each month; fast-moving segment.",
+            "priorEvidence": {
+              "basis": "Independent",
+              "population": "Analyst estimate; not derived from recorded arrival counts."
+            }
           },
           {
             "segmentName": "E-commerce Fulfillment",
@@ -667,7 +697,11 @@
             "distType": "Point",
             "p1": 0.22,
             "provenance": "Default",
-            "rationale": "Placeholder until Carrier Connect v1 ships; too few decided deals in 2025 to fit a Beta."
+            "rationale": "Placeholder until Carrier Connect v1 ships; too few decided deals in 2025 to fit a Beta.",
+            "priorEvidence": {
+              "basis": "Independent",
+              "population": "Placeholder; not derived from observations."
+            }
           },
           {
             "segmentName": "E-commerce Fulfillment",
@@ -676,7 +710,11 @@
             "p1": 3,
             "p2": 197,
             "provenance": "Asserted",
-            "rationale": "17% annual logo churn -> 0.0154 per month; operators fail or get acquired often."
+            "rationale": "17% annual logo churn -> 0.0154 per month; operators fail or get acquired often.",
+            "priorEvidence": {
+              "basis": "Independent",
+              "population": "Industry estimate; not derived from the churn facts in the ledger."
+            }
           },
           {
             "segmentName": "E-commerce Fulfillment",
@@ -686,7 +724,11 @@
             "p1": 3,
             "p2": 97,
             "provenance": "Asserted",
-            "rationale": "About 3% monthly attach among clients without the module."
+            "rationale": "About 3% monthly attach among clients without the module.",
+            "priorEvidence": {
+              "basis": "Independent",
+              "population": "Analyst estimate; not derived from recorded attaches."
+            }
           },
           {
             "choiceKind": "PriceSensitivity",

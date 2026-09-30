@@ -40,12 +40,12 @@ public sealed class AssumptionSet : Entity
 
     /// <summary>Sets (upserting by key) a free-form parameter — one the engine does not read.</summary>
     public Parameter SetParameter(string key, Distribution distribution, ParameterProvenance provenance,
-        string? rationale = null)
+        string? rationale = null, PriorEvidence? priorEvidence = null)
     {
         if (string.IsNullOrWhiteSpace(key))
             throw new ArgumentException("Parameter key is required.", nameof(key));
         _parameters.RemoveAll(p => p.Key == key.Trim());
-        var parameter = new Parameter(Id, key.Trim(), distribution, provenance, rationale);
+        var parameter = new Parameter(Id, key.Trim(), distribution, provenance, rationale).WithPriorEvidence(priorEvidence);
         _parameters.Add(parameter);
         return parameter;
     }
@@ -63,7 +63,8 @@ public sealed class AssumptionSet : Entity
         ParameterProvenance provenance,
         string? rationale = null,
         Guid? covariateId = null,
-        double? covariateBeta = null)
+        double? covariateBeta = null,
+        PriorEvidence? priorEvidence = null)
     {
         if (clientSegmentId == Guid.Empty)
             throw new ArgumentException("ClientSegmentId is required.", nameof(clientSegmentId));
@@ -82,7 +83,8 @@ public sealed class AssumptionSet : Entity
         _parameters.RemoveAll(p => p.Key == key);
         var parameter = new Parameter(Id, key, distribution, provenance, rationale)
             .WithEngineKeying(clientSegmentId, flowKind, moduleProductId)
-            .WithCovariateLink(covariateId, covariateBeta);
+            .WithCovariateLink(covariateId, covariateBeta)
+            .WithPriorEvidence(priorEvidence);
         _parameters.Add(parameter);
         return parameter;
     }
@@ -100,7 +102,8 @@ public sealed class AssumptionSet : Entity
             branch._parameters.Add(
                 new Parameter(branch.Id, p.Key, p.Distribution.Copy(), p.Provenance, p.Rationale)
                     .WithEngineKeying(p.ClientSegmentId, p.FlowKind, p.ModuleProductId)
-                    .WithCovariateLink(p.CovariateId, p.CovariateBeta));
+                    .WithCovariateLink(p.CovariateId, p.CovariateBeta)
+                    .WithPriorEvidence(p.PriorEvidence?.Copy()));
         return branch;
     }
 }
@@ -139,6 +142,12 @@ public sealed class Parameter : Entity
     /// </summary>
     public double? CovariateBeta { get; private set; }
 
+    /// <summary>
+    /// Which observations informed this distribution; null = unknown. Provenance metadata for the
+    /// evidence-reuse check at calibration time — never read by the engine.
+    /// </summary>
+    public PriorEvidence? PriorEvidence { get; private set; }
+
     /// <summary>True when this parameter is keyed the way the engine keys its parameters.</summary>
     public bool IsEngineParameter => ClientSegmentId is not null && FlowKind is not null;
 
@@ -175,6 +184,12 @@ public sealed class Parameter : Entity
         CovariateBeta = covariateBeta;
         return this;
     }
+
+    internal Parameter WithPriorEvidence(PriorEvidence? priorEvidence)
+    {
+        PriorEvidence = priorEvidence;
+        return this;
+    }
 }
 
 /// <summary>
@@ -196,6 +211,18 @@ public sealed class CalibrationRun : Entity
     public string? Name { get; private set; }
 
     /// <summary>
+    /// Lower bound of the fit's observation window: only facts recorded after this date were read, and
+    /// relationship exposure starts here. Null = the whole ledger up to the as-of date.
+    /// </summary>
+    public DateOnly? ObservationsRecordedAfter { get; private set; }
+
+    /// <summary>
+    /// The prior set's parameters as they stood when the fit ran (JSON, including prior evidence), so
+    /// a readiness report on this run does not depend on later edits to the prior set.
+    /// </summary>
+    public string? PriorParametersJson { get; private set; }
+
+    /// <summary>
     /// The exact calibration input this run was executed against (JSON): priors plus the
     /// observations mapped out of the ledger as of <see cref="FactsAsOfDate"/>. Re-running the pure
     /// calibration module on this document alone reproduces the stored output.
@@ -212,11 +239,17 @@ public sealed class CalibrationRun : Entity
 
     private CalibrationRun() { } // EF
 
-    public CalibrationRun(Guid workspaceId, DateOnly factsAsOfDate, Guid priorAssumptionSetId, string? name = null)
+    public CalibrationRun(Guid workspaceId, DateOnly factsAsOfDate, Guid priorAssumptionSetId, string? name = null,
+        DateOnly? observationsRecordedAfter = null)
     {
         if (workspaceId == Guid.Empty) throw new ArgumentException("WorkspaceId is required.", nameof(workspaceId));
         if (priorAssumptionSetId == Guid.Empty)
             throw new ArgumentException("Prior assumption set is required.", nameof(priorAssumptionSetId));
+        if (observationsRecordedAfter >= factsAsOfDate)
+            throw new ArgumentException(
+                "The observation window must start before the as-of date (observationsRecordedAfter < asOfDate).",
+                nameof(observationsRecordedAfter));
+        ObservationsRecordedAfter = observationsRecordedAfter;
         WorkspaceId = workspaceId;
         FactsAsOfDate = factsAsOfDate;
         PriorAssumptionSetId = priorAssumptionSetId;
@@ -227,13 +260,15 @@ public sealed class CalibrationRun : Entity
     /// Records the fit: the assumption set it produced, and the input/output documents that make it
     /// reproducible and diffable. A run is immutable once fitted.
     /// </summary>
-    public void RecordFit(Guid fittedAssumptionSetId, string? inputSnapshotJson = null, string? outputJson = null)
+    public void RecordFit(Guid fittedAssumptionSetId, string? inputSnapshotJson = null, string? outputJson = null,
+        string? priorParametersJson = null)
     {
         if (FittedAssumptionSetId is not null)
             throw new DomainConflictException("A calibration run is immutable once fitted.");
         FittedAssumptionSetId = fittedAssumptionSetId;
         InputSnapshotJson = inputSnapshotJson;
         OutputJson = outputJson;
+        PriorParametersJson = priorParametersJson;
     }
 }
 

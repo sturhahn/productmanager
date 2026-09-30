@@ -65,6 +65,10 @@
   **When you add a loader method, build its index from the API listing, not from the seed file's
   list of that entity** — that is the bug class these three resolvers exist to close.
 
+- **Calibration exit codes:** `calibrate run` exits 6 when the API refuses a fit for evidence reuse
+  (`ApiRequestException.IsPriorEvidenceReuse`) — distinct from 4 (any other refused request) so a script can
+  tell "narrow the window / fix the prior's evidence" from a broken request.
+
 ## Working here
 
 - Command files are organized by entity/area, not by CRUD verb — a new endpoint usually means

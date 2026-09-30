@@ -42,6 +42,10 @@ domain model's *rationale*; this file is the mechanical how.
 - **Distributions and Money are immutable value objects (`sealed record`).** `Distribution.
   Copy()` exists because a distribution is owned by the parameter that carries it — copying a
   parameter must deep-copy its distribution, never share the reference.
+- **`PriorEvidence` is optional and owned by its parameter** (null = unknown evidence). Its invariants
+  (period both-or-neither and ordered; Independent has no dates; a source run implies `RecordedThrough`)
+  live in its constructor; `Branch` copies it with `Copy()` like `Distribution`. It is metadata for the
+  API's evidence-reuse check, never engine input.
 - **`Period` is a calendar month**, not a `DateOnly` — capacity and effort demand are budgeted
   per month. Use `Period.FromDate` / `Period.Range` rather than hand-rolling month arithmetic.
 - **Repeating an applied transition is a no-op, not a conflict.** `Opportunity.Qualify`/`Decide`

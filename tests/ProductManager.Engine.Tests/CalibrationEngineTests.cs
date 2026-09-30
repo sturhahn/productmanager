@@ -131,6 +131,46 @@ public class CalibrationEngineTests
         Assert.Equal(0.65, fitted.Diff.PosteriorMean, 9);
     }
 
+    /// <summary>PRD8 acceptance criterion 1: an independent Beta(1,1) prior and 6 wins / 4 losses give Beta(7,5).</summary>
+    [Fact]
+    public void Prd8_IndependentUniformPrior_SixWinsFourLosses_YieldsBeta7_5()
+    {
+        var prior = WinRatePrior(new DistributionSpec(DistributionType.Beta, 1, 1));
+        var output = CalibrationEngine.Run(Input(flowPriors: [prior], opportunities: Decided(6, 4)));
+
+        var fitted = Assert.Single(output.FittedFlows);
+        Assert.Equal(7.0, fitted.Posterior.P1, 12);
+        Assert.Equal(5.0, fitted.Posterior.P2, 12);
+        Assert.Equal(10, fitted.SampleSize);
+    }
+
+    /// <summary>
+    /// PRD8 requirement 5: an observed zero-arrival month is Poisson evidence and adds one month of
+    /// exposure; a month with no observation adds nothing — the engine never invents a zero for it.
+    /// </summary>
+    [Fact]
+    public void Prd8_ObservedZeroArrivalMonth_AddsExposure_UnobservedMonthAddsNothing()
+    {
+        var prior = new FlowPrior(Seg, FlowKind.NewFirmArrival, null, DistributionSpec.Point(2.0), CalibrationProvenance.Asserted);
+        ArrivalCount Month(int m, int count) => new(Seg, FlowKind.NewFirmArrival, new DateOnly(2026, m, 1), count);
+
+        // Jan 4, Feb observed zero, Mar missing, Apr 4.
+        var withZero = CalibrationEngine.Run(Input(flowPriors: [prior], arrivalCounts: [Month(1, 4), Month(2, 0), Month(4, 4)]));
+        var withoutZero = CalibrationEngine.Run(Input(flowPriors: [prior], arrivalCounts: [Month(1, 4), Month(4, 4)]));
+
+        double beta = CalibrationEngine.PointPriorStrength;
+        double alpha = 2.0 * beta;
+        static double Mean(FittedFlowParameter f) => Math.Exp(f.Posterior.P1 + 0.5 * f.Posterior.P2 * f.Posterior.P2);
+
+        var zeroFit = Assert.Single(withZero.FittedFlows);
+        Assert.Equal(3, zeroFit.SampleSize);
+        Assert.Equal((alpha + 8) / (beta + 3), Mean(zeroFit), 9);
+
+        var gapFit = Assert.Single(withoutZero.FittedFlows);
+        Assert.Equal(2, gapFit.SampleSize);
+        Assert.Equal((alpha + 8) / (beta + 2), Mean(gapFit), 9);
+    }
+
     // ---------------------------------------------------------------- churn hazard
 
     [Fact]

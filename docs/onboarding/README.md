@@ -8,7 +8,7 @@ Read this file end to end before you start. Do not read the dataset files under 
 one is read by the subagent you spawn for it. (Discovery, section 6, portfolio selection, section 8, and
 commercial normalization, section 9, are the exceptions: they read a requested dataset's tier,
 data-requirements and units sections only to map evidence and shape the mapping.) The review procedure
-(section 10) reads no dataset file.
+(section 10) and the calibration readiness procedure (`readiness/README.md`) read no dataset file.
 
 Shorthand used below: `pm` means `dotnet run --project src/ProductManager.Cli --`. There is no
 installed `pm` binary. Every command is run from the repository root.
@@ -26,7 +26,7 @@ spec - the *why* behind every dataset).
 
 | Role | Reads | Does |
 |---|---|---|
-| Orchestrator (you) | this file, plus [`discovery/README.md`](discovery/README.md) when sources are connected, [`portfolio/README.md`](portfolio/README.md) when Aha! or Jira are connected and [`commercial/README.md`](commercial/README.md) when Salesforce is connected and tier C or D is requested, [`review/README.md`](review/README.md) before anything consequential loads | environment checks, stack up, source discovery, consolidated interview, portfolio selection, commercial normalization, consequential-decision review, spawns subagents, assembles and loads, verifies |
+| Orchestrator (you) | this file, plus [`discovery/README.md`](discovery/README.md) when sources are connected, [`portfolio/README.md`](portfolio/README.md) when Aha! or Jira are connected and [`commercial/README.md`](commercial/README.md) when Salesforce is connected and tier C or D is requested, [`review/README.md`](review/README.md) before anything consequential loads, [`readiness/README.md`](readiness/README.md) when a calibration run is made or a "calibrated" baseline is asked for | environment checks, stack up, source discovery, consolidated interview, portfolio selection, commercial normalization, consequential-decision review, spawns subagents, assembles and loads, verifies, reports calibration readiness |
 | Dataset subagent | one file under `datasets/` | asks its dataset's questions, converts the human's source data, emits a seed JSON fragment (accepted decisions only), loads it, reports |
 
 This is progressive disclosure on purpose: the 12 dataset files together are far too long for one
@@ -79,6 +79,14 @@ its snapshot still equal to the entry's value, scope and evidence). A consequent
 by an accepted decision or rule is returned to the orchestrator as a proposed register entry; it is
 never defaulted into the fragment. Bracketed defaults in the dataset file apply to mechanical choices
 only. Records of proposed, rejected, deferred or reopened entries stay out of the fragment.
+
+Prior evidence: <for dataset 08, the rule below plus the period and population behind every prior the register accepted as derived from observations; "none - not dataset 08" otherwise>
+Every engine parameter (segmentName + flowKind) carries `priorEvidence`: `Independent` (a flat prior, a
+benchmark, an estimate that does not come from the ledger's facts) or `Observations` with the period
+(`observedFrom`, `observedThrough`) and population it was derived from. Never seed a win-count
+`Beta(wins + 1, losses + 1)` from deals the ledger will also hold without declaring that period. A
+prior whose basis you cannot state is returned as a proposed register entry and left undeclared, never
+declared `Independent` to make a check pass. See readiness/README.md section 2.
 
 Source data location:
 <path to spreadsheet / export / API, plus any credentials handling the human specified>
@@ -544,7 +552,11 @@ register, never fragment content.
 
 **Register and source references travel with the import package.** Keep the decision register (accepted
 snapshots and accepted assumptions included), the discovery manifest, the portfolio mapping and the loaded
-fragments together, outside the repository. See [`review/README.md`](review/README.md) section 9.
+fragments together, outside the repository. See [`review/README.md`](review/README.md) section 9. For every
+calibration run you present, add its readiness artifact (the run id, the `pm calibrate readiness --output`
+report, the input snapshot, your source reconciliation and any refused attempts): see
+[`readiness/README.md`](readiness/README.md) section 10 and the worked
+[example](readiness/calibration-readiness.example.json).
 
 Both strategies use the same command:
 
@@ -719,6 +731,9 @@ the human eyeball them.
 
 ### Smoke simulation (tiers C and D)
 
+A smoke test shows that records loaded and that a simulation or a fit can execute. It proves nothing
+about whether the numbers are usable: that is model readiness, the next subsection.
+
 Needs a roadmap id (`pm roadmap list`) and an assumption set id (`pm assumptions list`).
 
 ```
@@ -746,7 +761,32 @@ pm calibrate run --assumption-set <guid> --as-of 2026-08-31
 facts recorded on or before that date. `--name` and `--notes` are optional. It prints the run id
 and a prior-versus-posterior diff table. "Correct" here means the diff table has rows: an empty
 table means calibration found no facts to fit, which usually means dataset 12 did not load or its
-`recordedDate` values are all after the `--as-of` date.
+`recordedDate` values are all after the `--as-of` date. **Exit 6** means the fit was refused before
+anything was stored: a prior in the set was informed by observations the fit would count again (see
+model readiness below and the troubleshooting table). A run that prints a table has executed; it has not
+been checked.
+
+### Model readiness (tiers C and D)
+
+Not a smoke test: this step asks whether the evidence behind each fitted number is sufficient, non-reused
+and reconciled to the sources. It is evidence sufficiency, never forecast accuracy. Run it for every
+calibration run you intend to present, after the smoke checks pass:
+
+```
+pm calibrate readiness <run-id> --output <package>/run-<run-id>.readiness.json
+```
+
+It prints, per parameter and segment, a status (`Ready`, `NotReady`, `Unfitted`), its open issues, the
+asserted choice-model quantities, and a run verdict: `Ready`, or `Exploratory`. Then reconcile the report's
+populations against the commercial normalization artifact and write the readiness artifact. The procedure,
+every status and issue code, the tolerances and the holdout are in
+[`readiness/README.md`](readiness/README.md), with a worked
+[example](readiness/calibration-readiness.example.json).
+
+What you may say: a run whose verdict is `Exploratory` is an exploratory simulation with its listed
+assumptions, never a validated forecast; only a `Ready` parameter, not blocked by your reconciliation,
+may be called "fitted from N observations, evidence complete". A roadmap-only user (tiers A and B, or C
+without calibration) skips this subsection entirely.
 
 ---
 
@@ -768,6 +808,7 @@ table means calibration found no facts to fit, which usually means dataset 12 di
 | Exit 5, `EXCEPTION ... Correction required: ...` | A sourced record already recorded differently: a changed decision or winner, a deal moved to another firm, a restated fact, or an older export reloaded after a newer one | Nothing was changed. Confirm with the human which is true; the loader does not rewrite the ledger. Keep the report with the register |
 | Exit 5, `EXCEPTION firm ... Indistinguishable same-name firms` | Two source accounts would share one display name | Give each a distinct, reviewed `name` in the file and rerun |
 | Exit 5, `EXCEPTION ... loaded earlier without source identity` | The row gained `source` after its record was loaded without it | Load that dataset without `source`, or have the earlier record resolved deliberately |
+| Exit 6 from `pm calibrate run`: `Refused: the prior already contains evidence this fit would apply again` (API 409 `prior-evidence-reuse`) | A parameter the fit would move has a prior derived from observations (a hand-declared `Observations` period, or a previous fit's stamp) that overlap the fit's observations. Nothing was fitted or stored | Read the overlap, then rerun with `--observations-recorded-after <the prior's recordedThrough>`, or replace the prior with an `Independent` one, or restate its period. Do not relabel a prior `Independent` to get past it. [`readiness/README.md`](readiness/README.md) section 3 |
 | Exit 4 or 2 partway through a load | The API refused one write, or the connection dropped; everything before it was applied | Fix the cause (the report's `failure`), then run the same file again - it resumes without duplicates |
 | `dotnet build` fails with "framework 'Microsoft.NETCore.App' version '9.0.x' was not found" or NETSDK1045 | Only a 10.x (or 8.x) SDK is installed; every project targets `net9.0` | Install the .NET 9 SDK; verify with `dotnet --list-sdks` |
 | `docker compose version` reports `docker-compose version 1.x` | Compose v1; `docker compose up -d --wait` does not exist there | Install Docker Compose v2 (bundled with current Docker Desktop) |

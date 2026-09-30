@@ -360,7 +360,8 @@ public sealed record CalibrationRunDto(
     Guid? FittedAssumptionSetId,
     bool IsExecuted,
     DateTimeOffset CreatedAt,
-    string? Notes);
+    string? Notes,
+    DateOnly? ObservationsRecordedAfter = null);
 
 /// <summary>
 /// Fits the prior assumption set to the facts ledger as it stood on <c>asOfDate</c>: only facts
@@ -368,12 +369,32 @@ public sealed record CalibrationRunDto(
 /// The run is immutable and produces a new assumption set (parent = the prior, provenance
 /// Calibrated) rather than editing the prior in place. <c>name</c> labels both the run and the
 /// assumption set it produces; omitted, the set is named "{prior} (calibrated {asOfDate})".
+///
+/// <para>
+/// <c>observationsRecordedAfter</c> narrows the fit to facts recorded <em>after</em> that date (and
+/// starts relationship exposure there), so a prior informed by earlier evidence can be updated with
+/// new evidence only. It must be before <c>asOfDate</c>.
+/// </para>
+///
+/// <para>
+/// Evidence reuse is refused before fitting (409, <see cref="ProblemTypes.PriorEvidenceReuse"/>, nothing
+/// stored). For each prior parameter the engine would move, the prior's evidence is compared with the
+/// observations this fit would apply to it, by every rule whose field is present: <c>Independent</c> never
+/// overlaps; <c>recordedThrough</c> R overlaps unless <c>observationsRecordedAfter</c> &gt;= R; an observation
+/// period [from, through] overlaps if any of the fit's observations for the parameter is effective inside it
+/// (for ChurnHazard and CrossSellRate: also any client-month inside it; exposure runs from day
+/// <c>observationsRecordedAfter</c>, so only a window after <c>through</c> leaves the period's client-months
+/// out). Unknown evidence is not refused; the readiness report flags it. A fit stamps every parameter it moves
+/// with <c>recordedThrough</c> = the as-of date and its run id, keeping the updated prior's own period, so
+/// both rules protect a fitted set fitted again.
+/// </para>
 /// </summary>
 public sealed record CreateCalibrationRunRequest(
     [Required] Guid AssumptionSetId,
     DateOnly? AsOfDate = null,
     [MaxLength(200)] string? Name = null,
-    string? Notes = null);
+    string? Notes = null,
+    DateOnly? ObservationsRecordedAfter = null);
 
 /// <summary>Prior vs posterior for one parameter, with the evidence that moved it.</summary>
 public sealed record CalibrationParameterDiffDto(
@@ -443,5 +464,5 @@ public static class Phase3Mapping
 
     public static CalibrationRunDto ToDto(this CalibrationRun r) =>
         new(r.Id, r.WorkspaceId, r.Name, r.FactsAsOfDate, r.PriorAssumptionSetId, r.FittedAssumptionSetId,
-            r.IsExecuted, r.CreatedAt, r.Notes);
+            r.IsExecuted, r.CreatedAt, r.Notes, r.ObservationsRecordedAfter);
 }

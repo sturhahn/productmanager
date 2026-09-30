@@ -292,6 +292,53 @@ public class SeedLoaderCrossFileReferenceTests
         Assert.Contains("Yard Management", ex.Message);
     }
 
+    // ---------- PRD8: prior evidence travels from the seed file to the parameter upsert ----------
+
+    [Fact]
+    public async Task A_parameter_with_prior_evidence_parses_strictly_and_is_sent_with_the_upsert()
+    {
+        const string json = """
+            {
+              "marketDynamics": {
+                "marketName": "Warehouse Software",
+                "assumptionSets": [
+                  {
+                    "name": "Base case",
+                    "parameters": [
+                      {
+                        "segmentName": "Mid-Market", "flowKind": "WinRate", "distType": "Beta", "p1": 9, "p2": 21,
+                        "priorEvidence": {
+                          "basis": "Observations", "observedFrom": "2025-01-01", "observedThrough": "2025-12-31",
+                          "population": "2025 decided deals"
+                        }
+                      },
+                      { "key": "note", "p1": 1, "priorEvidence": { "basis": "Independent" } }
+                    ]
+                  }
+                ]
+              }
+            }
+            """;
+        var strict = new JsonSerializerOptions(ProductManagerApiClient.JsonOptions)
+        {
+            UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow
+        };
+        var seed = JsonSerializer.Deserialize<SeedFile>(json, strict)!;
+        var evidence = seed.MarketDynamics!.AssumptionSets[0].Parameters[0].PriorEvidence!;
+        Assert.Equal(("Observations", "2025-01-01"), (evidence.Basis, evidence.ObservedFrom));
+
+        var api = World();
+        api.GetPage("api/assumption-sets?workspaceId=", []);
+        await SeedLoader.RunAsync(api.Client, seed, CancellationToken.None);
+
+        var upserts = api.Writes.Where(w => w.Method == "PUT" && w.Url.EndsWith("/parameters")).ToList();
+        Assert.Equal(2, upserts.Count);
+        Assert.Contains("\"priorEvidence\":{\"basis\":\"Observations\",\"observedFrom\":\"2025-01-01\",\"observedThrough\":\"2025-12-31\"",
+            upserts[0].Body);
+        Assert.Contains("2025 decided deals", upserts[0].Body);
+        Assert.Contains("\"priorEvidence\":{\"basis\":\"Independent\"", upserts[1].Body);
+    }
+
     // ---------- The scripted API ----------
 
     /// <summary>

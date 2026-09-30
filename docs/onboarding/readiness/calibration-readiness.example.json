@@ -1,0 +1,976 @@
+{
+  "readinessArtifactVersion": 1,
+  "purpose": "Worked agent-side calibration readiness artifact for the Harborline example (fictional): the API readiness report of one calibration run plus what only the agent can add, a reconciliation against the PRD7 commercial normalization, a verdict per parameter, the evidence-reuse refusals met on the way and the sensitivity comparisons. Procedure: README.md. The figures are the PRD7 fixture's, so the run is small on purpose and the honest result is exploratory. Ids are fictional. Contains no credentials.",
+  "references": {
+    "commercialNormalization": "../commercial/commercial-normalization.example.json",
+    "registers": [
+      "../commercial/commercial-register-excerpt.example.json",
+      "../review/decision-register.example.json"
+    ],
+    "fragmentsLoaded": [
+      "../commercial/fixture/seed/06-segment-economics.json",
+      "../commercial/fixture/seed/11-firms-and-relationships.json",
+      "../commercial/fixture/seed/12-historical-facts.json"
+    ]
+  },
+  "run": {
+    "calibrationRunId": "8a1f0c52-6b7d-4c1e-9a10-0000000000c1",
+    "name": "Harborline baseline fit as of 2026-09-30",
+    "asOf": "2026-09-30",
+    "observationsRecordedAfter": null,
+    "importedOn": "2026-09-30",
+    "priorAssumptionSetId": "a4e7d3f0-0000-4000-8000-0000000000d1",
+    "fittedAssumptionSetId": "a4e7d3f0-0000-4000-8000-0000000000d2",
+    "commands": [
+      "pm calibrate run --assumption-set <prior-set-id> --as-of 2026-09-30 --name \"Harborline baseline fit as of 2026-09-30\"",
+      "pm calibrate readiness <run-id> --holdout-through 2026-12-31 --output run-<run-id>.readiness.json"
+    ],
+    "packageFiles": {
+      "inputSnapshot": "run-<run-id>.input.json",
+      "diff": "run-<run-id>.diff.txt",
+      "readinessReport": "run-<run-id>.readiness.json",
+      "decisionRegister": "decision-register.json",
+      "normalization": "commercial-normalization.json",
+      "importReports": [
+        "06-segment-economics.report.json",
+        "11-firms-and-relationships.report.json",
+        "12-historical-facts.report.json"
+      ]
+    },
+    "note": "The fragments carry no recordedDate for the decisions without stage history, so the import stamped them on 2026-09-30 and the fit as of that date reads them. A fit as of an earlier date would read none of those."
+  },
+  "refusedAttempts": [
+    {
+      "attemptedOn": "2026-09-30",
+      "command": "pm calibrate run --assumption-set <set-with-win-count-prior> --as-of 2026-09-30",
+      "why": "The set seeded WinRate for Regional 3PLs as Beta(wins + 1, losses + 1) = Beta(4, 1) from the three new-logo deals decided in 2025 (the old dataset 08 recipe) and declared them: Observations, 2025-01-01 to 2025-12-31. The fit would count the same three deals again.",
+      "httpStatus": 409,
+      "problemType": "urn:productmanager:problem:prior-evidence-reuse",
+      "exitCode": 6,
+      "stored": false,
+      "overlaps": [
+        {
+          "key": "WinRate:3c1b7a10-0000-4000-8000-0000000000a1",
+          "flowKind": "WinRate",
+          "clientSegmentId": "3c1b7a10-0000-4000-8000-0000000000a1",
+          "moduleProductId": null,
+          "productId": null,
+          "priorEvidence": {
+            "basis": "Observations",
+            "observedFrom": "2025-01-01",
+            "observedThrough": "2025-12-31",
+            "recordedThrough": null,
+            "population": "Regional 3PLs new-logo deals decided in 2025 (Salesforce extract)",
+            "sourceCalibrationRunId": null
+          },
+          "overlapFrom": "2025-02-20",
+          "overlapThrough": "2025-09-10",
+          "overlappingObservations": 3,
+          "overlappingExposure": null,
+          "fitObservations": 3
+        }
+      ],
+      "resolution": "No run was stored. The three deals are the only win-rate evidence, so the prior was replaced by a flat Beta(1, 1) declared Independent (proposed entry DEC-calibration-priors-regional-3pl) and the fit run again: the deals are counted once, Beta(4, 1). Declaring the old prior Independent instead would have hidden the double count."
+    }
+  ],
+  "report": {
+    "calibrationRunId": "8a1f0c52-6b7d-4c1e-9a10-0000000000c1",
+    "asOfDate": "2026-09-30",
+    "observationsRecordedAfter": null,
+    "priorAssumptionSetId": "a4e7d3f0-0000-4000-8000-0000000000d1",
+    "fittedAssumptionSetId": "a4e7d3f0-0000-4000-8000-0000000000d2",
+    "overall": "Exploratory",
+    "overallReasons": [
+      "1 fitted parameter(s) have open issues: WinRate:3c1b7a10-0000-4000-8000-0000000000a2 [PriorEvidenceUnknown].",
+      "1 parameter(s) were not fitted; their priors stand as assumptions.",
+      "10 asserted choice-model quantities are not validated by this fit."
+    ],
+    "parameters": [
+      {
+        "key": "ChurnHazard:3c1b7a10-0000-4000-8000-0000000000a1",
+        "flowKind": "ChurnHazard",
+        "clientSegmentId": "3c1b7a10-0000-4000-8000-0000000000a1",
+        "moduleProductId": null,
+        "productId": null,
+        "status": "Ready",
+        "units": "probability per client-month",
+        "denominator": "client-months: every relationship of ours in the segment (base products and modules alike, one per relationship) from acquisition to its end or the as-of date; numerator = churn events",
+        "observedFrom": "2025-03-01",
+        "observedThrough": "2026-09-30",
+        "observations": 1,
+        "successes": 1,
+        "failures": null,
+        "excluded": null,
+        "exposure": 48.887064,
+        "prior": {
+          "type": "Beta",
+          "p1": 2,
+          "p2": 198
+        },
+        "priorProvenance": "Asserted",
+        "priorEvidence": {
+          "basis": "Independent",
+          "population": "Finance planning benchmark: 11% annual logo churn converted to a monthly hazard (dataset 08). Not derived from the churn facts in the ledger."
+        },
+        "posterior": {
+          "type": "Beta",
+          "p1": 3,
+          "p2": 245.887064
+        },
+        "posteriorMean": 0.012054,
+        "unfittedReason": null,
+        "issues": []
+      },
+      {
+        "key": "CrossSellRate:3c1b7a10-0000-4000-8000-0000000000a1:5d2e9b20-0000-4000-8000-0000000000b1",
+        "flowKind": "CrossSellRate",
+        "clientSegmentId": "3c1b7a10-0000-4000-8000-0000000000a1",
+        "moduleProductId": "5d2e9b20-0000-4000-8000-0000000000b1",
+        "productId": null,
+        "status": "Unfitted",
+        "units": "probability per client-month",
+        "denominator": "client-months as for ChurnHazard; numerator = won cross-sell opportunities for the module",
+        "observedFrom": "2025-03-01",
+        "observedThrough": "2026-09-30",
+        "observations": 0,
+        "successes": 0,
+        "failures": 0,
+        "excluded": null,
+        "exposure": 48.887064,
+        "prior": {
+          "type": "Lognormal",
+          "p1": -3.912,
+          "p2": 0.4
+        },
+        "priorProvenance": "Asserted",
+        "priorEvidence": {
+          "basis": "Independent",
+          "population": "Sales estimate: about 2% of clients without Carrier Connect add it each month. Not derived from recorded attaches."
+        },
+        "posterior": null,
+        "posteriorMean": null,
+        "unfittedReason": "No observed cross-sell wins for module '5d2e9b20-0000-4000-8000-0000000000b1' in segment '3c1b7a10-0000-4000-8000-0000000000a1' as of 2026-09-30 (0 decided cross-sell opportunities, 48.9 client-months of exposure) \u2014 the prior stands.",
+        "issues": []
+      },
+      {
+        "key": "WinRate:3c1b7a10-0000-4000-8000-0000000000a1",
+        "flowKind": "WinRate",
+        "clientSegmentId": "3c1b7a10-0000-4000-8000-0000000000a1",
+        "moduleProductId": null,
+        "productId": null,
+        "status": "Ready",
+        "units": "probability per decided opportunity",
+        "denominator": "decided new-business opportunities (won + lost); no-decision outcomes and cross-sells excluded",
+        "observedFrom": "2025-02-20",
+        "observedThrough": "2025-09-10",
+        "observations": 3,
+        "successes": 3,
+        "failures": 0,
+        "excluded": 1,
+        "exposure": null,
+        "prior": {
+          "type": "Beta",
+          "p1": 1,
+          "p2": 1
+        },
+        "priorProvenance": "Asserted",
+        "priorEvidence": {
+          "basis": "Independent",
+          "population": "Flat prior: nothing is assumed about the win rate before the recorded deals."
+        },
+        "posterior": {
+          "type": "Beta",
+          "p1": 4,
+          "p2": 1
+        },
+        "posteriorMean": 0.8,
+        "unfittedReason": null,
+        "issues": []
+      },
+      {
+        "key": "WinRate:3c1b7a10-0000-4000-8000-0000000000a2",
+        "flowKind": "WinRate",
+        "clientSegmentId": "3c1b7a10-0000-4000-8000-0000000000a2",
+        "moduleProductId": null,
+        "productId": null,
+        "status": "NotReady",
+        "units": "probability per decided opportunity",
+        "denominator": "decided new-business opportunities (won + lost); no-decision outcomes and cross-sells excluded",
+        "observedFrom": "2025-07-15",
+        "observedThrough": "2025-07-15",
+        "observations": 1,
+        "successes": 0,
+        "failures": 1,
+        "excluded": 0,
+        "exposure": null,
+        "prior": {
+          "type": "Point",
+          "p1": 0.22,
+          "p2": 0
+        },
+        "priorProvenance": "Default",
+        "priorEvidence": null,
+        "posterior": {
+          "type": "Beta",
+          "p1": 11,
+          "p2": 40
+        },
+        "posteriorMean": 0.215686,
+        "unfittedReason": null,
+        "issues": [
+          {
+            "code": "PriorEvidenceUnknown",
+            "message": "The prior carries no evidence metadata, so overlap between the evidence behind it and this fit's observations cannot be ruled out. Declare it (Independent, or Observations with a period) and refit."
+          }
+        ]
+      }
+    ],
+    "asserted": [
+      {
+        "key": "choice.price-sensitivity:3c1b7a10-0000-4000-8000-0000000000a1",
+        "quantity": "price sensitivity",
+        "status": "Asserted",
+        "provenance": "Asserted",
+        "distribution": {
+          "type": "Lognormal",
+          "p1": 0,
+          "p2": 0.35
+        },
+        "rationale": "Median sensitivity 1.0 (one utility unit per PriceScale of monthly price), typically within a factor of 2. No price experiment or win/loss price data backs it.",
+        "count": 1
+      },
+      {
+        "key": "choice.switching-cost-base",
+        "quantity": "switching cost (base)",
+        "status": "Asserted",
+        "provenance": "Asserted",
+        "distribution": {
+          "type": "Point",
+          "p1": 0.6,
+          "p2": 0
+        },
+        "rationale": "Replacing an incumbent WMS is a multi-month migration; moderate friction. Win rates and cycle times do not measure it.",
+        "count": 1
+      },
+      {
+        "key": "choice.expansion-propensity",
+        "quantity": "expansion propensity",
+        "status": "Asserted",
+        "provenance": "Default",
+        "distribution": {
+          "type": "Point",
+          "p1": 0,
+          "p2": 0
+        },
+        "rationale": "Not defined in the set: the firm-level engine's documented default.",
+        "count": 1
+      },
+      {
+        "key": "choice.integration-weight",
+        "quantity": "integration weight",
+        "status": "Asserted",
+        "provenance": "Default",
+        "distribution": {
+          "type": "Point",
+          "p1": 1,
+          "p2": 0
+        },
+        "rationale": "Not defined in the set: the firm-level engine's documented default.",
+        "count": 1
+      },
+      {
+        "key": "choice.no-decision-utility",
+        "quantity": "no-decision utility",
+        "status": "Asserted",
+        "provenance": "Default",
+        "distribution": {
+          "type": "Point",
+          "p1": 0,
+          "p2": 0
+        },
+        "rationale": "Not defined in the set: the firm-level engine's documented default.",
+        "count": 1
+      },
+      {
+        "key": "choice.price-scale",
+        "quantity": "price scale",
+        "status": "Asserted",
+        "provenance": "Default",
+        "distribution": {
+          "type": "Point",
+          "p1": 1000,
+          "p2": 0
+        },
+        "rationale": "Not defined in the set: the firm-level engine's documented default.",
+        "count": 1
+      },
+      {
+        "key": "choice.price-sensitivity:3c1b7a10-0000-4000-8000-0000000000a2",
+        "quantity": "price sensitivity",
+        "status": "Asserted",
+        "provenance": "Default",
+        "distribution": {
+          "type": "Point",
+          "p1": 1,
+          "p2": 0
+        },
+        "rationale": "Not defined in the set: the firm-level engine's documented default.",
+        "count": 1
+      },
+      {
+        "key": "choice.scope-cluster-count:3c1b7a10-0000-4000-8000-0000000000a1",
+        "quantity": "scope cluster count",
+        "status": "Asserted",
+        "provenance": "Default",
+        "distribution": {
+          "type": "Point",
+          "p1": 1,
+          "p2": 0
+        },
+        "rationale": "Not defined in the set: the firm-level engine's documented default.",
+        "count": 1
+      },
+      {
+        "key": "choice.scope-cluster-count:3c1b7a10-0000-4000-8000-0000000000a2",
+        "quantity": "scope cluster count",
+        "status": "Asserted",
+        "provenance": "Default",
+        "distribution": {
+          "type": "Point",
+          "p1": 1,
+          "p2": 0
+        },
+        "rationale": "Not defined in the set: the firm-level engine's documented default.",
+        "count": 1
+      },
+      {
+        "key": "choice.workaround-cost-weight",
+        "quantity": "workaround cost weight",
+        "status": "Asserted",
+        "provenance": "Default",
+        "distribution": {
+          "type": "Point",
+          "p1": 1,
+          "p2": 0
+        },
+        "rationale": "Not defined in the set: the firm-level engine's documented default.",
+        "count": 1
+      }
+    ],
+    "populations": [
+      {
+        "clientSegmentId": "3c1b7a10-0000-4000-8000-0000000000a2",
+        "segmentName": "E-commerce Fulfillment",
+        "observedFirms": 1,
+        "inferredFirms": 0,
+        "syntheticFirms": 0,
+        "activeCustomers": 0,
+        "moduleHolders": [
+          {
+            "moduleProductId": "5d2e9b20-0000-4000-8000-0000000000b1",
+            "name": "Harborline Carrier Connect",
+            "holders": 0
+          }
+        ],
+        "decisions": {
+          "won": 0,
+          "lost": 1,
+          "noDecision": 0,
+          "crossSellWon": 0,
+          "crossSellLost": 0,
+          "crossSellNoDecision": 0
+        },
+        "churnEvents": 0,
+        "productlessChurnEvents": 0,
+        "relationships": 0,
+        "relationshipsWithoutAcquisitionDate": 0,
+        "endedRelationships": 0,
+        "multiProductFirms": 0,
+        "clientMonths": 0
+      },
+      {
+        "clientSegmentId": "3c1b7a10-0000-4000-8000-0000000000a1",
+        "segmentName": "Regional 3PLs",
+        "observedFirms": 4,
+        "inferredFirms": 0,
+        "syntheticFirms": 0,
+        "activeCustomers": 2,
+        "moduleHolders": [
+          {
+            "moduleProductId": "5d2e9b20-0000-4000-8000-0000000000b1",
+            "name": "Harborline Carrier Connect",
+            "holders": 1
+          }
+        ],
+        "decisions": {
+          "won": 3,
+          "lost": 0,
+          "noDecision": 1,
+          "crossSellWon": 0,
+          "crossSellLost": 0,
+          "crossSellNoDecision": 0
+        },
+        "churnEvents": 1,
+        "productlessChurnEvents": 0,
+        "relationships": 4,
+        "relationshipsWithoutAcquisitionDate": 0,
+        "endedRelationships": 1,
+        "multiProductFirms": 1,
+        "clientMonths": 48.887064
+      }
+    ],
+    "exclusions": [
+      {
+        "kind": "OpportunityDecided",
+        "recordedAfterAsOf": 0,
+        "recordedOnOrBeforeWindowStart": 0,
+        "unattributed": 0,
+        "addedAfterRun": 0
+      },
+      {
+        "kind": "Churn",
+        "recordedAfterAsOf": 0,
+        "recordedOnOrBeforeWindowStart": 0,
+        "unattributed": 0,
+        "addedAfterRun": 0
+      },
+      {
+        "kind": "SegmentArrivalObserved",
+        "recordedAfterAsOf": 0,
+        "recordedOnOrBeforeWindowStart": 0,
+        "unattributed": 0,
+        "addedAfterRun": 0
+      }
+    ],
+    "arrivalObservations": [],
+    "notes": [
+      "Relationship spans (the client-month exposure of ChurnHazard and CrossSellRate) are read from current relationship rows and cut at the as-of date by their effective acquisition and end dates. The as-of fit does not reconstruct what was known about relationships at the as-of date: a relationship entered later but acquired earlier still contributes exposure, so exposure is an upper bound on what was known then.",
+      "Firm counts, segment membership and module holdings are current state, not as-of reconstructions; decision, churn and arrival counts are the run's own snapshot.",
+      "Readiness is about evidence: a Ready parameter has a known, non-reused prior and a complete denominator. It says nothing about forecast accuracy.",
+      "Choice-model quantities the set does not define are listed as asserted with provenance Default and the firm-level engine's documented default value; the flows are never evidence for them."
+    ],
+    "holdout": {
+      "heldOutFrom": "2026-10-01",
+      "heldOutThrough": "2026-12-31",
+      "intervalMass": 0.9,
+      "note": "Outcomes effective after the as-of date and on or before 2026-12-31, as recorded now, against the central 90% posterior-predictive interval for that sample size. A value inside the interval is not a pass and one outside is a discrepancy to explain; small samples say little either way.",
+      "comparisons": [
+        {
+          "key": "ChurnHazard:3c1b7a10-0000-4000-8000-0000000000a1",
+          "flowKind": "ChurnHazard",
+          "clientSegmentId": "3c1b7a10-0000-4000-8000-0000000000a1",
+          "moduleProductId": null,
+          "productId": null,
+          "status": "Unsupported",
+          "reason": "Needs client-month exposure over the held-out period. Relationships are current state with no history of what was known when, so the exposure is not reconstructed from current data.",
+          "sampleSize": 0,
+          "observedEvents": null,
+          "exposure": null,
+          "observedRate": null,
+          "posteriorMean": null,
+          "intervalLower": null,
+          "intervalUpper": null,
+          "observedInsideInterval": null
+        },
+        {
+          "key": "WinRate:3c1b7a10-0000-4000-8000-0000000000a1",
+          "flowKind": "WinRate",
+          "clientSegmentId": "3c1b7a10-0000-4000-8000-0000000000a1",
+          "moduleProductId": null,
+          "productId": null,
+          "status": "Unsupported",
+          "reason": "No held-out decided new-business opportunities effective 2026-10-01..2026-12-31.",
+          "sampleSize": 0,
+          "observedEvents": null,
+          "exposure": null,
+          "observedRate": null,
+          "posteriorMean": null,
+          "intervalLower": null,
+          "intervalUpper": null,
+          "observedInsideInterval": null
+        },
+        {
+          "key": "WinRate:3c1b7a10-0000-4000-8000-0000000000a2",
+          "flowKind": "WinRate",
+          "clientSegmentId": "3c1b7a10-0000-4000-8000-0000000000a2",
+          "moduleProductId": null,
+          "productId": null,
+          "status": "Unsupported",
+          "reason": "No held-out decided new-business opportunities effective 2026-10-01..2026-12-31.",
+          "sampleSize": 0,
+          "observedEvents": null,
+          "exposure": null,
+          "observedRate": null,
+          "posteriorMean": null,
+          "intervalLower": null,
+          "intervalUpper": null,
+          "observedInsideInterval": null
+        }
+      ]
+    }
+  },
+  "reconciliation": {
+    "tolerancePolicy": "Per figure, never universal. Counts are exact. A tolerance exists only where a rounding step or an approved approximation of the PRD7 artifact produces the difference, and it states its basis (a formula key or rounding). A difference beyond its tolerance needs named reasons that add up to it; what is left is unexplained and is a defect.",
+    "reasonsAllowed": [
+      "syntheticFill",
+      "unresolved",
+      "excludedByRule",
+      "excludedByAsOfCut",
+      "open",
+      "notLoaded",
+      "edgeVersusLogoExposure",
+      "rounding"
+    ],
+    "figures": [
+      {
+        "id": "importedFirms:Regional 3PLs",
+        "figure": "importedFirms",
+        "segment": "Regional 3PLs",
+        "unit": "firms",
+        "system": 4,
+        "systemFrom": "populations[].observedFirms + inferredFirms + syntheticFirms",
+        "source": 4,
+        "sourceFrom": "normalized.firms with segment Regional 3PLs; sourceCounts Account imported 5, one more in E-commerce",
+        "difference": 0,
+        "reasons": [],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "matched",
+        "affectsParameters": [],
+        "effect": "none",
+        "note": "No synthetic fill: syntheticFirms is 0, so every firm is a source account."
+      },
+      {
+        "id": "importedFirms:E-commerce Fulfillment",
+        "figure": "importedFirms",
+        "segment": "E-commerce Fulfillment",
+        "unit": "firms",
+        "system": 1,
+        "systemFrom": "populations[].observedFirms + inferredFirms + syntheticFirms",
+        "source": 1,
+        "sourceFrom": "normalized.firms with segment E-commerce Fulfillment",
+        "difference": 0,
+        "reasons": [],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "matched",
+        "affectsParameters": [],
+        "effect": "none",
+        "note": "Meridian Fulfillment (001EX000000B003AAA) has no reviewed segment, is held unresolved and is not loaded."
+      },
+      {
+        "id": "activeCustomers:Regional 3PLs",
+        "figure": "activeCustomers",
+        "segment": "Regional 3PLs",
+        "unit": "firms",
+        "system": 2,
+        "systemFrom": "populations[].activeCustomers",
+        "source": 2,
+        "sourceFrom": "segmentTotals[].activeCustomers",
+        "difference": 0,
+        "reasons": [],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "matched",
+        "affectsParameters": [],
+        "effect": "none"
+      },
+      {
+        "id": "activeCustomers:E-commerce Fulfillment",
+        "figure": "activeCustomers",
+        "segment": "E-commerce Fulfillment",
+        "unit": "firms",
+        "system": 0,
+        "systemFrom": "populations[].activeCustomers",
+        "source": null,
+        "sourceFrom": "segmentTotals[].activeCustomers (null: segment unresolved)",
+        "difference": null,
+        "reasons": [
+          {
+            "reason": "unresolved",
+            "count": null,
+            "ref": "001EX000000B003AAA",
+            "decisionKey": "DEC-account-meridian-segment"
+          }
+        ],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "unresolvedInSource",
+        "affectsParameters": [],
+        "effect": "none",
+        "note": "The system's 0 means no resolved customer, not a count of zero customers: the source says unresolved. No fitted parameter of the segment uses customers as a denominator."
+      },
+      {
+        "id": "moduleHolders:Regional 3PLs:Harborline Carrier Connect",
+        "figure": "moduleHolders",
+        "segment": "Regional 3PLs",
+        "module": "Harborline Carrier Connect",
+        "unit": "firms",
+        "system": 1,
+        "systemFrom": "populations[].moduleHolders[Harborline Carrier Connect].holders",
+        "source": 1,
+        "sourceFrom": "segmentTotals[].modules[].holders",
+        "difference": 0,
+        "reasons": [],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "matched",
+        "affectsParameters": [],
+        "effect": "none"
+      },
+      {
+        "id": "closedNewLogoDeals:Regional 3PLs",
+        "figure": "closedNewLogoDeals",
+        "segment": "Regional 3PLs",
+        "unit": "deals",
+        "system": 4,
+        "systemFrom": "populations[].decisions.won + lost + noDecision",
+        "source": 5,
+        "sourceFrom": "calibrationPopulation.winRate[segment].won + lost + noDecision + unresolved",
+        "difference": -1,
+        "reasons": [
+          {
+            "reason": "unresolved",
+            "count": -1,
+            "ref": "006EX000000A009AAA",
+            "decisionKey": "DEC-commercial-northgate-a009-loss-reason"
+          }
+        ],
+        "unexplained": 0,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "explained",
+        "affectsParameters": [
+          "WinRate:3c1b7a10-0000-4000-8000-0000000000a1"
+        ],
+        "effect": "notReady",
+        "note": "The mismatch. Northgate's closed-lost deal with a blank loss reason is held out: it is neither a loss nor a no-decision. 3 wins in 3 decided is an upper bound until DEC-commercial-northgate-a009-loss-reason is answered, so WinRate for the segment is not presented as Ready although the API rates it Ready."
+      },
+      {
+        "id": "closedNewLogoDeals:E-commerce Fulfillment",
+        "figure": "closedNewLogoDeals",
+        "segment": "E-commerce Fulfillment",
+        "unit": "deals",
+        "system": 1,
+        "systemFrom": "populations[].decisions.won + lost + noDecision",
+        "source": 1,
+        "sourceFrom": "calibrationPopulation.winRate[segment].won + lost + noDecision + unresolved",
+        "difference": 0,
+        "reasons": [],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "matched",
+        "affectsParameters": [],
+        "effect": "none"
+      },
+      {
+        "id": "churnEvents:Regional 3PLs",
+        "figure": "churnEvents",
+        "segment": "Regional 3PLs",
+        "unit": "events",
+        "system": 1,
+        "systemFrom": "populations[].churnEvents",
+        "source": 1,
+        "sourceFrom": "normalized.churnEvents with segment Regional 3PLs",
+        "difference": 0,
+        "reasons": [],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "matched",
+        "affectsParameters": [],
+        "effect": "none"
+      },
+      {
+        "id": "clientMonths:Regional 3PLs",
+        "figure": "clientMonths",
+        "segment": "Regional 3PLs",
+        "unit": "relationship-months",
+        "system": 48.887064,
+        "systemFrom": "populations[].clientMonths",
+        "source": 44.911704,
+        "sourceFrom": "months recomputed at calibrationPopulation.churn.level (logo): one per firm, base relationships only",
+        "difference": 3.97536,
+        "reasons": [
+          {
+            "reason": "edgeVersusLogoExposure",
+            "count": 3.97536,
+            "ref": "REL-bluewater-carrier-connect"
+          }
+        ],
+        "unexplained": 0,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.001,
+          "basis": "rounding: months carry six decimals of a 30.4375-day month"
+        },
+        "status": "explained",
+        "affectsParameters": [
+          "ChurnHazard:3c1b7a10-0000-4000-8000-0000000000a1"
+        ],
+        "effect": "notReady",
+        "note": "The churn event is logo level but the denominator counts relationships. Bluewater holds a module, so its Carrier Connect edge adds 3.98 months a logo-level reading would not count. Proposed DEC-calibration-churn-level-regional-3pl decides the level; until then the hazard is not presented as Ready."
+      },
+      {
+        "id": "baseArr:Regional 3PLs",
+        "figure": "baseArr",
+        "segment": "Regional 3PLs",
+        "unit": "USD per year",
+        "system": 100656,
+        "systemFrom": "arpuPerMonth x initialClientCount x 12 from the loaded stock state (pm segment get)",
+        "source": 100656,
+        "sourceFrom": "segmentTotals[].baseArr",
+        "difference": 0,
+        "reasons": [],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "matched",
+        "affectsParameters": [],
+        "effect": "none"
+      },
+      {
+        "id": "moduleArr:Regional 3PLs:Harborline Carrier Connect",
+        "figure": "moduleArr",
+        "segment": "Regional 3PLs",
+        "module": "Harborline Carrier Connect",
+        "unit": "USD per year",
+        "system": 10800,
+        "systemFrom": "penetration x initialClientCount x module arpuPerMonth x 12 from the loaded stock state",
+        "source": 10800,
+        "sourceFrom": "segmentTotals[].modules[].arr",
+        "difference": 0,
+        "reasons": [],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "matched",
+        "affectsParameters": [],
+        "effect": "none"
+      },
+      {
+        "id": "implementationFee:Regional 3PLs",
+        "figure": "implementationFee",
+        "segment": "Regional 3PLs",
+        "unit": "USD per new client",
+        "system": 14493.33,
+        "systemFrom": "stock state implementationFee",
+        "source": 14493.3333,
+        "sourceFrom": "mean of segmentTotals[].implementationFee.inputs, unrounded",
+        "difference": -0.0033,
+        "reasons": [],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.005,
+          "basis": "F8-implementation-fee rounds the fee to cents"
+        },
+        "status": "matched",
+        "affectsParameters": [],
+        "effect": "none"
+      },
+      {
+        "id": "monthlyObservations:Regional 3PLs",
+        "figure": "monthlyObservations",
+        "segment": "Regional 3PLs",
+        "unit": "months",
+        "system": 0,
+        "systemFrom": "sum of arrivalObservations[].observedMonths for the segment",
+        "source": 0,
+        "sourceFrom": "calibrationPopulation.arrivals (loaded: false)",
+        "difference": 0,
+        "reasons": [],
+        "unexplained": null,
+        "tolerance": {
+          "kind": "exact",
+          "value": 0,
+          "basis": "counts are integers"
+        },
+        "status": "matched",
+        "affectsParameters": [],
+        "effect": "none",
+        "note": "No arrival counts are loaded: CRM Account creation is not firm formation (gap firmBirthsFromCrmCreation), so NewFirmArrival and ConversionToMarket are not in the prior set's fit."
+      }
+    ]
+  },
+  "verdict": {
+    "overall": "Exploratory",
+    "presentableAs": "exploratory",
+    "statement": "Exploratory baseline for the Regional 3PLs and E-commerce segments on three decided-deal observations and one churn event. It is not a validated forecast: no fitted parameter is presented as Ready, one parameter is unfitted, two choice-model quantities are asserted and 8 more run on engine defaults, and the holdout is unsupported.",
+    "parameters": [
+      {
+        "key": "ChurnHazard:3c1b7a10-0000-4000-8000-0000000000a1",
+        "apiStatus": "Ready",
+        "presentedStatus": "NotReady",
+        "because": [
+          "clientMonths:Regional 3PLs"
+        ]
+      },
+      {
+        "key": "CrossSellRate:3c1b7a10-0000-4000-8000-0000000000a1:5d2e9b20-0000-4000-8000-0000000000b1",
+        "apiStatus": "Unfitted",
+        "presentedStatus": "Unfitted",
+        "because": []
+      },
+      {
+        "key": "WinRate:3c1b7a10-0000-4000-8000-0000000000a1",
+        "apiStatus": "Ready",
+        "presentedStatus": "NotReady",
+        "because": [
+          "closedNewLogoDeals:Regional 3PLs"
+        ]
+      },
+      {
+        "key": "WinRate:3c1b7a10-0000-4000-8000-0000000000a2",
+        "apiStatus": "NotReady",
+        "presentedStatus": "NotReady",
+        "because": [
+          "PriorEvidenceUnknown"
+        ]
+      }
+    ],
+    "unsupportedAssumptions": [
+      "choice.price-sensitivity:3c1b7a10-0000-4000-8000-0000000000a1",
+      "choice.switching-cost-base",
+      "CrossSellRate:3c1b7a10-0000-4000-8000-0000000000a1:5d2e9b20-0000-4000-8000-0000000000b1"
+    ],
+    "holdout": "Unsupported for every fitted parameter: the extract ends on the as-of date."
+  },
+  "sensitivityComparisons": [
+    {
+      "id": "switching-cost",
+      "quantity": "switching cost (base)",
+      "assertedKey": "choice.switching-cost-base",
+      "baseline": {
+        "type": "Point",
+        "p1": 0.6,
+        "p2": 0
+      },
+      "variant": {
+        "type": "Point",
+        "p1": 0.3,
+        "p2": 0
+      },
+      "why": "Win rates and cycle times do not measure friction. Halving it shows how much the win-share conclusion leans on the assertion.",
+      "output": "wins against the incumbent and churned clients in Regional 3PLs (pm sim diagnostics), NPV mean (pm sim compare)",
+      "commands": [
+        "pm assumptions branch <fitted-set-id> --name \"Sensitivity: switching cost 0.3\"",
+        "pm assumptions set-param <branch-id> --key choice.switching-cost-base --dist-type Point --p1 0.3 --rationale \"sensitivity variant\"",
+        "pm sim run --roadmap-id <roadmap-id> --assumption-set-id <fitted-set-id> --mode firm-level --seed 1 --paths 500 --horizon-months 24 --name \"baseline\"",
+        "pm sim run --roadmap-id <roadmap-id> --assumption-set-id <branch-id> --mode firm-level --seed 1 --paths 500 --horizon-months 24 --name \"switching cost 0.3\"",
+        "pm sim compare <baseline-run> <variant-run>"
+      ],
+      "status": "planned",
+      "simRunIds": null,
+      "result": null
+    },
+    {
+      "id": "price-sensitivity",
+      "quantity": "price sensitivity",
+      "assertedKey": "choice.price-sensitivity:3c1b7a10-0000-4000-8000-0000000000a1",
+      "baseline": {
+        "type": "Lognormal",
+        "p1": 0,
+        "p2": 0.35
+      },
+      "variant": {
+        "type": "Lognormal",
+        "p1": 0.35,
+        "p2": 0.35
+      },
+      "why": "No price experiment backs the segment's sensitivity. A median of 1.42 instead of 1.0 is a plausible buyer who is more price sensitive.",
+      "output": "cumulative bookings and win share in Regional 3PLs (pm sim compare)",
+      "commands": [
+        "pm assumptions branch <fitted-set-id> --name \"Sensitivity: price sensitivity 1.42\"",
+        "pm assumptions set-param <branch-id> --key choice.price-sensitivity:3c1b7a10-0000-4000-8000-0000000000a1 --dist-type Lognormal --p1 0.35 --p2 0.35 --rationale \"sensitivity variant\"",
+        "pm sim run --roadmap-id <roadmap-id> --assumption-set-id <fitted-set-id> --mode firm-level --seed 1 --paths 500 --horizon-months 24 --name \"baseline\"",
+        "pm sim run --roadmap-id <roadmap-id> --assumption-set-id <branch-id> --mode firm-level --seed 1 --paths 500 --horizon-months 24 --name \"price sensitivity 1.42\"",
+        "pm sim compare <baseline-run> <variant-run>"
+      ],
+      "status": "planned",
+      "simRunIds": null,
+      "result": null
+    },
+    {
+      "id": "coverage-delta",
+      "quantity": "feature effect (coverage delta of a planned project)",
+      "assertedKey": null,
+      "variesRoadmap": true,
+      "why": "The coverage tier a feature reaches is reviewed evidence of capability, not of buyer response. Dropping the project that delivers it shows how much of the roadmap's value rests on that delta.",
+      "output": "terminal ARR and NPV of the two roadmaps (pm sim compare)",
+      "commands": [
+        "pm roadmap branch <roadmap-id> --name \"Sensitivity: without Carrier Connect v1\"",
+        "pm roadmap unplan <branch-roadmap-id> --project-id <project-id>",
+        "pm sim run --roadmap-id <roadmap-id> --assumption-set-id <fitted-set-id> --mode firm-level --seed 1 --paths 500 --horizon-months 24 --name \"with project\"",
+        "pm sim run --roadmap-id <branch-roadmap-id> --assumption-set-id <fitted-set-id> --mode firm-level --seed 1 --paths 500 --horizon-months 24 --name \"without project\"",
+        "pm sim compare <with-run> <without-run>"
+      ],
+      "status": "planned",
+      "simRunIds": null,
+      "result": null
+    }
+  ],
+  "proposedRegisterEntries": [
+    {
+      "key": "DEC-calibration-priors-regional-3pl",
+      "state": "proposed",
+      "question": "Are the flat Beta(1, 1) win-rate prior and the 11% annual churn benchmark Beta(2, 198) independent of the deals and churn events in the ledger, so they may be declared Independent?",
+      "blocks": [
+        "WinRate:3c1b7a10-0000-4000-8000-0000000000a1",
+        "ChurnHazard:3c1b7a10-0000-4000-8000-0000000000a1"
+      ]
+    },
+    {
+      "key": "DEC-calibration-churn-level-regional-3pl",
+      "state": "proposed",
+      "question": "Is ChurnHazard for Regional 3PLs fitted at logo level (one exposure month per firm) or at product level (one per relationship)? The import carries product-named churn events and relationship-level exposure.",
+      "blocks": [
+        "ChurnHazard:3c1b7a10-0000-4000-8000-0000000000a1"
+      ]
+    },
+    {
+      "key": "DEC-calibration-ecommerce-winrate-placeholder",
+      "state": "proposed",
+      "question": "Is the 0.22 placeholder win rate for E-commerce Fulfillment independent of the one recorded deal, so it may be declared Independent and the fit run again?",
+      "blocks": [
+        "WinRate:3c1b7a10-0000-4000-8000-0000000000a2"
+      ]
+    }
+  ]
+}

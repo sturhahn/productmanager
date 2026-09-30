@@ -835,6 +835,22 @@ export interface DistributionSpecDto {
   p2: number;
 }
 
+/** What informed a prior (PRD8). A null `priorEvidence` means unknown. */
+export type PriorEvidenceBasis = "Independent" | "Observations";
+
+/**
+ * Independent: no dates. Observations: an effective-date period (observedFrom..observedThrough) and/or
+ * the ledger as recorded through `recordedThrough` (what a calibration fit stamps, with its run id).
+ */
+export interface PriorEvidenceDto {
+  basis: PriorEvidenceBasis;
+  observedFrom?: string | null;
+  observedThrough?: string | null;
+  recordedThrough?: string | null;
+  population?: string | null;
+  sourceCalibrationRunId?: string | null;
+}
+
 export interface ParameterDto {
   id: string;
   assumptionSetId: string;
@@ -848,6 +864,7 @@ export interface ParameterDto {
   covariateId: string | null;
   covariateBeta: number | null;
   isEngineParameter: boolean;
+  priorEvidence?: PriorEvidenceDto | null;
 }
 
 export interface AssumptionSetDto {
@@ -885,6 +902,10 @@ export interface UpsertParameterRequest {
   covariateId?: string | null;
   covariateBeta?: number | null;
   key?: string | null;
+  /** Omitted: the parameter keeps the evidence it had (a calibration stamp included). */
+  priorEvidence?: PriorEvidenceDto | null;
+  /** Clears the evidence deliberately; not together with `priorEvidence`. */
+  clearPriorEvidence?: boolean;
 }
 
 // ---------- Simulation runs ----------
@@ -1208,6 +1229,8 @@ export interface CalibrationRunDto {
   isExecuted: boolean;
   createdAt: string;
   notes: string | null;
+  /** Only facts recorded after this date were fitted (PRD8 sequential update). */
+  observationsRecordedAfter?: string | null;
 }
 
 export interface CalibrationParameterDiffDto {

@@ -745,6 +745,12 @@ public static partial class SeedLoader
                 var distribution = new DistributionSpecDto(
                     ParseHelpers.ParseEnum<DistributionType>(parameter.DistType, "parameter distType"), parameter.P1, parameter.P2);
                 var provenance = ParseHelpers.ParseEnum<ParameterProvenance>(parameter.Provenance, "parameter provenance");
+                var evidence = parameter.PriorEvidence is not { } e ? null : new PriorEvidenceDto(
+                    ParseHelpers.ParseEnum<PriorEvidenceBasis>(e.Basis, "parameter priorEvidence basis"),
+                    ParseHelpers.ParseOptionalDate(e.ObservedFrom, "parameter priorEvidence observedFrom"),
+                    ParseHelpers.ParseOptionalDate(e.ObservedThrough, "parameter priorEvidence observedThrough"),
+                    ParseHelpers.ParseOptionalDate(e.RecordedThrough, "parameter priorEvidence recordedThrough"),
+                    e.Population);
 
                 if (parameter.ChoiceKind is not null)
                 {
@@ -754,7 +760,8 @@ public static partial class SeedLoader
                     Guid? processId = parameter.BusinessProcessName is null ? null : processes.GetOrThrow(parameter.BusinessProcessName);
                     var choiceKey = ChoiceParameterKeys.Build(parameter.ChoiceKind, segmentId, processId, moduleProductId);
                     await WriteAsync(tally, () => client.UpsertParameterAsync(id, new UpsertParameterRequest(
-                        distribution, provenance, parameter.Rationale, null, null, null, covariateId, parameter.CovariateBeta, choiceKey), ct));
+                        distribution, provenance, parameter.Rationale, null, null, null, covariateId, parameter.CovariateBeta, choiceKey,
+                        evidence), ct));
                     return;
                 }
 
@@ -764,7 +771,7 @@ public static partial class SeedLoader
 
                 await WriteAsync(tally, () => client.UpsertParameterAsync(id, new UpsertParameterRequest(
                     distribution, provenance, parameter.Rationale, segmentId, flowKind, moduleProductId,
-                    covariateId, parameter.CovariateBeta, parameter.Key), ct));
+                    covariateId, parameter.CovariateBeta, parameter.Key, evidence), ct));
             });
         }
     }

@@ -119,6 +119,27 @@ public abstract class Phase3TestBase : ApiTestBase
             new UpsertParameterRequest(new DistributionSpecDto(DistributionType.Point, value),
                 ParameterProvenance.Asserted, null, Key: key));
 
+    /// <summary>
+    /// Opens and decides <paramref name="wins"/> + <paramref name="losses"/> new-business deals, each
+    /// at a fresh firm, decided at <paramref name="decidedAt"/> and learned at <paramref name="recordedAt"/>
+    /// (omitted: now) — which is what puts OpportunityDecided facts in the ledger.
+    /// </summary>
+    protected async Task DecideDealsAsync(MarketWorld world, int wins, int losses, DateTimeOffset decidedAt,
+        DateTimeOffset? recordedAt = null)
+    {
+        for (int i = 0; i < wins + losses; i++)
+        {
+            var firm = await PostAsync<FirmDto>("/api/firms",
+                new CreateFirmRequest(world.MarketId, $"Deal firm {Guid.NewGuid():N}", EpistemicStatus.Observed,
+                    world.SegmentId));
+            var opportunity = await PostAsync<OpportunityDto>("/api/opportunities",
+                new CreateOpportunityRequest(firm.Id, decidedAt.AddDays(-60), null, null, [world.SettlementProcessId]));
+            await PostAsync<OpportunityDto>($"/api/opportunities/{opportunity.Id}/decide",
+                new DecideOpportunityRequest(OpportunityStage.Won, i < wins ? world.OurProductId : world.RivalProductId,
+                    decidedAt, recordedAt));
+        }
+    }
+
     /// <summary>A live roadmap; firm-level runs still reference one, exactly as aggregate runs do.</summary>
     protected async Task<Guid> CreateLiveRoadmapAsync(Guid workspaceId)
     {

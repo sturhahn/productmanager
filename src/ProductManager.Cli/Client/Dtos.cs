@@ -507,7 +507,19 @@ public sealed record ParameterDto(
     Guid? ModuleProductId,
     Guid? CovariateId,
     double? CovariateBeta,
-    bool IsEngineParameter);
+    bool IsEngineParameter,
+    PriorEvidenceDto? PriorEvidence = null);
+
+/// <summary>Which observations informed a prior (PRD8). Null on a parameter = unknown. Independent: no
+/// dates. Observations: an effective-date period (ObservedFrom..ObservedThrough) or the ledger as recorded
+/// through RecordedThrough (what a fit stamps, with SourceCalibrationRunId).</summary>
+public sealed record PriorEvidenceDto(
+    PriorEvidenceBasis Basis,
+    DateOnly? ObservedFrom = null,
+    DateOnly? ObservedThrough = null,
+    DateOnly? RecordedThrough = null,
+    string? Population = null,
+    Guid? SourceCalibrationRunId = null);
 
 public sealed record AssumptionSetDto(
     Guid Id,
@@ -537,7 +549,9 @@ public sealed record UpsertParameterRequest(
     Guid? ModuleProductId = null,
     Guid? CovariateId = null,
     double? CovariateBeta = null,
-    string? Key = null);
+    string? Key = null,
+    PriorEvidenceDto? PriorEvidence = null,
+    bool ClearPriorEvidence = false);
 
 // ---------- SimulationRun ----------
 
@@ -811,16 +825,21 @@ public sealed record CalibrationRunDto(
     Guid? FittedAssumptionSetId,
     bool IsExecuted,
     DateTimeOffset CreatedAt,
-    string? Notes);
+    string? Notes,
+    DateOnly? ObservationsRecordedAfter = null);
 
 /// <summary>Fits the prior assumption set to the facts ledger as it stood on <c>AsOfDate</c>: only
 /// facts recorded on or before that date are read. The run is immutable and produces a new
 /// assumption set (parent = the prior, provenance Calibrated) rather than editing the prior.</summary>
+/// <para>ObservationsRecordedAfter narrows the fit to facts recorded after that date (a sequential update of
+/// a prior fitted up to it). A fit whose prior already contains its observations is refused with a 409 of
+/// type <see cref="ApiRequestException.PriorEvidenceReuseType"/>.</para>
 public sealed record CreateCalibrationRunRequest(
     Guid AssumptionSetId,
     DateOnly? AsOfDate = null,
     string? Name = null,
-    string? Notes = null);
+    string? Notes = null,
+    DateOnly? ObservationsRecordedAfter = null);
 
 /// <summary>Prior vs posterior for one parameter, with the evidence that moved it.</summary>
 public sealed record CalibrationParameterDiffDto(
@@ -859,6 +878,120 @@ public sealed record CalibrationDiffDto(
 
 /// <summary>A calibration run plus the diff it produced — what POST returns.</summary>
 public sealed record CalibrationRunResultDto(CalibrationRunDto Run, CalibrationDiffDto Diff);
+
+// ---------- Calibration readiness (PRD8) — mirrors Contracts/CalibrationReadinessContracts.cs ----------
+
+public sealed record ReadinessIssueDto(ReadinessIssueCode Code, string Message);
+
+public sealed record ReadinessParameterDto(
+    string Key,
+    SimulationFlowKind? FlowKind,
+    Guid? ClientSegmentId,
+    Guid? ModuleProductId,
+    Guid? ProductId,
+    CalibrationReadinessStatus Status,
+    string Units,
+    string Denominator,
+    DateOnly? ObservedFrom,
+    DateOnly? ObservedThrough,
+    int Observations,
+    int? Successes,
+    int? Failures,
+    int? Excluded,
+    double? Exposure,
+    DistributionSpecDto? Prior,
+    ParameterProvenance? PriorProvenance,
+    PriorEvidenceDto? PriorEvidence,
+    DistributionSpecDto? Posterior,
+    double? PosteriorMean,
+    string? UnfittedReason,
+    IReadOnlyList<ReadinessIssueDto> Issues);
+
+public sealed record ReadinessAssertedDto(
+    string Key,
+    string Quantity,
+    CalibrationReadinessStatus Status,
+    ParameterProvenance? Provenance,
+    DistributionSpecDto? Distribution,
+    string? Rationale,
+    int Count);
+
+public sealed record ReadinessModuleHoldersDto(Guid ModuleProductId, string? Name, int Holders);
+
+public sealed record ReadinessDecisionCountsDto(
+    int Won, int Lost, int NoDecision, int CrossSellWon, int CrossSellLost, int CrossSellNoDecision);
+
+public sealed record ReadinessSegmentPopulationDto(
+    Guid ClientSegmentId,
+    string? SegmentName,
+    int ObservedFirms,
+    int InferredFirms,
+    int SyntheticFirms,
+    int ActiveCustomers,
+    IReadOnlyList<ReadinessModuleHoldersDto> ModuleHolders,
+    ReadinessDecisionCountsDto Decisions,
+    int ChurnEvents,
+    int ProductlessChurnEvents,
+    int Relationships,
+    int RelationshipsWithoutAcquisitionDate,
+    int EndedRelationships,
+    int MultiProductFirms,
+    double ClientMonths);
+
+public sealed record ReadinessExclusionDto(
+    FactEventKind Kind, int RecordedAfterAsOf, int RecordedOnOrBeforeWindowStart, int Unattributed, int AddedAfterRun);
+
+public sealed record ReadinessArrivalSeriesDto(
+    Guid? ClientSegmentId,
+    SimulationFlowKind FlowKind,
+    int ObservedMonths,
+    int ZeroMonths,
+    DateOnly? FirstMonth,
+    DateOnly? LastMonth,
+    double Exposure,
+    IReadOnlyList<DateOnly> MissingMonths,
+    IReadOnlyList<DateOnly> DuplicateMonths);
+
+public sealed record ReadinessHoldoutComparisonDto(
+    string Key,
+    SimulationFlowKind? FlowKind,
+    Guid? ClientSegmentId,
+    Guid? ModuleProductId,
+    Guid? ProductId,
+    HoldoutComparisonStatus Status,
+    string? Reason,
+    int SampleSize,
+    int? ObservedEvents,
+    double? Exposure,
+    double? ObservedRate,
+    double? PosteriorMean,
+    double? IntervalLower,
+    double? IntervalUpper,
+    bool? ObservedInsideInterval);
+
+public sealed record ReadinessHoldoutDto(
+    DateOnly HeldOutFrom,
+    DateOnly HeldOutThrough,
+    double IntervalMass,
+    string Note,
+    IReadOnlyList<ReadinessHoldoutComparisonDto> Comparisons);
+
+/// <summary>GET api/calibration-runs/{id}/readiness — computed on read from the stored run; never refits.</summary>
+public sealed record CalibrationReadinessDto(
+    Guid CalibrationRunId,
+    DateOnly AsOfDate,
+    DateOnly? ObservationsRecordedAfter,
+    Guid PriorAssumptionSetId,
+    Guid? FittedAssumptionSetId,
+    CalibrationReadinessOverall Overall,
+    IReadOnlyList<string> OverallReasons,
+    IReadOnlyList<ReadinessParameterDto> Parameters,
+    IReadOnlyList<ReadinessAssertedDto> Asserted,
+    IReadOnlyList<ReadinessSegmentPopulationDto> Populations,
+    IReadOnlyList<ReadinessExclusionDto> Exclusions,
+    IReadOnlyList<ReadinessArrivalSeriesDto> ArrivalObservations,
+    IReadOnlyList<string> Notes,
+    ReadinessHoldoutDto? Holdout);
 
 // ---------- Firm-level diagnostics (mirrors ProductManager.Engine.FirmLevelContracts — see openapi's Engine-prefixed schemas) ----------
 
