@@ -40,8 +40,19 @@
   that dependencies, dates and units follow the rules in `portfolio/README.md`. Change the mapping, the
   fixture extracts, the fragments and the walkthrough together. The guide's section 8 (portfolio
   selection) sits between the interview and loading; if you renumber guide sections, fix every
-  cross-reference (grep for "section"). The PRD5 hook there is a placeholder for the decision-register
-  link. No ABSTRACT/INDEX/CLAUDE trio inside this directory, matching `discovery/`.
+  cross-reference (grep for "section"). Section 9 is the consequential-decision review; assembling and
+  loading is section 10. No ABSTRACT/INDEX/CLAUDE trio inside this directory, matching `discovery/`.
+- **`onboarding/review/` is documentation plus examples only** (PRD5): no assembly code, API, database or
+  seed-schema changes; the register is a local artifact and the seed shape is unchanged. The tests check that
+  the template and example register parse with every required key and an allowed review state, that every
+  label maps to a real CLI enum member (`Client/Enums.cs`), that every evidence and scope reference resolves
+  to the manifest, the mapping, the fixtures or the register, that no entry outside force leaves its proposed
+  value in `review/fixture/seed/` (the Bronze-to-Gold case), that unknown competitor cells stay unknown, that
+  a material change (value, scope, evidence refs) reopens exactly that entry while formatting does not, that
+  rule-covered records carry no question, that tier outcomes follow the required entries, and that the
+  guide, brief template and all 12 dataset files point at the procedure. Change the register, the review
+  walkthrough and the fragments together. The dataset files keep their eight headings; each carries one
+  "Consequential choices" note. No ABSTRACT/INDEX/CLAUDE trio inside this directory.
 - Dataset files are written for an agent reader: state units only when verified in code, cite
   the file, keep the shared Harborline example world consistent across files, and never invent a
   `pm` verb or option.

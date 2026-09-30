@@ -1,0 +1,23 @@
+{
+  "features": [
+    {
+      "name": "Multi-carrier rate shopping",
+      "status": "Planned",
+      "productName": "Harborline WMS"
+    },
+    {
+      "name": "Cycle counting",
+      "status": "Planned",
+      "productName": "Harborline WMS",
+      "deltas": [
+        {
+          "kind": "Coverage",
+          "businessProcessName": "Cycle Counting",
+          "fromTier": "NotPlaying",
+          "toTier": "Silver",
+          "rationale": "DEC-delta-cycle-counting: ABC counts and variance approval match what RFP checklists ask for (competitive, not market-leading)."
+        }
+      ]
+    }
+  ]
+}

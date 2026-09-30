@@ -1,0 +1,36 @@
+{
+  "market": {
+    "name": "Mid-market 3PL warehouse software",
+    "coverages": [
+      {
+        "productName": "Harborline WMS",
+        "businessProcessName": "Shipping & Carrier Integration",
+        "tier": "Bronze",
+        "confidence": 0.8,
+        "rationale": "DEC-cov-harborline-shipping: two carriers hard-wired, no rate shopping (product marketing grid, 2026-06-30).",
+        "effectiveDate": "2026-06-30"
+      },
+      {
+        "productName": "Stackline WMS",
+        "businessProcessName": "Cycle Counting",
+        "isUnknown": true,
+        "rationale": "DEC-cov-stackline-cycle-counting under RULE-unknown-competitor-coverage: a repeated sales-note claim, never seen in a demo. Not assumed Bronze."
+      },
+      {
+        "productName": "Palletto Cloud",
+        "businessProcessName": "Shipping & Carrier Integration",
+        "segmentName": "E-commerce Fulfillment",
+        "isUnknown": true,
+        "rationale": "DEC-cov-palletto-shipping-ecommerce proposes Gold but is not accepted; until it is, the cell stays unknown (RULE-unknown-competitor-coverage)."
+      }
+    ],
+    "needs": [
+      {
+        "segmentName": "E-commerce Fulfillment",
+        "businessProcessName": "Shipping & Carrier Integration",
+        "importanceWeight": 0.8,
+        "notes": "DEC-need-ecommerce-shipping: rank 2 of 5 processes (weight (5-2+1)/5). Evidence of a need, not of any coverage tier or win-rate effect."
+      }
+    ]
+  }
+}

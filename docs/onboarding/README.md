@@ -7,7 +7,7 @@ instance loaded with that human's data.
 Read this file end to end before you start. Do not read the dataset files under `datasets/` - each
 one is read by the subagent you spawn for it. (Discovery, section 6, and portfolio selection, section 8,
 are the exceptions: they read a requested dataset's tier, data-requirements and units sections only to
-map evidence and shape the mapping.)
+map evidence and shape the mapping.) The review procedure (section 9) reads no dataset file.
 
 Shorthand used below: `pm` means `dotnet run --project src/ProductManager.Cli --`. There is no
 installed `pm` binary. Every command is run from the repository root.
@@ -25,8 +25,8 @@ spec - the *why* behind every dataset).
 
 | Role | Reads | Does |
 |---|---|---|
-| Orchestrator (you) | this file, plus [`discovery/README.md`](discovery/README.md) when sources are connected and [`portfolio/README.md`](portfolio/README.md) when Aha! or Jira are connected | environment checks, stack up, source discovery, consolidated interview, portfolio selection, spawns subagents, assembles and loads, verifies |
-| Dataset subagent | one file under `datasets/` | asks its dataset's questions, converts the human's source data, emits a seed JSON fragment, loads it, reports |
+| Orchestrator (you) | this file, plus [`discovery/README.md`](discovery/README.md) when sources are connected, [`portfolio/README.md`](portfolio/README.md) when Aha! or Jira are connected and [`review/README.md`](review/README.md) before anything consequential loads | environment checks, stack up, source discovery, consolidated interview, portfolio selection, consequential-decision review, spawns subagents, assembles and loads, verifies |
+| Dataset subagent | one file under `datasets/` | asks its dataset's questions, converts the human's source data, emits a seed JSON fragment (accepted decisions only), loads it, reports |
 
 This is progressive disclosure on purpose: the 12 dataset files together are far too long for one
 context, and most onboardings need only three or four of them.
@@ -67,6 +67,13 @@ decision and every effort or capacity unit from it. Never coin your own name, me
 or include a record the mapping holds out or excludes; a name you think is wrong goes in your report
 for the orchestrator. Prepare the fragment only from the mapping's selected records.
 
+Decision register: <absolute path to decision-register.json, or "none - nothing consequential to review">
+If given, take every consequential value from the entries whose acceptance is in force (accepted, and
+its snapshot still equal to the entry's value, scope and evidence). A consequential choice not covered
+by an accepted decision or rule is returned to the orchestrator as a proposed register entry; it is
+never defaulted into the fragment. Bracketed defaults in the dataset file apply to mechanical choices
+only. Records of proposed, rejected, deferred or reopened entries stay out of the fragment.
+
 Source data location:
 <path to spreadsheet / export / API, plus any credentials handling the human specified>
 
@@ -75,12 +82,14 @@ Already loaded into this instance (so by-name references to these will resolve):
 
 Deliverables:
 1. A seed JSON fragment written to <path>/<NN>-<slug>.json containing only the top-level
-   SeedFile keys this dataset owns.
+   SeedFile keys this dataset owns, and only records that are mechanical, covered by an accepted
+   rule, or the value of an accepted decision.
 2. Load it:  dotnet run --project src/ProductManager.Cli -- seed --file <path>/<NN>-<slug>.json
 3. Run the verification commands from the file's "## Verification" section.
-4. Report back: the tally line the CLI printed, the verification output, every judgement
-   call you made converting the source data (units, defaults, gaps you filled), and
-   anything you could not source and left out.
+4. Report back: the tally line the CLI printed, the verification output, every mechanical
+   judgement call you made converting the source data (units, formatting, gaps you left), every
+   consequential choice you returned as a proposed register entry, and anything you could not
+   source and left out.
 
 Rules: the API is the only write path - never touch the database directly. Do not invent
 fields; the schema is src/ProductManager.Cli/Seed/SeedModels.cs. Do not edit the dataset
@@ -335,9 +344,9 @@ Procedure - the detail and every field is in [`discovery/README.md`](discovery/R
 Hard rules:
 
 - Discovery is read-only and creates nothing: no ProductManager entities, no writes to any source
-  system, no database access. Loading stays API-only and later, exactly as sections 9 and 10 describe.
+  system, no database access. Loading stays API-only and later, exactly as sections 10 and 11 describe.
 - It precedes all per-dataset preparation and any real-data load. Environment checks, authentication,
-  load order and verification (sections 2, 3, 9, 10) are unchanged.
+  load order and verification (sections 2, 3, 10, 11) are unchanged.
 - Store no credentials, tokens or connection strings in any artifact.
 - Finance costs and market-wide totals stay gaps when no accessible system holds them; a Jira Done
   status is not customer availability; a sales commitment is not a delivery date.
@@ -378,10 +387,15 @@ per-dataset questions belong to the subagents - do not pre-empt them.
 7. **Where does each dataset live?** (With discovery: the manifest already answers this for connected sources; ask only for what the sources cannot hold.) Get a concrete path or export for each tier you agreed on -
    spreadsheet, CSV export, CRM report, Jira query, finance system extract. A subagent with no
    source cannot invent one.
-8. **Who decides when the data is ambiguous?** Default: the subagent picks a documented default and
-   flags it in its report; you surface every flag to the human at the end.
+8. **Who decides when the data is ambiguous?** Split by consequence. *Mechanical* choices (trimming,
+   formatting, approved unit conversions; see [`review/README.md`](review/README.md) section 2) follow the
+   dataset file's bracketed default and the subagent lists them in its report. *Consequential* choices
+   (segments, identity merges, capability scopes, coverage tiers and deltas, planning dates, commercial
+   classifications, simulation assumptions) are decided by the human before the record loads, through the
+   decision register (section 9). Tell the human up front that nothing consequential loads unseen; a default
+   never stands in for that decision.
 
-Write the answers down. You will paste the relevant slice of them into each subagent brief. With Aha! or Jira connected, section 8 comes next.
+Write the answers down. You will paste the relevant slice of them into each subagent brief. With Aha! or Jira connected, section 8 comes next; then section 9 for everything that needs a decision.
 
 ---
 
@@ -422,13 +436,65 @@ Hard rules:
   only from the mapping's selected records.
 - Store no credentials, tokens or connection strings in the mapping.
 
-> **PRD5 hook - consequential-decision review.** Before any fragment is loaded (section 9), the mapping's
-> inclusion decisions, exceptions and date conflicts go through the consequential-decision review.
-> Link: <!-- PRD5: link the decision-register procedure here -->
+Before any fragment is loaded, the mapping's inclusion decisions, exceptions and date conflicts go through
+the consequential-decision review (section 9).
 
 ---
 
-## 9. Assembling and loading
+## 9. Consequential-decision review (before any consequential record loads)
+
+**When:** after discovery and portfolio selection (sections 6 and 8, when they ran) and the interview
+(section 7), before you spawn a subagent that would put an interpretation into a fragment. It applies to
+every onboarding; on the spreadsheet-only path the register just cites the human's statements.
+
+**Why:** a segment definition, a coverage tier, a delta, a planning date or a simulation assumption changes
+which roadmaps win in a comparison. A default chosen by a subagent and reported after loading makes it the
+baseline unseen. The human decides first, once, with the evidence beside the proposal.
+
+Procedure - the detail and every field is in [`review/README.md`](review/README.md):
+
+1. Split every choice into mechanical (proceed, no question) and interpretive (a register entry).
+   An accepted rule covers a whole class of records: those records are not asked about again.
+2. Write one entry per interpretive choice in the decision register
+   ([`review/decision-register.template.json`](review/decision-register.template.json)): stable key, affected
+   records, proposed value in seed shape, evidence by reference, dates, alternatives, rationale, what is
+   missing, and the review state. Reference manifest questions and mapping exceptions; do not copy them.
+3. Keep extraction confidence, model uncertainty and independent observations apart. An asserted value
+   stays asserted, unknown competitor coverage stays unknown, and a customer request is evidence of a need,
+   not of a coverage tier.
+4. Present one consolidated review ([`review/review.example.md`](review/review.example.md)): what proceeds, what
+   reopened, what awaits an answer (proposal, evidence, alternatives, one question each), what is deferred.
+   Silence is not acceptance.
+5. Record answers with the accepted material fields; load only accepted entries. Unresolved entries are
+   excluded with a reason; a required one defers its tier. A later change to an accepted entry's value,
+   scope or evidence reopens that entry, and only that one.
+
+Worked example: [`review/decision-register.example.json`](review/decision-register.example.json).
+
+Hard rules:
+
+- The review adds no ProductManager entities, no seed keys and no API: the register is a local artifact kept
+  with the import package (section 10). Loading stays API-only.
+- Quantities with no source in Salesforce, Aha! or Jira (market population, competitor installed base, channel
+  reach, operating costs, price sensitivity, switching costs, covariate elasticities, event effects) may load
+  only as reviewed assumptions with provenance `Asserted` (or `Default`) and a rationale; never relabel them
+  observed or calibrated.
+- Dataset subagents never default a consequential choice into a fragment; see the brief's "Decision register" slot.
+
+---
+
+## 10. Assembling and loading
+
+**Only what the review allows loads.** Assemble each fragment from records that are mechanical, covered
+by an accepted rule, or the value of an accepted decision whose acceptance still holds (section 9). Drop
+every record of a proposed, rejected, deferred or reopened entry and say which and why in your report;
+a required entry that is not accepted defers its tier, so its datasets are not loaded. Do not fill a gap
+with a default: a subagent's independent default for a consequential choice is a proposal for the
+register, never fragment content.
+
+**Register and source references travel with the import package.** Keep the decision register (accepted
+snapshots and accepted assumptions included), the discovery manifest, the portfolio mapping and the loaded
+fragments together, outside the repository. See [`review/README.md`](review/README.md) section 9.
 
 Both strategies use the same command:
 
@@ -524,7 +590,7 @@ appears in the tally at all.
 
 ---
 
-## 10. Verification checklist
+## 11. Verification checklist
 
 Run this after every dataset load, and again at the end.
 
@@ -594,7 +660,7 @@ table means calibration found no facts to fit, which usually means dataset 12 di
 
 ---
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|

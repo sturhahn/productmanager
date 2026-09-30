@@ -45,6 +45,8 @@ numbers. `pm` below means `dotnet run --project src/ProductManager.Cli --`.
 9. "What currency?" All amounts in one file must be in the market's single currency; the
    engine never converts (`SegmentStockState.cs` class remarks).
 
+**Consequential choices** here: how ARPU is derived from revenue, every cost line (`operatingCosts`) and the prospect pool (`marketPopulation`) when no accessible system holds them, and module penetration defaults. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 Entity: `marketDynamics.segmentStockStates[]` (one per segment; natural key `segmentName`).

@@ -40,6 +40,8 @@ PRD: "Market side - dynamics", row Covariate. `pm` below means
    beta. A series that crosses zero (a spread, a net balance) must be rebased (e.g. index it
    to 100) before loading.
 
+**Consequential choices** here: which external series is linked to which flow and its elasticity (`covariateElasticities`), and any drift or volatility for a stochastic path. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 Entity: `marketDynamics.covariates[]` (natural key `name`, scoped to the workspace).

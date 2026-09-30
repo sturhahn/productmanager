@@ -173,9 +173,10 @@ their brief. Fragment rules:
   they are the roadmap-only variant (no market referenced), so business processes and deltas wait for
   dataset 02.
 
-Before any fragment is loaded, the consequential-decision review hook in
-[guide section 8](../README.md#8-portfolio-selection-aha-or-jira-connected-before-any-dataset-subagent)
-applies to the inclusion decisions, exceptions and date conflicts.
+Before any fragment is loaded, the consequential-decision review in
+[guide section 9](../README.md#9-consequential-decision-review-before-any-consequential-record-loads)
+applies to the inclusion decisions, exceptions and date conflicts; its procedure is in
+[`../review/README.md`](../review/README.md).
 
 ## 9. Mapping field reference
 

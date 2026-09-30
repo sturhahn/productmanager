@@ -41,6 +41,8 @@ CLI shorthand used below: `pm` means `dotnet run --project src/ProductManager.Cl
    `dependsOnProjectNames`; here, confirm that each dependent project's planned start is not
    before its dependency's planned end, or accept that the feasibility check will flag it.
 
+**Consequential choices** here: which date a roadmap item follows when sources disagree, a sales commitment against the plan, a Done epic under an unreleased capability (`planningDate`), and whether proposed projects go on the timeline. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 ### roadmap

@@ -43,7 +43,11 @@ integration tests on CRUD/API. Light touch on UI.")
   keys, fixture page counts, no credentials, dataset readiness values); edit the manifest and fixture
   together. It also guards `docs/onboarding/portfolio/` (the mapping example, its Aha!/Jira/Salesforce
   fixture and the seed fragments generated from it: names, dates, units, dependencies, every source
-  record dispositioned exactly once); edit the mapping, fixture and fragments together.
+  record dispositioned exactly once); edit the mapping, fixture and fragments together. It also guards
+  `docs/onboarding/review/` (the decision register template and example, the review walkthrough and the
+  seed fragments generated from accepted decisions: required fields, enum labels, evidence references,
+  exclusion of unresolved decisions, invalidation of materially changed acceptances); edit the register,
+  review text and fragments together.
 
 ---
 Update this trio (`ABSTRACT.md` / `INDEX.md` / `CLAUDE.md`) whenever you add, remove, or

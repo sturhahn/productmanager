@@ -44,6 +44,8 @@ CLI shorthand used below: `pm` means `dotnet run --project src/ProductManager.Cl
 7. Does capacity vary by month? Default: a flat number per team, then adjust for known dips
    (December holidays, a planned hiring date).
 
+**Consequential choices** here: merging or splitting teams, the capacity and effort unit (an unapproved conversion between units), and any capacity figure or focus factor the human did not state. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 ### workspace

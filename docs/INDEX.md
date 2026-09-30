@@ -15,7 +15,7 @@
   `onboarding/`.
 - `onboarding/README.md` — the orchestrator agent's onboarding guide: environment checks,
   running the stack, source discovery, the mandatory/optional dataset task list, the consolidated
-  interview, portfolio selection, load order, verification. Hand this file to an agent onboarding a new instance.
+  interview, portfolio selection, consequential-decision review, load order, verification. Hand this file to an agent onboarding a new instance.
 - `onboarding/discovery/README.md` - the detailed source-discovery procedure (PRD3): scope
   boundaries, inspection, pagination, authority by concept, dataset-to-evidence mapping, manifest
   field reference. Open when the human has connected sources.
@@ -32,6 +32,15 @@
   (Harborline, fictional); guarded by tests.
 - `onboarding/portfolio/fixture/` - Aha!/Jira/Salesforce extracts, the seed fragments generated from the
   mapping (`seed/`), and `README.md`, the walkthrough of every PRD4 acceptance criterion.
+- `onboarding/review/README.md` - the detailed consequential-decision review procedure (PRD5): mechanical
+  versus interpretive choices, the decision register and its label map, the consolidated review, the
+  needs and coverage rubric, confidence versus uncertainty, outside-evidence quantities, acceptance tied to
+  the reviewed version, the import package. Open before any interpretation loads.
+- `onboarding/review/decision-register.template.json` and `decision-register.example.json` - the blank and
+  the worked register (Harborline, fictional); guarded by tests.
+- `onboarding/review/review.example.md` - the consolidated human-facing review of the example register.
+- `onboarding/review/fixture/seed/` - the seed fragments generated from the example register's accepted
+  decisions only (`03-feature-deltas`, `04-roadmap`, `05-coverage-and-needs`, `11-firms`).
 - `onboarding/datasets/NN-*.md` — one file per dataset (12, numbered in load order): data
   requirements, units and conversions, seed JSON shape, idempotency rule, verification. Each
   follows the same eight-heading skeleton; a subagent reads exactly one.

@@ -1,0 +1,24 @@
+{
+  "marketDynamics": {
+    "marketName": "Mid-market 3PL warehouse software",
+    "firms": [
+      {
+        "name": "Bluewater Logistics",
+        "segmentName": "Regional 3PLs",
+        "epistemicStatus": "Observed",
+        "attributesJson": "{\"salesforceId\":\"001EX000000B001AAA\"}",
+        "notes": "Segment from Account.Segment__c under RULE-segment-from-segment-c. Customer; acquisitionDate stays null until ContractHistory is readable (Q2).",
+        "relationships": [
+          { "productName": "Harborline WMS" }
+        ]
+      },
+      {
+        "name": "Cargo Nine",
+        "segmentName": "E-commerce Fulfillment",
+        "epistemicStatus": "Observed",
+        "attributesJson": "{\"salesforceId\":\"001EX000000B002AAA\"}",
+        "notes": "Segment from Account.Segment__c under RULE-segment-from-segment-c. Prospect: no relationships."
+      }
+    ]
+  }
+}

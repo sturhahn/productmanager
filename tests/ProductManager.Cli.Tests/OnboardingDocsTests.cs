@@ -32,6 +32,12 @@ public class OnboardingDocsTests
     private const string PortfolioReadmePath = PortfolioDirectory + "/README.md";
     private const string PortfolioMappingPath = PortfolioDirectory + "/portfolio-mapping.example.json";
     private const string PortfolioFixtureReadmePath = PortfolioDirectory + "/fixture/README.md";
+    private const string ReviewDirectory = "docs/onboarding/review";
+    private const string ReviewReadmePath = ReviewDirectory + "/README.md";
+    private const string ReviewExamplePath = ReviewDirectory + "/review.example.md";
+    private const string RegisterTemplatePath = ReviewDirectory + "/decision-register.template.json";
+    private const string RegisterExamplePath = ReviewDirectory + "/decision-register.example.json";
+    private const string ReviewSeedDirectory = ReviewDirectory + "/fixture/seed";
 
     /// <summary>Today is 2026-09-01 (see docs/onboarding house rules) - a fact cannot be recorded
     /// in the future, and the API refuses a future recordedAt.</summary>
@@ -94,7 +100,7 @@ public class OnboardingDocsTests
         new[]
         {
             RootReadmePath, GuidePath, DiscoveryReadmePath, AssessmentPath, FixtureReadmePath,
-            PortfolioReadmePath, PortfolioFixtureReadmePath
+            PortfolioReadmePath, PortfolioFixtureReadmePath, ReviewReadmePath, ReviewExamplePath
         }
             .Concat(DatasetFileNames.Select(name => $"{DatasetDirectory}/{name}"))
             .Select(path => new object[] { path });
@@ -1466,9 +1472,9 @@ public class OnboardingDocsTests
         var guide = ReadRepoFile(GuidePath);
         var interview = guide.IndexOf("## 7. Interviewing the human", StringComparison.Ordinal);
         var portfolio = guide.IndexOf("## 8. Portfolio selection", StringComparison.Ordinal);
-        var loading = guide.IndexOf("## 9. Assembling and loading", StringComparison.Ordinal);
+        var loading = guide.IndexOf("## 10. Assembling and loading", StringComparison.Ordinal);
         Assert.True(interview >= 0 && portfolio > interview && loading > portfolio,
-            "Portfolio selection must be section 8, after the interview and before assembling and loading.");
+            "Portfolio selection must be section 8, after the interview and before assembling and loading (section 10).");
 
         var linked = RelativeLinkTargets(guide, GuidePath).Select(t => t.ResolvedPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
         Assert.Contains(Path.GetFullPath(RepoPath(PortfolioReadmePath)), linked);
@@ -1476,7 +1482,7 @@ public class OnboardingDocsTests
 
         Assert.Contains("Portfolio mapping:", guide);
         Assert.Contains("never coin", guide);
-        Assert.Contains("PRD5", guide); // the named hook for the consequential-decision review
+        Assert.DoesNotContain("<!-- PRD5", guide); // the hook is now guide section 9 (PRD5 tests below)
 
         var readme = ReadRepoFile(PortfolioReadmePath);
         foreach (var meaning in DateMeanings) Assert.Contains(meaning, readme);
@@ -1495,4 +1501,607 @@ public class OnboardingDocsTests
     }
 
     // ---------- PRD4: append new tests above this line ----------
+
+    // ---------- PRD5: evidence and consequential-decision review ----------
+    // docs/onboarding/review/: the decision register template and example, the review walkthrough and
+    // the seed fragments generated from the register's accepted decisions only.
+
+    private static readonly string[] ReviewStates = ["proposed", "accepted", "rejected", "deferred"];
+
+    private static readonly string[] DecisionClasses = ["sourceFact", "inferredInterpretation", "default", "assumption"];
+
+    private static readonly string[] DecisionTopics =
+    [
+        "segmentDefinition", "identityMerge", "capabilityScope", "coverageTier", "coverageDelta", "need",
+        "planningDate", "commercialClassification", "simulationAssumption"
+    ];
+
+    private static readonly string[] OutsideEvidenceQuantities =
+    [
+        "marketPopulation", "competitorInstalledBase", "channelMarketReach", "operatingCosts",
+        "priceSensitivity", "switchingCosts", "covariateElasticities", "eventEffects"
+    ];
+
+    /// <summary>Every decision carries all of these keys; optional facts are explicit nulls.</summary>
+    private static readonly string[] RequiredDecisionKeys =
+    [
+        "key", "entryType", "topic", "class", "tier", "datasets", "requiredForTier", "affects", "seedTarget",
+        "proposedValue", "evidence", "sourceDate", "effectiveDate", "independentObservations",
+        "extractionConfidence", "modelUncertainty", "alternatives", "rationale", "missingEvidence",
+        "outsideEvidenceQuantity", "domainMapping", "question", "reviewState", "exclusionReason", "appliedRule",
+        "accepted"
+    ];
+
+    private static readonly string[] ReviewSeedFiles =
+        ["03-feature-deltas.json", "04-roadmap.json", "05-coverage-and-needs.json", "11-firms.json"];
+
+    /// <summary>The domain vocabulary a register label may map onto: the CLI's mirrors of the Domain enums.</summary>
+    private static readonly Dictionary<string, Type> DomainEnums = new()
+    {
+        ["ParameterProvenance"] = typeof(ParameterProvenance),
+        ["EpistemicStatus"] = typeof(EpistemicStatus),
+        ["CoverageTier"] = typeof(CoverageTier),
+        ["FeatureStatus"] = typeof(FeatureStatus),
+        ["ProjectStatus"] = typeof(ProjectStatus)
+    };
+
+    private static JsonNode Register() => ReadJson(RegisterExamplePath);
+
+    private static List<JsonNode> Decisions(JsonNode register) => Nodes(register["decisions"]).ToList();
+
+    private static JsonNode Decision(JsonNode register, string key) =>
+        Decisions(register).Single(d => d["key"]!.GetValue<string>() == key);
+
+    private static string Text(JsonNode? node) => node?.GetValue<string>() ?? "";
+
+    /// <summary>
+    /// Canonical form of a JSON value for the material-fields comparison: object keys sorted, strings
+    /// trimmed with whitespace runs collapsed, arrays compared as sets. Formatting, key order and
+    /// array order therefore never change it; a different value, scope or evidence always does.
+    /// </summary>
+    private static string Canon(JsonNode? node) => node switch
+    {
+        null => "null",
+        JsonObject o => "{" + string.Join(",", o.OrderBy(p => p.Key, StringComparer.Ordinal)
+            .Select(p => $"{p.Key}:{Canon(p.Value)}")) + "}",
+        JsonArray a => "[" + string.Join(",", a.Select(Canon).Order(StringComparer.Ordinal)) + "]",
+        JsonValue v when v.TryGetValue<string>(out var s) => "\"" + Regex.Replace(s.Trim(), @"\s+", " ") + "\"",
+        JsonValue v when v.TryGetValue<double>(out var n) => n.ToString("R", CultureInfo.InvariantCulture),
+        _ => node.ToJsonString()
+    };
+
+    /// <summary>The material fields of the current proposal: selected value, scope (affects) and evidence references.</summary>
+    private static string MaterialOf(JsonNode decision) => Canon(new JsonObject
+    {
+        ["value"] = decision["proposedValue"]!.DeepClone(),
+        ["affects"] = decision["affects"]!.DeepClone(),
+        ["evidence"] = new JsonArray(Nodes(decision["evidence"]).Select(e => (JsonNode)JsonValue.Create(Text(e["ref"]))!).ToArray())
+    });
+
+    /// <summary>
+    /// Acceptance is valid only while the accepted snapshot equals the current material fields. A
+    /// decision whose snapshot no longer matches is reopened: treated like a proposal, excluded until re-accepted.
+    /// </summary>
+    private static string EffectiveState(JsonNode decision)
+    {
+        var state = Text(decision["reviewState"]);
+        if (state != "accepted") return state;
+        var snapshot = decision["accepted"];
+        return snapshot is not null && Canon(snapshot["material"]) == MaterialOf(decision) ? "accepted" : "reopened";
+    }
+
+    private static HashSet<string> KnownSourceIds()
+    {
+        var known = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var source in Sources(ReadJson(ManifestPath)))
+            foreach (var obj in Nodes(source!["objects"]))
+                foreach (var id in Strings(obj["sourceIds"])) known.Add(id);
+
+        foreach (var dir in new[] { DiscoveryDirectory, PortfolioDirectory })
+            foreach (var file in Directory.GetFiles(RepoPath($"{dir}/fixture"), "*.json", SearchOption.AllDirectories)
+                         .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}seed{Path.DirectorySeparatorChar}")))
+                CollectStrings(JsonNode.Parse(File.ReadAllText(file)), known);
+        return known;
+    }
+
+    private static void CollectStrings(JsonNode? node, HashSet<string> into)
+    {
+        switch (node)
+        {
+            case JsonObject obj: foreach (var (_, child) in obj) CollectStrings(child, into); break;
+            case JsonArray array: foreach (var child in array) CollectStrings(child, into); break;
+            case JsonValue value when value.TryGetValue<string>(out var text): into.Add(text); break;
+        }
+    }
+
+    /// <summary>Resolves "kind:id" against the discovery manifest, the portfolio mapping, the fixtures and the register itself.</summary>
+    private static bool RefResolves(string reference, JsonNode register, JsonNode manifest, JsonNode mapping, HashSet<string> sourceIds)
+    {
+        var colon = reference.IndexOf(':');
+        if (colon <= 0) return false;
+        var (kind, id) = (reference[..colon], reference[(colon + 1)..]);
+        return kind switch
+        {
+            "salesforce" or "aha" or "jira" => sourceIds.Contains(id),
+            "mapping" => new[] { "records", "exceptions", "dependencies", "exclusions" }
+                .Any(list => Nodes(mapping[list]).Any(n => Text(n["key"]) == id)),
+            "manifest" when id.StartsWith("dataset:") => Nodes(manifest["datasetReadiness"]).Any(r => Text(r["datasetId"]) == id[8..]),
+            "manifest" when id.StartsWith("gap:") => Nodes(manifest["gaps"]).Any(g => Text(g["concept"]).StartsWith(id[4..], StringComparison.Ordinal)),
+            "manifest" => Nodes(manifest["openQuestions"]).Any(q => Text(q["id"]) == id),
+            "human" => Nodes(register["humanEvidence"]).Any(h => Text(h["id"]) == id),
+            "register" => Nodes(register["decisions"]).Any(d => Text(d["key"]) == id),
+            "seed" => id.Length > 0,
+            _ => false
+        };
+    }
+
+    private static JsonNode ReviewFragment(string fileName) =>
+        JsonNode.Parse(ReadRepoFile($"{ReviewSeedDirectory}/{fileName}"))!;
+
+    /// <summary>The fragment rows a decision's <c>seedTarget</c> points at (collection path plus match keys).</summary>
+    private static List<JsonNode> SeedRows(JsonNode target)
+    {
+        JsonNode? node = ReviewFragment(Text(target["fragment"]));
+        foreach (var part in Text(target["collection"]).Split('.')) node = node?[part];
+        return node is JsonArray rows
+            ? rows.Select(r => r!).Where(r => target["match"]!.AsObject().All(m => Text(r[m.Key]) == Text(m.Value))).ToList()
+            : [];
+    }
+
+    private static bool RowHoldsValue(JsonNode row, JsonNode value) =>
+        value.AsObject().All(p => row[p.Key] is not null && JsonNode.DeepEquals(row[p.Key], p.Value));
+
+    [Fact]
+    public void The_register_template_and_example_parse_and_every_decision_has_the_required_fields_and_an_allowed_state()
+    {
+        foreach (var path in new[] { RegisterTemplatePath, RegisterExamplePath })
+        {
+            var register = ReadJson(path);
+            Assert.Equal(1, register["registerVersion"]!.GetValue<int>());
+            Assert.NotEmpty(register["decisions"]!.AsArray());
+            foreach (var decision in Decisions(register))
+            {
+                foreach (var key in RequiredDecisionKeys)
+                    Assert.True(decision.AsObject().ContainsKey(key), $"{path}: decision '{Text(decision["key"])}' lacks '{key}'.");
+                Assert.NotEmpty(Text(decision["key"]));
+            }
+        }
+
+        var example = Register();
+        var keys = Decisions(example).Select(d => Text(d["key"])).ToList();
+        Assert.Equal(keys.Count, keys.Distinct().Count());
+        foreach (var d in Decisions(example))
+        {
+            var key = Text(d["key"]);
+            Assert.Contains(Text(d["reviewState"]), ReviewStates);
+            Assert.Contains(Text(d["class"]), DecisionClasses);
+            Assert.Contains(Text(d["topic"]), DecisionTopics);
+            Assert.Contains(Text(d["entryType"]), new[] { "decision", "rule" });
+            Assert.Contains(Text(d["tier"]), new[] { "A", "B", "C", "D" });
+            Assert.NotEmpty(d["datasets"]!.AsArray());
+            Assert.NotEmpty(d["affects"]!.AsArray());
+            Assert.False(string.IsNullOrWhiteSpace(Text(d["rationale"])), $"{key}: rationale.");
+            Assert.False(string.IsNullOrWhiteSpace(Text(d["missingEvidence"])), $"{key}: missingEvidence (write 'none' if none).");
+            Assert.True(d["alternatives"] is JsonArray, $"{key}: alternatives.");
+        }
+
+        // Every state the example exercises: accepted and in force, reopened, proposed, deferred.
+        var effective = Decisions(example).Select(EffectiveState).Distinct().ToList();
+        foreach (var state in new[] { "accepted", "reopened", "proposed", "deferred" })
+            Assert.Contains(state, effective);
+    }
+
+    [Fact]
+    public void Every_label_the_register_uses_maps_to_a_real_domain_enum_member()
+    {
+        var register = Register();
+        var labelMap = Nodes(register["labelMap"]).ToList();
+        Assert.NotEmpty(labelMap);
+
+        foreach (var row in labelMap)
+        {
+            Assert.Contains(Text(row["label"]), DecisionClasses.Append("unknown"));
+            var enumName = Text(row["enum"]);
+            if (enumName.Length == 0) continue; // "unknown" lands in isUnknown, which is a flag, not an enum member
+            Assert.True(DomainEnums.TryGetValue(enumName, out var type), $"labelMap: '{enumName}' is not a mirrored domain enum.");
+            Assert.True(Enum.IsDefined(type!, Text(row["member"])), $"labelMap: {enumName}.{Text(row["member"])} does not exist.");
+        }
+
+        // Every descriptive class the register uses is mapped somewhere, and a decision's own domainMapping agrees.
+        var mappedLabels = labelMap.Select(r => Text(r["label"])).ToHashSet();
+        foreach (var d in Decisions(register))
+        {
+            Assert.Contains(Text(d["class"]), mappedLabels);
+            if (d["domainMapping"] is not { } mapping) continue;
+            Assert.Contains(labelMap, r => Text(r["label"]) == Text(d["class"])
+                && Text(r["enum"]) == Text(mapping["enum"]) && Text(r["member"]) == Text(mapping["member"]));
+        }
+
+        // Coverage tiers proposed in seed-shaped values use the exact CoverageTier spellings.
+        foreach (var d in Decisions(register))
+        {
+            var value = d["proposedValue"]!;
+            if (value["tier"] is { } tier) Assert.True(Enum.IsDefined(typeof(CoverageTier), Text(tier)), $"{Text(d["key"])}: tier '{Text(tier)}'.");
+            foreach (var delta in value["deltas"] is JsonArray deltas ? deltas.Select(x => x!) : [])
+            {
+                Assert.True(Enum.IsDefined(typeof(CoverageTier), Text(delta["fromTier"])), $"{Text(d["key"])}: fromTier.");
+                Assert.True(Enum.IsDefined(typeof(CoverageTier), Text(delta["toTier"])), $"{Text(d["key"])}: toTier.");
+            }
+        }
+    }
+
+    [Fact]
+    public void Every_evidence_reference_in_the_register_resolves_to_a_real_key_or_id()
+    {
+        var register = Register();
+        var manifest = ReadJson(ManifestPath);
+        var mapping = Mapping();
+        var sourceIds = KnownSourceIds();
+
+        Assert.Equal(Text(manifest["discovery"]!["runId"]), Text(register["manifest"]!["runId"]));
+        Assert.Equal(Text(manifest["discovery"]!["runId"]), Text(mapping["manifest"]!["runId"]));
+        foreach (var human in Nodes(register["humanEvidence"]))
+        {
+            Assert.NotEmpty(Text(human["statement"]));
+            AssertIsoDate(Text(human["date"]), RegisterExamplePath, $"humanEvidence {Text(human["id"])}", required: true);
+        }
+
+        foreach (var d in Decisions(register))
+        {
+            var key = Text(d["key"]);
+            foreach (var evidence in Nodes(d["evidence"]))
+                Assert.True(RefResolves(Text(evidence["ref"]), register, manifest, mapping, sourceIds),
+                    $"{key}: evidence '{Text(evidence["ref"])}' does not resolve.");
+            foreach (var affected in Nodes(d["affects"]))
+            {
+                Assert.True(RefResolves(Text(affected["ref"]), register, manifest, mapping, sourceIds),
+                    $"{key}: affects '{Text(affected["ref"])}' does not resolve.");
+                Assert.NotEmpty(affected["fields"]!.AsArray());
+            }
+
+            if (Text(d["appliedRule"]).Length > 0) Assert.Contains(Text(d["appliedRule"]), Decisions(register).Select(x => Text(x["key"])));
+            AssertIsoDate(d["sourceDate"] is null ? null : Text(d["sourceDate"]), RegisterExamplePath, $"{key} sourceDate");
+            AssertIsoDate(d["effectiveDate"] is null ? null : Text(d["effectiveDate"]), RegisterExamplePath, $"{key} effectiveDate");
+        }
+    }
+
+    /// <summary>Acceptance criterion 2 and requirement 3: only decisions in force reach the fragments; the rest are excluded.</summary>
+    [Fact]
+    public void A_decision_that_is_not_in_force_leaves_no_trace_of_its_proposed_value_in_any_seed_fragment()
+    {
+        var register = Register();
+        var typed = new List<SeedFile>();
+        foreach (var fileName in ReviewSeedFiles)
+        {
+            var seed = ParseSeedFile(ReadRepoFile($"{ReviewSeedDirectory}/{fileName}"), fileName);
+            Assert.True(HasAnyTopLevelKey(seed), $"{fileName} is empty.");
+            AssertEnumsAreExactMemberNames(seed, fileName);
+            AssertDatesAreIsoAndRecordedDatesArePast(seed, fileName);
+            typed.Add(seed);
+        }
+
+        foreach (var d in Decisions(register).Where(d => d["seedTarget"] is not null))
+        {
+            var key = Text(d["key"]);
+            var holding = SeedRows(d["seedTarget"]!).Where(row => RowHoldsValue(row, d["proposedValue"]!)).ToList();
+            if (EffectiveState(d) == "accepted")
+                Assert.True(holding.Count == 1, $"{key} is accepted and in force, so its value must appear exactly once in the fragments.");
+            else
+                Assert.True(holding.Count == 0, $"{key} is {EffectiveState(d)}; its proposed value leaked into the fragments.");
+        }
+
+        // The concrete case: the Bronze-to-Gold delta for rate shopping stays proposed and the feature loads without it.
+        var delta = Decision(register, "DEC-delta-rate-shopping-shipping");
+        Assert.Equal("proposed", EffectiveState(delta));
+        var features = typed.SelectMany(s => s.Features).ToList();
+        Assert.Single(features, f => f.Name == "Multi-carrier rate shopping");
+        Assert.DoesNotContain(features.SelectMany(f => f.Deltas), x => x.FromTier == "Bronze" && x.ToTier == "Gold");
+        Assert.Empty(features.Single(f => f.Name == "Multi-carrier rate shopping").Deltas);
+
+        // Nothing outside the register's scope names an item the human did not accept.
+        var mapping = Mapping();
+        var approvedProjects = MappingRecords(mapping, "project").Select(r => Text(r["name"])).ToHashSet();
+        foreach (var item in typed.Select(s => s.Roadmap).Where(r => r is not null).SelectMany(r => r!.Items))
+            Assert.Contains(item.ProjectName, approvedProjects);
+        Assert.DoesNotContain(typed.Select(s => s.Roadmap).Where(r => r is not null).SelectMany(r => r!.Items),
+            i => i.ProjectName == "Wave picking engine");
+    }
+
+    /// <summary>Acceptance criterion 3: unknown competitor cells stay unknown; extraction confidence does not make them Gold.</summary>
+    [Fact]
+    public void Unknown_competitor_cells_stay_unknown_and_extraction_confidence_never_turns_them_into_a_tier()
+    {
+        var register = Register();
+        var coverage = ReviewFragment("05-coverage-and-needs.json")["market"]!["coverages"]!.AsArray().Select(c => c!).ToList();
+        var competitors = coverage.Where(c => !Text(c["productName"]).StartsWith("Harborline", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(competitors);
+
+        foreach (var cell in competitors)
+        {
+            Assert.True(cell["isUnknown"]!.GetValue<bool>(), $"{Text(cell["productName"])} / {Text(cell["businessProcessName"])} must stay unknown.");
+            Assert.Null(cell["tier"]);       // an unknown cell carries no tier ...
+            Assert.Null(cell["confidence"]); // ... and no confidence: the API ignores both, and a copied score must not sneak in.
+        }
+
+        var stackline = Decision(register, "DEC-cov-stackline-cycle-counting");
+        Assert.True(stackline["extractionConfidence"]!.GetValue<double>() > 0.5);       // recorded, and high ...
+        Assert.True(stackline["proposedValue"]!["isUnknown"]!.GetValue<bool>());        // ... yet the outcome is unknown.
+        Assert.Null(stackline["proposedValue"]!["tier"]);
+
+        var palletto = Decision(register, "DEC-cov-palletto-shipping-ecommerce");
+        Assert.Equal("Gold", Text(palletto["proposedValue"]!["tier"]));
+        Assert.Equal("proposed", EffectiveState(palletto));
+        Assert.Contains(competitors, c => Text(c["productName"]) == "Palletto Cloud" && c["isUnknown"]!.GetValue<bool>());
+    }
+
+    /// <summary>Acceptance criterion 5 and requirement 7: a material change reopens that decision only; formatting does not.</summary>
+    [Fact]
+    public void Changing_a_material_accepted_date_reopens_that_decision_only_and_formatting_changes_do_not()
+    {
+        var register = Register();
+        var mapping = Mapping();
+
+        var reopened = Decisions(register)
+            .Where(d => Text(d["reviewState"]) == "accepted" && EffectiveState(d) == "reopened")
+            .Select(d => Text(d["key"])).ToList();
+        Assert.Equal(new[] { "DEC-date-rate-shopping-planning" }, reopened);
+        Assert.All(Decisions(register).Where(d => Text(d["reviewState"]) == "accepted" && Text(d["key"]) != reopened[0]),
+            d => Assert.Equal("accepted", EffectiveState(d)));
+
+        // The current proposal follows the current mapping; the accepted snapshot holds the older date.
+        var moved = Decision(register, reopened[0]);
+        var mappedEnd = Text(RecordByName(mapping, "project", "Carrier Connect rate-shopping UI")["roadmapItem"]!["end"]);
+        Assert.Equal(mappedEnd, Text(moved["proposedValue"]!["end"]));
+        Assert.NotEqual(mappedEnd, Text(moved["accepted"]!["material"]!["value"]!["end"]));
+
+        // Sibling decisions on the same feature keep their acceptance (the sales promise did not change).
+        var promise = Decision(register, "DEC-date-sales-commitment-rate-shopping");
+        Assert.Equal("accepted", EffectiveState(promise));
+        Assert.Equal(Text(RecordByName(mapping, "feature", "Multi-carrier rate shopping")["dates"]!["salesCommitment"]!["value"]),
+            Text(promise["proposedValue"]!["salesCommitment"]));
+
+        // Formatting-only changes: whitespace, key and array order, prose. Still valid.
+        var settled = Decision(register, "DEC-date-cycle-counting-plan");
+        Assert.Equal("accepted", EffectiveState(settled));
+        var reformatted = JsonNode.Parse(settled.ToJsonString(new JsonSerializerOptions { WriteIndented = true }))!;
+        reformatted["proposedValue"]!["end"] = " 2026-11-30  ";
+        reformatted["rationale"] = "Reworded   rationale.";
+        reformatted["evidence"] = new JsonArray(Nodes(settled["evidence"]).Reverse().Select(e => e.DeepClone()).ToArray());
+        reformatted["affects"] = new JsonArray(Nodes(settled["affects"]).Reverse().Select(a => a.DeepClone()).ToArray());
+        Assert.Equal("accepted", EffectiveState(reformatted));
+
+        // Material changes: value, scope, evidence. Each one reopens.
+        var changedValue = settled.DeepClone();
+        changedValue["proposedValue"]!["end"] = "2026-12-15";
+        Assert.Equal("reopened", EffectiveState(changedValue));
+
+        var changedScope = settled.DeepClone();
+        changedScope["affects"]!.AsArray().Add(JsonNode.Parse("""{ "ref": "mapping:P-returns-portal", "fields": ["roadmapItem.end"] }"""));
+        Assert.Equal("reopened", EffectiveState(changedScope));
+
+        var changedEvidence = settled.DeepClone();
+        changedEvidence["evidence"]!.AsArray().Add(JsonNode.Parse("""{ "ref": "jira:HWEB-3", "note": "added" }"""));
+        Assert.Equal("reopened", EffectiveState(changedEvidence));
+    }
+
+    /// <summary>Acceptance criterion 1 and requirement 2: a clean mapping under an accepted rule is loaded without a repeated question.</summary>
+    [Fact]
+    public void Records_covered_by_an_accepted_rule_carry_no_open_question_and_are_loaded()
+    {
+        var register = Register();
+        var decisions = Decisions(register);
+        var rules = decisions.Where(d => Text(d["entryType"]) == "rule").ToList();
+        Assert.NotEmpty(rules);
+        foreach (var rule in rules)
+        {
+            Assert.Equal("accepted", EffectiveState(rule));
+            Assert.NotEmpty(rule["covers"]!.AsArray());
+            foreach (var covered in Strings(rule["covers"]))
+            {
+                var touching = decisions.Where(d => Text(d["key"]) != Text(rule["key"])
+                    && Nodes(d["affects"]).Any(a => Text(a["ref"]) == covered)).ToList();
+                Assert.All(touching, d =>
+                {
+                    Assert.Equal(Text(rule["key"]), Text(d["appliedRule"]));
+                    Assert.Equal("accepted", EffectiveState(d));
+                    Assert.Null(d["question"]);
+                });
+            }
+        }
+
+        foreach (var applied in decisions.Where(d => Text(d["appliedRule"]).Length > 0))
+        {
+            Assert.Null(applied["question"]);
+            Assert.StartsWith("rule:", Text(applied["accepted"]!["by"]));
+        }
+
+        // The account-to-segment rule: every covered account has a populated Segment__c that the value map knows,
+        // and the fragment holds exactly one firm per covered account, in the mapped segment.
+        var segmentRule = Decision(register, "RULE-segment-from-segment-c");
+        var valueMap = segmentRule["proposedValue"]!["valueMap"]!.AsObject();
+        var accounts = Nodes(ReadJson($"{DiscoveryDirectory}/fixture/salesforce/accounts-sample.json")["response"]!["records"]).ToList();
+        var firms = ReviewFragment("11-firms.json")["marketDynamics"]!["firms"]!.AsArray().Select(f => f!).ToList();
+        foreach (var covered in Strings(segmentRule["covers"]))
+        {
+            var id = covered["salesforce:".Length..];
+            var account = accounts.Single(a => Text(a["Id"]) == id);
+            Assert.True(valueMap.ContainsKey(Text(account["Segment__c"])), $"{id}: Segment__c is not in the rule's value map.");
+            var firm = firms.Single(f => f["attributesJson"]!.GetValue<string>().Contains(id, StringComparison.Ordinal));
+            Assert.Equal(Text(valueMap[Text(account["Segment__c"])]), Text(firm["segmentName"]));
+        }
+
+        // The account the rule does not cover (null Segment__c) is an open decision and is not loaded.
+        var meridian = accounts.Single(a => Text(a["Name"]) == "Meridian Fulfillment");
+        Assert.Null(meridian["Segment__c"]);
+        Assert.DoesNotContain(Strings(segmentRule["covers"]), c => c == $"salesforce:{Text(meridian["Id"])}");
+        Assert.Equal("proposed", EffectiveState(Decision(register, "DEC-account-meridian-segment")));
+        Assert.DoesNotContain(firms, f => f["attributesJson"]!.GetValue<string>().Contains(Text(meridian["Id"]), StringComparison.Ordinal));
+    }
+
+    /// <summary>Acceptance criterion 6 and requirement 3: Tier A proceeds, unsupported simulation assumptions are deferred, all traceable.</summary>
+    [Fact]
+    public void Tier_A_proceeds_while_unsupported_simulation_assumptions_are_deferred_and_every_accepted_choice_is_traceable()
+    {
+        var register = Register();
+        var decisions = Decisions(register);
+
+        // A tier is deferred when a decision it requires is not in force; otherwise it proceeds (with exclusions).
+        var outcome = register["tierOutcome"]!.AsObject().ToDictionary(p => p.Key, p => Text(p.Value));
+        foreach (var tier in new[] { "A", "B", "C", "D" })
+        {
+            var blocked = decisions.Any(d => Text(d["tier"]) == tier && d["requiredForTier"]!.GetValue<bool>() && EffectiveState(d) != "accepted");
+            Assert.Equal(blocked ? "deferred" : "proceed", outcome[tier]);
+        }
+
+        Assert.Equal("proceed", outcome["A"]);
+        Assert.Equal("deferred", outcome["C"]);
+        var deferred = decisions.Where(d => Text(d["reviewState"]) == "deferred").ToList();
+        Assert.NotEmpty(deferred);
+        Assert.All(deferred, d =>
+        {
+            Assert.Equal("simulationAssumption", Text(d["topic"]));
+            Assert.Contains(Text(d["tier"]), new[] { "C", "D" });
+        });
+
+        // Tier A fragments still exist and hold the accepted roadmap items.
+        var roadmap = ParseSeedFile(ReadRepoFile($"{ReviewSeedDirectory}/04-roadmap.json"), "04-roadmap.json").Roadmap!;
+        Assert.NotEmpty(roadmap.Items);
+        Assert.DoesNotContain(roadmap.Items, i => i.ProjectName == "Carrier Connect rate-shopping UI"); // reopened date
+
+        foreach (var d in decisions)
+        {
+            var key = Text(d["key"]);
+            var state = EffectiveState(d);
+            if (state == "accepted")
+            {
+                // Traceable: evidence, or an explicit assumption with its basis in the rationale.
+                Assert.True(d["evidence"]!.AsArray().Count > 0 || Text(d["class"]) == "assumption", $"{key}: accepted without evidence or an explicit assumption.");
+                Assert.Null(d["exclusionReason"]);
+                Assert.NotNull(d["accepted"]);
+            }
+            else
+            {
+                Assert.False(string.IsNullOrWhiteSpace(Text(d["exclusionReason"])), $"{key}: {state} but no exclusion reason.");
+                Assert.False(string.IsNullOrWhiteSpace(Text(d["question"])), $"{key}: {state} but no question for the reviewer.");
+            }
+        }
+    }
+
+    /// <summary>Requirement 5: extraction confidence, model uncertainty and independence are separate facts.</summary>
+    [Fact]
+    public void Extraction_confidence_model_uncertainty_and_independence_are_recorded_separately()
+    {
+        var register = Register();
+        foreach (var d in Decisions(register))
+        {
+            var key = Text(d["key"]);
+            if (d["extractionConfidence"] is { } confidence)
+                Assert.InRange(confidence.GetValue<double>(), 0.0, 1.0);
+            if (d["modelUncertainty"] is { } uncertainty)
+            {
+                Assert.Contains(Text(uncertainty["level"]), new[] { "low", "medium", "high", "unquantified" });
+                Assert.NotEmpty(Text(uncertainty["statement"]));
+                // No distribution width is derived from an agent's confidence.
+                Assert.Null(uncertainty["width"]);
+            }
+
+            if (d["independentObservations"] is { } independent)
+                Assert.InRange(independent.GetValue<int>(), 1, Math.Max(1, d["evidence"]!.AsArray().Count));
+        }
+
+        // Repeated sales notes: three references, one independent observation.
+        var stackline = Decision(register, "DEC-cov-stackline-cycle-counting");
+        Assert.True(stackline["evidence"]!.AsArray().Count >= 3);
+        Assert.Equal(1, stackline["independentObservations"]!.GetValue<int>());
+
+        // A customer request evidences a need, not a coverage tier or a win-probability effect.
+        var need = Decision(register, "DEC-need-ecommerce-shipping");
+        Assert.Equal("need", Text(need["topic"]));
+        Assert.Contains(Nodes(need["evidence"]), e => Text(e["ref"]) == "salesforce:006EX000000A002AAA");
+        Assert.DoesNotContain(Decisions(register), d => Text(d["topic"]) == "coverageTier" && Nodes(d["evidence"]).Any(e => Text(e["ref"]) == "salesforce:006EX000000A002AAA")
+            && EffectiveState(d) == "accepted");
+        Assert.DoesNotContain(Decisions(register), d => Text(d["proposedValue"]!["flowKind"]) == "WinRate");
+    }
+
+    /// <summary>Requirement 6: quantities with no source in the three systems are reviewed assumptions, never observed or calibrated.</summary>
+    [Fact]
+    public void Quantities_needing_outside_evidence_are_reviewed_assumptions_and_never_relabelled_observed_or_calibrated()
+    {
+        var register = Register();
+        var outside = Decisions(register).Where(d => d["outsideEvidenceQuantity"] is not null).ToList();
+        Assert.Contains(outside, d => Text(d["outsideEvidenceQuantity"]) == "marketPopulation");
+        Assert.Contains(outside, d => Text(d["outsideEvidenceQuantity"]) == "priceSensitivity");
+        foreach (var d in outside)
+        {
+            var key = Text(d["key"]);
+            Assert.Contains(Text(d["outsideEvidenceQuantity"]), OutsideEvidenceQuantities);
+            Assert.Contains(Text(d["class"]), new[] { "assumption", "default" });
+            var mapping = d["domainMapping"];
+            Assert.True(mapping is not null, $"{key}: an outside-evidence quantity names the provenance it will carry.");
+            Assert.Equal("ParameterProvenance", Text(mapping!["enum"]));
+            Assert.Contains(Text(mapping["member"]), new[] { "Asserted", "Default" });
+            Assert.NotEqual("Calibrated", Text(mapping["member"]));
+            Assert.False(string.IsNullOrWhiteSpace(Text(d["rationale"])), $"{key}: reviewed assumptions carry a rationale.");
+        }
+
+        Assert.DoesNotContain(Nodes(register["labelMap"]), r => Text(r["member"]) == "Calibrated");
+    }
+
+    [Fact]
+    public void The_guide_links_the_review_procedure_between_portfolio_selection_and_loading_and_the_brief_carries_the_register_slot()
+    {
+        var guide = ReadRepoFile(GuidePath);
+        var portfolio = guide.IndexOf("## 8. Portfolio selection", StringComparison.Ordinal);
+        var review = guide.IndexOf("## 9. Consequential-decision review", StringComparison.Ordinal);
+        var loading = guide.IndexOf("## 10. Assembling and loading", StringComparison.Ordinal);
+        Assert.True(portfolio >= 0 && review > portfolio && loading > review,
+            "The review must be section 9, after portfolio selection and before assembling and loading.");
+
+        var linked = RelativeLinkTargets(guide, GuidePath).Select(t => t.ResolvedPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in new[] { ReviewReadmePath, RegisterTemplatePath, RegisterExamplePath })
+            Assert.Contains(Path.GetFullPath(RepoPath(path)), linked);
+
+        Assert.DoesNotContain("<!-- PRD5", guide);
+        Assert.Contains("Decision register:", guide);
+        Assert.Contains("never defaulted into the fragment", guide);
+        Assert.DoesNotContain("Default: the subagent picks a documented default", guide); // old interview question 8
+        Assert.Contains("Register and source references", guide);                          // kept with the import package
+    }
+
+    [Theory]
+    [MemberData(nameof(DatasetFiles))]
+    public void Each_dataset_file_points_at_the_review_procedure_and_names_its_consequential_choices(string fileName)
+    {
+        var content = ReadRepoFile(DatasetPath(fileName));
+        Assert.Contains("](../review/README.md)", content);
+        Assert.Contains("proposed register entry", content);
+        Assert.Contains("Consequential choices", content);
+    }
+
+    [Fact]
+    public void The_review_procedure_documents_every_register_field_state_class_and_outside_evidence_quantity()
+    {
+        var readme = ReadRepoFile(ReviewReadmePath);
+        foreach (var name in RequiredDecisionKeys.Concat(ReviewStates).Concat(DecisionClasses).Concat(DecisionTopics)
+                     .Concat(OutsideEvidenceQuantities).Concat(new[] { "reopened", "valueMap", "labelMap", "humanEvidence", "tierOutcome" }))
+            Assert.Contains($"`{name}`", readme);
+
+        // The enum members the mapping table promises exist (the register test checks the JSON; this checks the prose).
+        foreach (var member in new[] { "Observed", "Inferred", "Asserted", "Default", "Gold", "NotPlaying" })
+            Assert.Contains(member, readme);
+        Assert.Contains("silence is not acceptance", readme, StringComparison.OrdinalIgnoreCase);
+
+        // The consolidated review lists every decision key exactly as the register does.
+        var review = ReadRepoFile(ReviewExamplePath);
+        foreach (var d in Decisions(Register()))
+            Assert.Contains(Text(d["key"]), review);
+
+        var dataset05 = ReadRepoFile(DatasetPath("05-coverage-and-needs.md"));
+        Assert.Contains("unknown", dataset05, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("is evidence of a need", dataset05);
+        var dataset08 = ReadRepoFile(DatasetPath("08-assumption-sets.md"));
+        Assert.Contains("never relabel", dataset08, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ---------- PRD5: append new tests above this line ----------
 }

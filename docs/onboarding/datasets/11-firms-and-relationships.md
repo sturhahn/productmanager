@@ -66,6 +66,8 @@ There is no installed `pm` binary.
 
 **Do not ask about synthetic firms.** They are generated, not seeded - see Units.
 
+**Consequential choices** here: which segment a firm belongs to when the segment field is empty or unlisted, merging account records into one firm (`identityMerge`), competitor accounts and the installed base (`competitorInstalledBase`), and `Inferred` versus `Observed` status. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 ### `marketDynamics.firms[]` (`SeedFirm`, `src/ProductManager.Cli/Seed/SeedModels.cs:373-381`)

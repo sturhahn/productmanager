@@ -43,6 +43,8 @@ assumption set. PRD: "Simulation & calibration" (AssumptionSet) and "The choice 
    price-sensitive is each segment relative to the others?" Defaults: instant decisions and
    sensitivity 1.0 - see the choice-model table.
 
+**Consequential choices** here: every parameter with no source in Salesforce, Aha! or Jira - market population, competitor installed base, channel reach, operating costs, price sensitivity, switching costs, covariate elasticities and event effects ([review section 7](../review/README.md#7-quantities-that-need-outside-evidence)). Each is a reviewed assumption with provenance `Asserted` (or `Default`) and a rationale; never relabel it observed or calibrated, and never turn an agent's confidence score into a distribution width. An accurately copied asserted value is still asserted. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 Entity: `marketDynamics.assumptionSets[]` (natural key `name`, scoped to the workspace).

@@ -1,0 +1,496 @@
+{
+  "registerVersion": 1,
+  "purpose": "Worked decision register for the Harborline example (fictional). It reviews the evidence in ../discovery/source-manifest.example.json and the reconciliation in ../portfolio/portfolio-mapping.example.json. Field reference: README.md. Contains no credentials.",
+  "manifest": { "file": "../discovery/source-manifest.example.json", "runId": "harborline-discovery-2026-09-30" },
+  "mapping": { "file": "../portfolio/portfolio-mapping.example.json" },
+  "reviewedOn": "2026-09-30",
+  "labelMap": [
+    { "label": "sourceFact", "appliesTo": "firms[].epistemicStatus", "enum": "EpistemicStatus", "member": "Observed" },
+    { "label": "inferredInterpretation", "appliesTo": "firms[].epistemicStatus", "enum": "EpistemicStatus", "member": "Inferred" },
+    { "label": "sourceFact", "appliesTo": "assumptionSets[].parameters[].provenance", "enum": "ParameterProvenance", "member": "Asserted" },
+    { "label": "inferredInterpretation", "appliesTo": "assumptionSets[].parameters[].provenance", "enum": "ParameterProvenance", "member": "Asserted" },
+    { "label": "assumption", "appliesTo": "assumptionSets[].parameters[].provenance", "enum": "ParameterProvenance", "member": "Asserted" },
+    { "label": "default", "appliesTo": "assumptionSets[].parameters[].provenance", "enum": "ParameterProvenance", "member": "Default" },
+    { "label": "unknown", "appliesTo": "market.coverages[].isUnknown", "enum": null, "member": null }
+  ],
+  "humanEvidence": [
+    { "id": "H1", "date": "2026-06-30", "statement": "Product marketing capabilities grid supplied by the user: Harborline WMS ships two hard-wired carriers on Shipping & Carrier Integration and no rate shopping." },
+    { "id": "H2", "date": "2026-09-30", "statement": "Sales lead, in the review interview: Stackline said on a call that it does cycle counting; the same sentence is copied into the notes of three opportunities. Nobody has seen it in a demo." },
+    { "id": "H3", "date": "2026-09-30", "statement": "Sales lead, in the review interview: Palletto tends to win carrier-connectivity deals in e-commerce fulfillment. No analyst report or loss-reason field backs it." },
+    { "id": "H4", "date": "2026-09-30", "statement": "User's ranking of the five processes E-commerce Fulfillment buyers care about: Shipping & Carrier Integration is second." },
+    { "id": "H5", "date": "2026-09-30", "statement": "User: the cycle count workflows cover ABC counts and variance approval, which is what the RFP checklists ask for." }
+  ],
+  "tierOutcome": { "A": "proceed", "B": "proceed", "C": "deferred", "D": "deferred" },
+  "decisions": [
+    {
+      "key": "RULE-segment-from-segment-c", "entryType": "rule", "topic": "segmentDefinition", "class": "sourceFact",
+      "tier": "B", "datasets": ["02", "11"], "requiredForTier": true,
+      "appliesWhen": "Account.Segment__c is non-null and is a key of valueMap. A null or unlisted value is not covered and needs its own decision.",
+      "covers": ["salesforce:001EX000000B001AAA", "salesforce:001EX000000B002AAA"],
+      "affects": [
+        { "ref": "manifest:Q1", "fields": ["segmentation field"] },
+        { "ref": "salesforce:001EX000000B001AAA", "fields": ["Segment__c"] },
+        { "ref": "salesforce:001EX000000B002AAA", "fields": ["Segment__c"] }
+      ],
+      "seedTarget": null,
+      "proposedValue": { "sourceField": "Account.Segment__c", "valueMap": { "Regional 3PL": "Regional 3PLs", "E-commerce Fulfillment": "E-commerce Fulfillment" } },
+      "evidence": [
+        { "ref": "manifest:Q1", "note": "Segment__c was the candidate the user picked; populated in 2 of 3 sampled accounts." },
+        { "ref": "salesforce:001EX000000B001AAA", "note": "Segment__c = Regional 3PL" },
+        { "ref": "salesforce:001EX000000B002AAA", "note": "Segment__c = E-commerce Fulfillment" }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": null, "independentObservations": null, "extractionConfidence": 1.0,
+      "modelUncertainty": { "level": "low", "statement": "The picklist values are the company's own segment names; only the plural spelling of one name differs." },
+      "alternatives": [
+        { "value": "Industry", "why": "One distinct value in the sample, so it cannot split the accounts." },
+        { "value": "NumberOfEmployees bands", "why": "Invents band edges the user did not give." }
+      ],
+      "rationale": "The user confirmed Segment__c as the authoritative segmentation field (Q1). Accounts whose value is in the map load without a further question.",
+      "missingEvidence": "none for covered accounts; accounts with a null Segment__c are outside this rule.",
+      "outsideEvidenceQuantity": null,
+      "domainMapping": { "enum": "EpistemicStatus", "member": "Observed" },
+      "question": null, "reviewState": "accepted", "exclusionReason": null, "appliedRule": null,
+      "accepted": {
+        "by": "user", "on": "2026-09-30", "decision": "Accepted as proposed.",
+        "material": {
+          "value": { "sourceField": "Account.Segment__c", "valueMap": { "Regional 3PL": "Regional 3PLs", "E-commerce Fulfillment": "E-commerce Fulfillment" } },
+          "affects": [
+            { "ref": "manifest:Q1", "fields": ["segmentation field"] },
+            { "ref": "salesforce:001EX000000B001AAA", "fields": ["Segment__c"] },
+            { "ref": "salesforce:001EX000000B002AAA", "fields": ["Segment__c"] }
+          ],
+          "evidence": ["manifest:Q1", "salesforce:001EX000000B001AAA", "salesforce:001EX000000B002AAA"]
+        }
+      }
+    },
+    {
+      "key": "RULE-unknown-competitor-coverage", "entryType": "rule", "topic": "coverageTier", "class": "default",
+      "tier": "B", "datasets": ["05"], "requiredForTier": false,
+      "appliesWhen": "A competitor product's cell has no accepted, evidence-backed tier. It is loaded as isUnknown: true with no tier and no confidence. A pending tier proposal for the same cell (for example DEC-cov-palletto-shipping-ecommerce) stays an open decision; the cell is unknown meanwhile.",
+      "covers": ["seed:market.coverages[Stackline WMS|Cycle Counting]"],
+      "affects": [{ "ref": "seed:market.coverages[Stackline WMS|Cycle Counting]", "fields": ["isUnknown"] }],
+      "seedTarget": null,
+      "proposedValue": { "isUnknown": true },
+      "evidence": [{ "ref": "manifest:dataset:05", "note": "No accessible system holds a coverage grid; competitor cells have no source." }],
+      "sourceDate": "2026-09-30", "effectiveDate": null, "independentObservations": null, "extractionConfidence": null,
+      "modelUncertainty": { "level": "unquantified", "statement": "Unknown means no estimate; it carries no distribution." },
+      "alternatives": [{ "value": { "tier": "Bronze" }, "why": "A guessed Bronze lowers the competitor's simulated attractiveness (dataset 05 common mistakes)." }],
+      "rationale": "Unknown competitor coverage stays unknown. An unknown cell neither helps nor hurts the competitor in a simulation.",
+      "missingEvidence": "none: the rule is about the absence of evidence.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": null, "reviewState": "accepted", "exclusionReason": null, "appliedRule": null,
+      "accepted": {
+        "by": "user", "on": "2026-09-30", "decision": "Accepted as proposed.",
+        "material": {
+          "value": { "isUnknown": true },
+          "affects": [{ "ref": "seed:market.coverages[Stackline WMS|Cycle Counting]", "fields": ["isUnknown"] }],
+          "evidence": ["manifest:dataset:05"]
+        }
+      }
+    },
+    {
+      "key": "RULE-date-authority", "entryType": "rule", "topic": "planningDate", "class": "inferredInterpretation",
+      "tier": "A", "datasets": ["03", "04"], "requiredForTier": false,
+      "appliesWhen": "A project's roadmap window follows the mapping's date authority rule (R1-R3) and its feature records no date conflict, no doneNotReleased flag and no sales commitment earlier than the plan. Conflicts need their own decision.",
+      "covers": ["mapping:P-carrier-connect-v1"],
+      "affects": [
+        { "ref": "manifest:Q4", "fields": ["availability authority"] },
+        { "ref": "mapping:P-carrier-connect-v1", "fields": ["roadmapItem.start", "roadmapItem.end"] }
+      ],
+      "seedTarget": null,
+      "proposedValue": { "authority": "portfolio mapping conventions.dateAuthorityRule R1-R3" },
+      "evidence": [
+        { "ref": "manifest:Q4", "note": "The user confirmed Aha! release date and status as the availability signal." },
+        { "ref": "mapping:P-carrier-connect-v1", "note": "Jira start and due dates, no conflict." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": null, "independentObservations": null, "extractionConfidence": 1.0,
+      "modelUncertainty": { "level": "low", "statement": "A stated authority rule applied to records that do not conflict." },
+      "alternatives": [{ "value": "Jira resolution date as the planning date", "why": "Jira Done is execution evidence, not customer availability." }],
+      "rationale": "Planning dates come from the product-intent authority; execution dates from the execution authority; conflicts are flagged, never overwritten.",
+      "missingEvidence": "none for covered records.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": null, "reviewState": "accepted", "exclusionReason": null, "appliedRule": null,
+      "accepted": {
+        "by": "user", "on": "2026-09-30", "decision": "Accepted as proposed.",
+        "material": {
+          "value": { "authority": "portfolio mapping conventions.dateAuthorityRule R1-R3" },
+          "affects": [
+            { "ref": "manifest:Q4", "fields": ["availability authority"] },
+            { "ref": "mapping:P-carrier-connect-v1", "fields": ["roadmapItem.start", "roadmapItem.end"] }
+          ],
+          "evidence": ["manifest:Q4", "mapping:P-carrier-connect-v1"]
+        }
+      }
+    },
+    {
+      "key": "DEC-date-rate-shopping-planning", "entryType": "decision", "topic": "planningDate", "class": "sourceFact",
+      "tier": "A", "datasets": ["03", "04"], "requiredForTier": false,
+      "affects": [
+        { "ref": "mapping:P-carrier-connect-rate-shopping-ui", "fields": ["roadmapItem.end"] },
+        { "ref": "mapping:F-multi-carrier-rate-shopping", "fields": ["dates.proposedPlanningDate"] }
+      ],
+      "seedTarget": { "fragment": "04-roadmap.json", "collection": "roadmap.items", "match": { "projectName": "Carrier Connect rate-shopping UI" } },
+      "proposedValue": { "end": "2026-10-31" },
+      "evidence": [
+        { "ref": "aha:HWMS-1", "note": "Release date 2026-10-31 in the current extract." },
+        { "ref": "mapping:F-multi-carrier-rate-shopping", "note": "proposedPlanningDate 2026-10-31 (productTarget, rule R1)." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": "2026-10-31", "independentObservations": null, "extractionConfidence": 1.0,
+      "modelUncertainty": { "level": "low", "statement": "A release date can move again; that is what the acceptance snapshot guards." },
+      "alternatives": [{ "value": { "end": "2026-10-28" }, "why": "The Jira engineering forecast; the agreed rule takes the product target." }],
+      "rationale": "The last project delivering a capability ends on the capability's planning date (mapping R2).",
+      "missingEvidence": "none.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": "The Aha! release for HWMS-1 moved from 2026-10-15 to 2026-10-31 after you accepted the earlier date. Should the roadmap item end on 2026-10-31?",
+      "reviewState": "accepted",
+      "exclusionReason": "Acceptance reopened: the accepted end date was 2026-10-15 and the proposal now says 2026-10-31. The roadmap item waits for re-acceptance.",
+      "appliedRule": null,
+      "accepted": {
+        "by": "user", "on": "2026-09-30", "decision": "Accepted 2026-10-15, before the mapping was refreshed at 15:00.",
+        "material": {
+          "value": { "end": "2026-10-15" },
+          "affects": [
+            { "ref": "mapping:P-carrier-connect-rate-shopping-ui", "fields": ["roadmapItem.end"] },
+            { "ref": "mapping:F-multi-carrier-rate-shopping", "fields": ["dates.proposedPlanningDate"] }
+          ],
+          "evidence": ["aha:HWMS-1", "mapping:F-multi-carrier-rate-shopping"]
+        }
+      }
+    },
+    {
+      "key": "DEC-date-sales-commitment-rate-shopping", "entryType": "decision", "topic": "planningDate", "class": "sourceFact",
+      "tier": "A", "datasets": ["03"], "requiredForTier": false,
+      "affects": [{ "ref": "mapping:F-multi-carrier-rate-shopping", "fields": ["dates.salesCommitment"] }],
+      "seedTarget": null,
+      "proposedValue": { "salesCommitment": "2026-10-09", "planningDateMoved": false },
+      "evidence": [
+        { "ref": "salesforce:006EX000000A004AAA", "note": "Committed_Date__c 2026-10-09 on the Bluewater add-on." },
+        { "ref": "mapping:EX-sales-commitment-date", "note": "Flagged exception; effect on plan: none." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": "2026-10-09", "independentObservations": null, "extractionConfidence": 1.0,
+      "modelUncertainty": { "level": "low", "statement": "The commitment is recorded exactly as promised; whether it can be met is a product matter." },
+      "alternatives": [{ "value": { "planningDateMoved": true }, "why": "A sales commitment is a commercial fact, not a delivery date." }],
+      "rationale": "Record the promise as salesCommitment only. No roadmap item ends on it and the planning date does not move.",
+      "missingEvidence": "none.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": null, "reviewState": "accepted", "exclusionReason": null, "appliedRule": null,
+      "accepted": {
+        "by": "user", "on": "2026-09-30", "decision": "Accepted as proposed; the account owner is told separately.",
+        "material": {
+          "value": { "salesCommitment": "2026-10-09", "planningDateMoved": false },
+          "affects": [{ "ref": "mapping:F-multi-carrier-rate-shopping", "fields": ["dates.salesCommitment"] }],
+          "evidence": ["salesforce:006EX000000A004AAA", "mapping:EX-sales-commitment-date"]
+        }
+      }
+    },
+    {
+      "key": "DEC-date-cycle-counting-plan", "entryType": "decision", "topic": "planningDate", "class": "inferredInterpretation",
+      "tier": "A", "datasets": ["03", "04"], "requiredForTier": false,
+      "affects": [
+        { "ref": "mapping:P-cycle-count-workflows", "fields": ["roadmapItem.end"] },
+        { "ref": "mapping:F-cycle-counting", "fields": ["dates.customerAvailability"] }
+      ],
+      "seedTarget": { "fragment": "04-roadmap.json", "collection": "roadmap.items", "match": { "projectName": "Cycle count workflows" } },
+      "proposedValue": { "end": "2026-11-30" },
+      "evidence": [
+        { "ref": "jira:HWEB-3", "note": "Done, resolved 2026-09-22 (execution evidence)." },
+        { "ref": "aha:HWMS-3", "note": "Release date 2026-11-30, not yet released." },
+        { "ref": "mapping:EX-done-not-released", "note": "Flagged: Jira Done is not customer availability." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": "2026-11-30", "independentObservations": null, "extractionConfidence": 1.0,
+      "modelUncertainty": { "level": "low", "statement": "Reading a Done epic as not yet available follows the agreed authority rule." },
+      "alternatives": [{ "value": { "end": "2026-09-22" }, "why": "The Jira resolution date would fabricate an availability date before the release." }],
+      "rationale": "The roadmap item ends on the capability's Aha! release date, so the coverage delta applies at release and not at Jira Done.",
+      "missingEvidence": "none.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": null, "reviewState": "accepted", "exclusionReason": null, "appliedRule": null,
+      "accepted": {
+        "by": "user", "on": "2026-09-30", "decision": "Accepted as proposed.",
+        "material": {
+          "value": { "end": "2026-11-30" },
+          "affects": [
+            { "ref": "mapping:P-cycle-count-workflows", "fields": ["roadmapItem.end"] },
+            { "ref": "mapping:F-cycle-counting", "fields": ["dates.customerAvailability"] }
+          ],
+          "evidence": ["jira:HWEB-3", "aha:HWMS-3", "mapping:EX-done-not-released"]
+        }
+      }
+    },
+    {
+      "key": "DEC-scope-wave-picking-delivery", "entryType": "decision", "topic": "identityMerge", "class": "inferredInterpretation",
+      "tier": "A", "datasets": ["03", "04"], "requiredForTier": false,
+      "affects": [
+        { "ref": "mapping:F-wave-picking", "fields": ["relations.deliveredBy"] },
+        { "ref": "jira:HCORE-7", "fields": ["project", "roadmapItem"] }
+      ],
+      "seedTarget": { "fragment": "04-roadmap.json", "collection": "roadmap.items", "match": { "projectName": "Wave picking engine" } },
+      "proposedValue": { "projectName": "Wave picking engine" },
+      "evidence": [
+        { "ref": "mapping:EX-wave-picking-delivery", "note": "Held: two similarly named unlinked epics; name similarity only proposes." },
+        { "ref": "jira:HCORE-7", "note": "Same title as HWMS-2; no Aha! reference." },
+        { "ref": "aha:HWMS-2", "note": "Lists no Jira link." },
+        { "ref": "manifest:Q8", "note": "The open discovery question." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": null, "independentObservations": null, "extractionConfidence": 0.6,
+      "modelUncertainty": { "level": "high", "statement": "Title equality is the only link; a second epic, HINT-16, could also deliver the capability." },
+      "alternatives": [
+        { "value": "HCORE-7 and HINT-16 both deliver Wave picking", "why": "Two epics, one capability is a normal shape." },
+        { "value": "Neither delivers it", "why": "The capability would have no delivery Project." }
+      ],
+      "rationale": "Proposed: HCORE-7 is the delivering Project. Nothing beyond a matching title supports it.",
+      "missingEvidence": "An Aha! reference on HCORE-7 or a Jira link on HWMS-2, or the user's answer.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": "Which epic or epics deliver HWMS-2 Wave picking, and are HCORE-7 and HINT-16 one piece of work or two?",
+      "reviewState": "proposed",
+      "exclusionReason": "Unanswered. Wave picking loads as a Feature with no delivering Project and no roadmap item; a merge is never inferred from a name.",
+      "appliedRule": null, "accepted": null
+    },
+    {
+      "key": "DEC-account-meridian-segment", "entryType": "decision", "topic": "segmentDefinition", "class": "inferredInterpretation",
+      "tier": "B", "datasets": ["11"], "requiredForTier": false,
+      "affects": [{ "ref": "salesforce:001EX000000B003AAA", "fields": ["Segment__c", "firm.segmentName"] }],
+      "seedTarget": { "fragment": "11-firms.json", "collection": "marketDynamics.firms", "match": { "name": "Meridian Fulfillment" } },
+      "proposedValue": { "segmentName": "E-commerce Fulfillment" },
+      "evidence": [
+        { "ref": "salesforce:001EX000000B003AAA", "note": "Segment__c is null; 60 employees; Industry Transportation & Logistics." },
+        { "ref": "manifest:Q1", "note": "Segment__c is the authoritative field, but it is empty here." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": null, "independentObservations": null, "extractionConfidence": 1.0,
+      "modelUncertainty": { "level": "high", "statement": "Two plausible segments; three sampled accounts cannot separate them." },
+      "alternatives": [
+        { "value": { "segmentName": "Regional 3PLs" }, "why": "Bluewater, a Regional 3PL, is larger (420 employees) and the name suggests fulfillment." },
+        { "value": { "segmentName": null }, "why": "Load the firm with no segment until Salesforce holds a value." }
+      ],
+      "rationale": "Proposed by size only: 60 employees sits nearer Cargo Nine (85, e-commerce) than Bluewater (420). Size is not a registered rule.",
+      "missingEvidence": "Segment__c is null (absentData in the manifest); the account-to-segment rule does not cover a null.",
+      "outsideEvidenceQuantity": null, "domainMapping": { "enum": "EpistemicStatus", "member": "Inferred" },
+      "question": "Which segment is Meridian Fulfillment in, or should it wait for a Segment__c value in Salesforce?",
+      "reviewState": "proposed",
+      "exclusionReason": "Unanswered. RULE-segment-from-segment-c covers only non-null values, so the firm is not loaded.",
+      "appliedRule": null, "accepted": null
+    },
+    {
+      "key": "DEC-delta-rate-shopping-shipping", "entryType": "decision", "topic": "coverageDelta", "class": "inferredInterpretation",
+      "tier": "B", "datasets": ["03", "05"], "requiredForTier": false,
+      "affects": [{ "ref": "mapping:F-multi-carrier-rate-shopping", "fields": ["deltas"] }],
+      "seedTarget": { "fragment": "03-feature-deltas.json", "collection": "features", "match": { "name": "Multi-carrier rate shopping" } },
+      "proposedValue": {
+        "deltas": [
+          { "kind": "Coverage", "businessProcessName": "Shipping & Carrier Integration", "fromTier": "Bronze", "toTier": "Gold", "rationale": "Closes the rate-shopping gap versus Stackline WMS and Palletto Cloud." }
+        ]
+      },
+      "evidence": [
+        { "ref": "mapping:F-multi-carrier-rate-shopping", "note": "The capability the delta would attach to." },
+        { "ref": "salesforce:006EX000000A002AAA", "note": "Cargo Nine - Carrier integration, Closed Lost 2025-07-15: evidence of a need, not of any tier." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": null, "independentObservations": 1, "extractionConfidence": 0.9,
+      "modelUncertainty": { "level": "high", "statement": "Gold means market-leading. No competitor cell is known and one lost deal is the only signal." },
+      "alternatives": [
+        { "value": "Bronze to Silver", "why": "Competitive once rate shopping ships; wins or loses on other factors." },
+        { "value": "no delta", "why": "Keep the capability without a market effect until coverage is assessed." }
+      ],
+      "rationale": "Proposed by the example seed's independent default. It is a jump of two tiers with no accepted evidence.",
+      "missingEvidence": "No accepted evidence for what Gold means on shipping: competitor cells are unknown and a customer request is not a coverage tier.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": "After rate shopping ships, is Harborline WMS Silver or Gold on Shipping & Carrier Integration, and what supports it?",
+      "reviewState": "proposed",
+      "exclusionReason": "Unsupported Bronze-to-Gold delta stays proposed. The feature loads without any delta.",
+      "appliedRule": null, "accepted": null
+    },
+    {
+      "key": "DEC-delta-cycle-counting", "entryType": "decision", "topic": "coverageDelta", "class": "inferredInterpretation",
+      "tier": "B", "datasets": ["03", "05"], "requiredForTier": false,
+      "affects": [{ "ref": "mapping:F-cycle-counting", "fields": ["deltas"] }],
+      "seedTarget": { "fragment": "03-feature-deltas.json", "collection": "features", "match": { "name": "Cycle counting" } },
+      "proposedValue": {
+        "deltas": [
+          { "kind": "Coverage", "businessProcessName": "Cycle Counting", "fromTier": "NotPlaying", "toTier": "Silver", "rationale": "DEC-delta-cycle-counting: ABC counts and variance approval match what RFP checklists ask for (competitive, not market-leading)." }
+        ]
+      },
+      "evidence": [
+        { "ref": "human:H5", "note": "The user describes what the workflows cover and what RFPs ask for." },
+        { "ref": "mapping:F-cycle-counting", "note": "The capability the delta attaches to." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": "2026-11-30", "independentObservations": 1, "extractionConfidence": 0.9,
+      "modelUncertainty": { "level": "medium", "statement": "Silver is the user's judgment of competitiveness; no competitor grid exists yet." },
+      "alternatives": [{ "value": "NotPlaying to Bronze", "why": "Check-the-box only; the user says the workflows meet the RFP list." }],
+      "rationale": "Harborline has no cycle counting today, so the from-tier is NotPlaying; Silver is what the user claims the workflows reach at release.",
+      "missingEvidence": "No competitor comparison; the tier rests on one statement.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": null, "reviewState": "accepted", "exclusionReason": null, "appliedRule": null,
+      "accepted": {
+        "by": "user", "on": "2026-09-30", "decision": "Accepted as proposed.",
+        "material": {
+          "value": {
+            "deltas": [
+              { "kind": "Coverage", "businessProcessName": "Cycle Counting", "fromTier": "NotPlaying", "toTier": "Silver", "rationale": "DEC-delta-cycle-counting: ABC counts and variance approval match what RFP checklists ask for (competitive, not market-leading)." }
+            ]
+          },
+          "affects": [{ "ref": "mapping:F-cycle-counting", "fields": ["deltas"] }],
+          "evidence": ["human:H5", "mapping:F-cycle-counting"]
+        }
+      }
+    },
+    {
+      "key": "DEC-cov-harborline-shipping", "entryType": "decision", "topic": "coverageTier", "class": "sourceFact",
+      "tier": "B", "datasets": ["05"], "requiredForTier": true,
+      "affects": [{ "ref": "seed:market.coverages[Harborline WMS|Shipping & Carrier Integration]", "fields": ["tier", "confidence", "effectiveDate"] }],
+      "seedTarget": { "fragment": "05-coverage-and-needs.json", "collection": "market.coverages", "match": { "productName": "Harborline WMS", "businessProcessName": "Shipping & Carrier Integration" } },
+      "proposedValue": { "tier": "Bronze", "confidence": 0.8, "effectiveDate": "2026-06-30" },
+      "evidence": [{ "ref": "human:H1", "note": "Product marketing grid dated 2026-06-30." }],
+      "sourceDate": "2026-06-30", "effectiveDate": "2026-06-30", "independentObservations": 1, "extractionConfidence": 1.0,
+      "modelUncertainty": { "level": "low", "statement": "The user is fairly sure of the tier (confidence 0.8, their own figure). It is not the extraction score." },
+      "alternatives": [{ "value": { "tier": "Silver" }, "why": "Two carriers are hard-wired; the grid says check-the-box." }],
+      "rationale": "Our own product's cell, taken from the user's grid as written: present, below competitive.",
+      "missingEvidence": "none for our own product.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": null, "reviewState": "accepted", "exclusionReason": null, "appliedRule": null,
+      "accepted": {
+        "by": "user", "on": "2026-09-30", "decision": "Accepted as proposed.",
+        "material": {
+          "value": { "tier": "Bronze", "confidence": 0.8, "effectiveDate": "2026-06-30" },
+          "affects": [{ "ref": "seed:market.coverages[Harborline WMS|Shipping & Carrier Integration]", "fields": ["tier", "confidence", "effectiveDate"] }],
+          "evidence": ["human:H1"]
+        }
+      }
+    },
+    {
+      "key": "DEC-cov-palletto-shipping-ecommerce", "entryType": "decision", "topic": "coverageTier", "class": "inferredInterpretation",
+      "tier": "B", "datasets": ["05"], "requiredForTier": false,
+      "affects": [{ "ref": "seed:market.coverages[Palletto Cloud|Shipping & Carrier Integration|E-commerce Fulfillment]", "fields": ["tier", "isUnknown"] }],
+      "seedTarget": { "fragment": "05-coverage-and-needs.json", "collection": "market.coverages", "match": { "productName": "Palletto Cloud", "businessProcessName": "Shipping & Carrier Integration", "segmentName": "E-commerce Fulfillment" } },
+      "proposedValue": { "tier": "Gold" },
+      "evidence": [
+        { "ref": "human:H3", "note": "A sales impression, not an observation." },
+        { "ref": "salesforce:006EX000000A002AAA", "note": "One lost e-commerce carrier deal; the record names no winner and no reason." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": null, "independentObservations": 1, "extractionConfidence": 0.7,
+      "modelUncertainty": { "level": "high", "statement": "One impression and one lost deal; the extraction is faithful, the tier is a guess." },
+      "alternatives": [
+        { "value": { "tier": "Silver" }, "why": "Competitive: wins some carrier deals." },
+        { "value": { "isUnknown": true }, "why": "No competitor evidence exists; unknown is the honest state." }
+      ],
+      "rationale": "Proposed from the example seed's default. A lost deal shows buyers ask for carrier integration; it does not show who leads.",
+      "missingEvidence": "No analyst report, demo, price page or loss-reason field for Palletto's shipping capability.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": "Do you have evidence of Palletto's shipping capability for e-commerce buyers beyond the sales impression?",
+      "reviewState": "proposed",
+      "exclusionReason": "Unresolved. The cell loads as unknown under RULE-unknown-competitor-coverage; Gold is not loaded.",
+      "appliedRule": null, "accepted": null
+    },
+    {
+      "key": "DEC-cov-stackline-cycle-counting", "entryType": "decision", "topic": "coverageTier", "class": "default",
+      "tier": "B", "datasets": ["05"], "requiredForTier": false,
+      "affects": [{ "ref": "seed:market.coverages[Stackline WMS|Cycle Counting]", "fields": ["isUnknown"] }],
+      "seedTarget": { "fragment": "05-coverage-and-needs.json", "collection": "market.coverages", "match": { "productName": "Stackline WMS", "businessProcessName": "Cycle Counting" } },
+      "proposedValue": { "isUnknown": true },
+      "evidence": [
+        { "ref": "human:H2", "note": "A claim made on a call; never seen." },
+        { "ref": "salesforce:006EX000000A001AAA", "note": "Named by the sales lead as carrying the copied sentence (the extract holds no notes field)." },
+        { "ref": "salesforce:006EX000000A003AAA", "note": "Named by the sales lead as carrying the copied sentence (the extract holds no notes field)." },
+        { "ref": "salesforce:006EX000000A005AAA", "note": "Named by the sales lead as carrying the copied sentence (the extract holds no notes field)." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": null, "independentObservations": 1, "extractionConfidence": 0.9,
+      "modelUncertainty": { "level": "unquantified", "statement": "Unknown carries no estimate. The 0.9 says the claim was read correctly, not that Stackline covers counting." },
+      "alternatives": [{ "value": { "tier": "Gold" }, "why": "Four references look strong, but they repeat one claim." }],
+      "rationale": "Three notes copy one sentence: one independent observation, and a claim, not a demo. It stays unknown.",
+      "missingEvidence": "No demo, analyst coverage or customer report of Stackline's cycle counting.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": null, "reviewState": "accepted", "exclusionReason": null, "appliedRule": "RULE-unknown-competitor-coverage",
+      "accepted": {
+        "by": "rule:RULE-unknown-competitor-coverage", "on": "2026-09-30", "decision": "Covered by the accepted rule; no question asked.",
+        "material": {
+          "value": { "isUnknown": true },
+          "affects": [{ "ref": "seed:market.coverages[Stackline WMS|Cycle Counting]", "fields": ["isUnknown"] }],
+          "evidence": ["human:H2", "salesforce:006EX000000A001AAA", "salesforce:006EX000000A003AAA", "salesforce:006EX000000A005AAA"]
+        }
+      }
+    },
+    {
+      "key": "DEC-need-ecommerce-shipping", "entryType": "decision", "topic": "need", "class": "assumption",
+      "tier": "B", "datasets": ["05"], "requiredForTier": false,
+      "affects": [{ "ref": "seed:market.needs[E-commerce Fulfillment|Shipping & Carrier Integration]", "fields": ["importanceWeight"] }],
+      "seedTarget": { "fragment": "05-coverage-and-needs.json", "collection": "market.needs", "match": { "segmentName": "E-commerce Fulfillment", "businessProcessName": "Shipping & Carrier Integration" } },
+      "proposedValue": { "importanceWeight": 0.8 },
+      "evidence": [
+        { "ref": "human:H4", "note": "Ranked second of five; weight (5-2+1)/5 = 0.8 by the dataset 05 rank rule." },
+        { "ref": "salesforce:006EX000000A002AAA", "note": "A lost carrier-integration deal: the buyer asked for it. Evidence of a need." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": null, "independentObservations": 1, "extractionConfidence": 1.0,
+      "modelUncertainty": { "level": "medium", "statement": "A rank is the user's judgment of importance; the weight is derived by the documented rule." },
+      "alternatives": [{ "value": { "importanceWeight": 1.0, "isHard": true }, "why": "Would disqualify any product below Bronze; the lost deal does not establish a deal-breaker." }],
+      "rationale": "The request supports a need row. It does not set a coverage tier for any product and it does not change a win-rate parameter.",
+      "missingEvidence": "Hardness is unknown; the need is loaded as soft with no workaround cost.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": null, "reviewState": "accepted", "exclusionReason": null, "appliedRule": null,
+      "accepted": {
+        "by": "user", "on": "2026-09-30", "decision": "Accepted as proposed.",
+        "material": {
+          "value": { "importanceWeight": 0.8 },
+          "affects": [{ "ref": "seed:market.needs[E-commerce Fulfillment|Shipping & Carrier Integration]", "fields": ["importanceWeight"] }],
+          "evidence": ["human:H4", "salesforce:006EX000000A002AAA"]
+        }
+      }
+    },
+    {
+      "key": "DEC-commercial-a004-existing-business", "entryType": "decision", "topic": "commercialClassification", "class": "inferredInterpretation",
+      "tier": "D", "datasets": ["12"], "requiredForTier": false,
+      "affects": [{ "ref": "salesforce:006EX000000A004AAA", "fields": ["StageName", "Type", "outcome", "crossSellModuleProductName"] }],
+      "seedTarget": null,
+      "proposedValue": { "outcome": "Won", "crossSellModuleProductName": "Harborline Carrier Connect" },
+      "evidence": [
+        { "ref": "salesforce:006EX000000A004AAA", "note": "Closed Won 2026-05-29, Type Existing Business, LeadSource Existing Customer, Amount 36000." },
+        { "ref": "manifest:Q7", "note": "How StageName and Amount map to outcomes." }
+      ],
+      "sourceDate": "2026-09-30", "effectiveDate": "2026-05-29", "independentObservations": 1, "extractionConfidence": 1.0,
+      "modelUncertainty": { "level": "medium", "statement": "Type and LeadSource agree, but nothing states the add-on is the Carrier Connect module." },
+      "alternatives": [
+        { "value": { "outcome": "Won" }, "why": "Count it as a new-client win; it would inflate the win-rate evidence with an existing customer." },
+        { "value": "leave it out of dataset 12", "why": "It is neither a new-logo decision nor certainly a module attach." }
+      ],
+      "rationale": "An add-on sold to an existing customer is a cross-sell of the module, not a competitive new-client decision.",
+      "missingEvidence": "The opportunity does not name the product sold.",
+      "outsideEvidenceQuantity": null, "domainMapping": null,
+      "question": "Is the Bluewater Carrier Connect add-on a cross-sell of the module or a new-client win?",
+      "reviewState": "proposed",
+      "exclusionReason": "Unanswered. Dataset 12 loads the other four opportunities and leaves this one out.",
+      "appliedRule": null, "accepted": null
+    },
+    {
+      "key": "DEC-assumption-new-firm-arrival-regional-3pl", "entryType": "decision", "topic": "simulationAssumption", "class": "assumption",
+      "tier": "C", "datasets": ["08"], "requiredForTier": true,
+      "affects": [{ "ref": "seed:marketDynamics.assumptionSets[Baseline 2026].parameters[Regional 3PLs|NewFirmArrival]", "fields": ["distType", "p1", "p2", "provenance"] }],
+      "seedTarget": null,
+      "proposedValue": { "segmentName": "Regional 3PLs", "flowKind": "NewFirmArrival", "distType": "Lognormal", "p1": 1.7918, "p2": 0.3, "provenance": "Asserted" },
+      "evidence": [{ "ref": "manifest:gap:market-wide totals", "note": "No accessible system holds the prospect pool or its growth." }],
+      "sourceDate": null, "effectiveDate": null, "independentObservations": null, "extractionConfidence": null,
+      "modelUncertainty": { "level": "high", "statement": "About 6 firms a month is a placeholder from dataset 08's example; the spread 0.3 is not derived from any confidence score." },
+      "alternatives": [{ "value": "Stop at tier B", "why": "Aggregate simulation cannot run credibly without a market population." }],
+      "rationale": "Market population is one of the quantities that needs evidence outside the three systems. Any value here is a reviewed assumption, provenance Asserted.",
+      "missingEvidence": "A market-wide firm count or arrival rate from an analyst report, a prospect list or the user's own estimate.",
+      "outsideEvidenceQuantity": "marketPopulation", "domainMapping": { "enum": "ParameterProvenance", "member": "Asserted" },
+      "question": "Where does the number of new Regional 3PL firms per month come from: a report, a prospect list, or your own estimate (recorded as Asserted)?",
+      "reviewState": "deferred",
+      "exclusionReason": "Deferred: tier C needs it and nothing supports it yet. Tier C waits; tiers A and B proceed.",
+      "appliedRule": null, "accepted": null
+    },
+    {
+      "key": "DEC-assumption-price-sensitivity-ecommerce", "entryType": "decision", "topic": "simulationAssumption", "class": "assumption",
+      "tier": "D", "datasets": ["08"], "requiredForTier": true,
+      "affects": [{ "ref": "seed:marketDynamics.assumptionSets[Baseline 2026].parameters[PriceSensitivity|E-commerce Fulfillment]", "fields": ["distType", "p1", "p2", "provenance"] }],
+      "seedTarget": null,
+      "proposedValue": { "choiceKind": "PriceSensitivity", "segmentName": "E-commerce Fulfillment", "distType": "Lognormal", "p1": 0, "p2": 0.35, "provenance": "Asserted" },
+      "evidence": [{ "ref": "manifest:dataset:08", "note": "Price sensitivity is a judgment no connected system stores." }],
+      "sourceDate": null, "effectiveDate": null, "independentObservations": null, "extractionConfidence": null,
+      "modelUncertainty": { "level": "high", "statement": "Median 1.0 within a factor of two is dataset 08's starting guess, not a measurement." },
+      "alternatives": [{ "value": "Point 1.0", "why": "The engine default; carries no uncertainty." }],
+      "rationale": "Price sensitivity needs evidence outside the three systems. Recorded as an assumption with provenance Asserted, never observed or calibrated.",
+      "missingEvidence": "Win/loss interviews or a price-test result; the firm-level calibration can only refine it later.",
+      "outsideEvidenceQuantity": "priceSensitivity", "domainMapping": { "enum": "ParameterProvenance", "member": "Asserted" },
+      "question": "How price-sensitive are e-commerce fulfillment buyers relative to Regional 3PLs, and what supports it?",
+      "reviewState": "deferred",
+      "exclusionReason": "Deferred with tier D: unsupported simulation assumption; no assumption set is loaded for it.",
+      "appliedRule": null, "accepted": null
+    }
+  ]
+}

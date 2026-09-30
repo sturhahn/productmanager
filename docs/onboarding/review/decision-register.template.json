@@ -1,0 +1,50 @@
+{
+  "registerVersion": 1,
+  "purpose": "Annotated template. Copy it outside the repository, replace every angle-bracket placeholder and repeat the one entry per decision or rule (a rule adds appliesWhen and covers). Field reference: README.md section 3. No credentials.",
+  "manifest": { "file": "<path to source-manifest.json, or null>", "runId": "<discovery runId, or null>" },
+  "mapping": { "file": "<path to portfolio-mapping.json, or null>" },
+  "reviewedOn": "<yyyy-MM-dd>",
+  "labelMap": [
+    { "label": "sourceFact", "appliesTo": "firms[].epistemicStatus", "enum": "EpistemicStatus", "member": "Observed" },
+    { "label": "inferredInterpretation", "appliesTo": "firms[].epistemicStatus", "enum": "EpistemicStatus", "member": "Inferred" },
+    { "label": "sourceFact", "appliesTo": "assumptionSets[].parameters[].provenance", "enum": "ParameterProvenance", "member": "Asserted" },
+    { "label": "inferredInterpretation", "appliesTo": "assumptionSets[].parameters[].provenance", "enum": "ParameterProvenance", "member": "Asserted" },
+    { "label": "assumption", "appliesTo": "assumptionSets[].parameters[].provenance", "enum": "ParameterProvenance", "member": "Asserted" },
+    { "label": "default", "appliesTo": "assumptionSets[].parameters[].provenance", "enum": "ParameterProvenance", "member": "Default" },
+    { "label": "unknown", "appliesTo": "market.coverages[].isUnknown", "enum": null, "member": null }
+  ],
+  "humanEvidence": [
+    { "id": "H1", "date": "<yyyy-MM-dd>", "statement": "<what the human said or supplied, in their words; one statement per id>" }
+  ],
+  "tierOutcome": { "A": "proceed", "B": "proceed", "C": "deferred", "D": "deferred" },
+  "decisions": [
+    {
+      "key": "<stable key, never reused: DEC-<topic>-<subject> or RULE-<subject>>",
+      "entryType": "decision",
+      "topic": "<segmentDefinition | identityMerge | capabilityScope | coverageTier | coverageDelta | need | planningDate | commercialClassification | simulationAssumption>",
+      "class": "<sourceFact | inferredInterpretation | default | assumption>",
+      "tier": "<A | B | C | D>",
+      "datasets": ["<NN>"],
+      "requiredForTier": false,
+      "affects": [{ "ref": "<mapping:<key> | salesforce:<id> | aha:<ref> | jira:<key> | seed:<natural key>>", "fields": ["<field>"] }],
+      "seedTarget": { "fragment": "<file name>", "collection": "<dotted path to the array>", "match": { "<key>": "<value>" } },
+      "proposedValue": { "<seed-shaped field>": "<value>" },
+      "evidence": [{ "ref": "<mapping:<key> | manifest:<Q id | dataset:NN | gap:<concept start>> | salesforce:/aha:/jira:<id> | human:<H id> | register:<key>>", "note": "<what it shows>" }],
+      "sourceDate": null,
+      "effectiveDate": null,
+      "independentObservations": null,
+      "extractionConfidence": null,
+      "modelUncertainty": { "level": "<low | medium | high | unquantified>", "statement": "<why, in words; never a distribution width>" },
+      "alternatives": [{ "value": "<another choice>", "why": "<why it was not proposed>" }],
+      "rationale": "<why this value>",
+      "missingEvidence": "<what would settle it, or none>",
+      "outsideEvidenceQuantity": null,
+      "domainMapping": null,
+      "question": "<the one question for the human, or null when nothing is open>",
+      "reviewState": "proposed",
+      "exclusionReason": "<why the affected records are not loaded, or null once accepted>",
+      "appliedRule": null,
+      "accepted": null
+    }
+  ]
+}

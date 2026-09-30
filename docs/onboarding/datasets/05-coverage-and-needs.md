@@ -50,6 +50,8 @@ Commands below use `pm` as shorthand for `dotnet run --project src/ProductManage
 6. Any process whose importance is conditional on a firm attribute ("only firms with
    international clients")? Record the condition as free text in `conditionality`.
 
+**Consequential choices** here: every coverage tier and delta (`coverageTier`, `coverageDelta`) and every need weight, hardness or workaround cost (`need`). Rubric: [review section 5](../review/README.md#5-needs-and-coverage-rubric) - a tier needs dated, representative evidence; a competitor cell with no accepted evidence stays `isUnknown: true` (unknown stays unknown, never a guessed Bronze, and extraction confidence never turns it into a tier); a customer request is evidence of a need, not of a coverage tier or of any change in win probability. Repeated sales notes are one observation. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 Fields are on `SeedCoverage` and `SeedNeed` in `src/ProductManager.Cli/Seed/SeedModels.cs`.

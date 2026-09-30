@@ -51,6 +51,8 @@ CLI shorthand used below: `pm` means `dotnet run --project src/ProductManager.Cl
    improve, from which coverage tier to which (`deltas`, needs 02)? Default for a roadmap-only
    user: `status` only, no `productName`, no `deltas`.
 
+**Consequential choices** here: which epic or ticket delivers which capability and any merge or split of features (`identityMerge`, `capabilityScope`), and every feature delta, especially a jump such as Bronze to Gold (`coverageDelta`). These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 ### initiatives[]

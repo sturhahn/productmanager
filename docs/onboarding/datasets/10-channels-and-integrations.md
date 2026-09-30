@@ -65,6 +65,8 @@ There is no installed `pm` binary.
    seed it, because the engine averages integration quality over the firm's whole stack and a
    missing edge reads as zero.
 
+**Consequential choices** here: which values are channels, each channel's reach and origination share (`channelMarketReach`), consultant bias, and integration quality scores. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 ### `marketDynamics.channels[]` (`SeedChannel`, `src/ProductManager.Cli/Seed/SeedModels.cs`)

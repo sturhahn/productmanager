@@ -60,6 +60,8 @@ Ask these in order; defaults are in brackets.
    one default row. [Default: one default row; competitor prices are estimates - say so in the
    product description.] Source: price book, order forms, competitor proposals seen in deals.
 
+**Consequential choices** here: how segments are defined and which segment an account belongs to (`segmentDefinition`), the process catalog and approaches, the `suiteAffinity` and `consolidationPreference` values, and competitor price estimates. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 Every field below exists on the POCOs in `src/ProductManager.Cli/Seed/SeedModels.cs`

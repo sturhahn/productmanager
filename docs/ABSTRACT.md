@@ -5,4 +5,6 @@ should duplicate its content. `onboarding/` is what a new user hands to an agent
 own data into a fresh instance (guide plus one requirements file per dataset), including a
 read-only source-discovery step (`onboarding/discovery/`) that assesses connected Aha!, Jira and
 Salesforce sources before any data is prepared, and a portfolio-reconciliation step
-(`onboarding/portfolio/`) that turns them into one approved, traceable mapping every dataset agent uses.
+(`onboarding/portfolio/`) that turns them into one approved, traceable mapping every dataset agent uses, and
+a consequential-decision review (`onboarding/review/`) that keeps interpretations out of the seed until the
+human has accepted them.

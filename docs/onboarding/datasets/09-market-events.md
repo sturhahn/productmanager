@@ -38,6 +38,8 @@ math. PRD: "Market side - dynamics", row MarketEvent. `pm` below means
    forced to migrate)?" Record it as `magnitude` with a `notes` explanation. It is
    documentation only.
 
+**Consequential choices** here: an event's effect size and the flows and segments it moves (`eventEffects`), and applying an effect to every segment when the human cannot split it. These go through the [decision register](../review/README.md), not a bracketed default above: a consequential choice not covered by an accepted decision or rule is returned to the orchestrator as a proposed register entry and is never defaulted into the fragment. Bracketed defaults apply to mechanical choices only.
+
 ## Data requirements
 
 Entity: `marketDynamics.marketEvents[]` (natural key `name`, scoped to the market).
