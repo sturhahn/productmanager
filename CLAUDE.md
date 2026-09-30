@@ -91,6 +91,13 @@ wholesale rather than hand-patch them; just keep `node_modules`, `.next`, and ot
 output out of the solution file. After editing, sanity-check with `dotnet sln ProductManager.sln
 list` (should still show only the 8 real projects) and `dotnet build`.
 
+## Follow-up PRDs
+
+New follow-up requirements use root `PRDs/PRD[n]-FeatureName.md`, continuing the numbering
+from `docs/PRD1-InitialFeedback.md` and `docs/PRD2-Onboarding.md`. Read `PRDs/ABSTRACT.md`
+and `PRDs/AGENTS.md` before editing them. The authoritative product spec remains
+`docs/PRDs/product_requirements.md`; follow-up drafts do not silently supersede it.
+
 ## Rules
 - For any bug first create a test showing the failure, then fix it and verify with the test.
 - For any feature first create a test showing the desired behavior, then implement it and verify

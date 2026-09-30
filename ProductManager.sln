@@ -63,6 +63,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{120B4091-3
 		docs\onboarding\datasets\12-historical-facts.md = docs\onboarding\datasets\12-historical-facts.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PRDs", "PRDs", "{E4EF7D20-C951-4EC8-90D2-20EE6DB7D73C}"
+	ProjectSection(SolutionItems) = preProject
+		PRDs\ABSTRACT.md = PRDs\ABSTRACT.md
+		PRDs\AGENTS.md = PRDs\AGENTS.md
+		PRDs\INDEX.md = PRDs\INDEX.md
+		PRDs\PRD3-SourceDiscovery.md = PRDs\PRD3-SourceDiscovery.md
+		PRDs\PRD4-PortfolioReconciliation.md = PRDs\PRD4-PortfolioReconciliation.md
+		PRDs\PRD5-EvidenceReview.md = PRDs\PRD5-EvidenceReview.md
+		PRDs\PRD6-ReliableSourceImports.md = PRDs\PRD6-ReliableSourceImports.md
+		PRDs\PRD7-CommercialNormalization.md = PRDs\PRD7-CommercialNormalization.md
+		PRDs\PRD8-CalibrationReadiness.md = PRDs\PRD8-CalibrationReadiness.md
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "seed", "seed", "{615E39E8-525B-4E90-B535-E5FAA601856B}"
 	ProjectSection(SolutionItems) = preProject
 		seed\phase1-seed.json = seed\phase1-seed.json

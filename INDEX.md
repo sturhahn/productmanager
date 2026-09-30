@@ -6,6 +6,8 @@
   phasing, testing posture. Read this before any cross-cutting change.
 - `docs/onboarding/` — agent-driven onboarding: orchestrator guide, one requirements file per
   dataset, and a complete example seed.
+- `PRDs/` — numbered follow-up requirements for source discovery, portfolio reconciliation,
+  evidence review, reliable imports, commercial normalization, and calibration readiness.
 - `src/ProductManager.Domain/` — entities, value objects, domain services. No EF/API refs.
 - `src/ProductManager.Engine/` — pure simulation/calibration library. No project references at all.
 - `src/ProductManager.Api/` — ASP.NET Core Web API: the only write path. EF Core + PostgreSQL.
